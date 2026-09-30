@@ -1,0 +1,21 @@
+# Installation checklist
+
+- [ ] Backup plan agreed; password manager ready
+- [ ] Domain/subdomain created; document root = `…/public` (or layout B chosen)
+- [ ] PHP 8.1+ selected; `pdo_mysql`, `mbstring`, `fileinfo`, `json`, `ctype` enabled
+- [ ] ZIP uploaded and extracted; `storage/*` writable (750/755, never 777)
+- [ ] `/check.php` shows **no FAIL**
+- [ ] Database + DB user created with all privileges; credentials stored safely
+- [ ] AutoSSL certificate active; site opens on `https://`
+- [ ] `/setup`: token → DB → administrator; demo data **off** for production
+- [ ] Confirmed `/setup` now returns 404
+- [ ] Confirmed `/storage/`, `/app/`, `/database/` are not reachable from the browser
+- [ ] `config.php` is outside the web root (System status shows OK) and is not committed anywhere
+- [ ] Departments, branches, categories, reporting periods configured
+- [ ] Rating scales reviewed against the institution's approved methodology and marked approved
+- [ ] Currency settings checked (LYD, 3 decimals)
+- [ ] Staff accounts created with the correct role and department/branch scope
+- [ ] Test users of each role confirm what they can and cannot see
+- [ ] Test upload (pdf) + download; test CSV export opens correctly in Excel (Arabic OK)
+- [ ] First database + uploads backup taken and a restore rehearsed
+- [ ] Sharia/legal/compliance owners informed that the tool supports, but does not establish, compliance
