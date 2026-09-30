@@ -6,6 +6,7 @@ namespace App\Controllers;
 use App\Core\Audit;
 use App\Core\Db;
 use App\Core\HttpException;
+use App\Core\Perm;
 use App\Core\Response;
 use App\Core\Scope;
 use App\Core\Session;
@@ -30,25 +31,38 @@ final class AttachmentController extends Controller
         Response::redirect($back);
     }
 
-    /** Load attachment and verify the caller may access its parent record. */
-    private function loadAuthorised(int $id): array
+    /**
+     * Parent-record access rule per attachment type: [view permission, edit permission(s), scope callable].
+     * Returns the parent row (with department/branch columns where relevant) or null.
+     */
+    public static function parentAccess(array $user, string $type, int $id, bool $forEdit): bool
+    {
+        $role = $user['role'];
+        $can = static fn(string ...$perms): bool => (bool)array_filter($perms, static fn($p) => Perm::roleHas($role, $p));
+        switch ($type) {
+            case 'risk':
+            case 'incident':
+                $tbl = $type === 'risk' ? 'risks' : 'incidents';
+                $row = Db::one("SELECT department_id, branch_id FROM $tbl WHERE id = ?", [$id]);
+                return $row && Scope::allows($user, $row) && $can($type . ($forEdit ? '.edit' : '.view'));
+            case 'obligation':
+                $row = Db::one('SELECT department_id FROM compliance_obligations WHERE id = ?', [$id]);
+                return $row && Scope::allowsDept($user, $row) && ($forEdit ? $can('compliance.manage', 'compliance.update') : $can('compliance.view'));
+            case 'policy_version':
+                $row = Db::one('SELECT id FROM policy_versions WHERE id = ?', [$id]);
+                return $row && ($forEdit ? $can('policy.manage') : $can('policy.view'));
+            default:
+                return false;
+        }
+    }
+
+    private function loadAuthorised(int $id, bool $forEdit = false): array
     {
         $u = $this->user();
         $a = Db::one('SELECT * FROM attachments WHERE id = ? AND deleted_at IS NULL', [$id]);
-        if (!$a) {
+        // Missing, out-of-scope and not-permitted all look the same (404) to avoid enumeration.
+        if (!$a || !self::parentAccess($u, $a['entity_type'], (int)$a['entity_id'], $forEdit)) {
             $this->notFound();
-        }
-        $parent = match ($a['entity_type']) {
-            'risk' => Db::one('SELECT department_id, branch_id FROM risks WHERE id = ?', [$a['entity_id']]),
-            'incident' => Db::one('SELECT department_id, branch_id FROM incidents WHERE id = ?', [$a['entity_id']]),
-            default => null,
-        };
-        if (!$parent || !Scope::allows($u, $parent)) {
-            $this->notFound();
-        }
-        $view = $a['entity_type'] === 'risk' ? 'risk.view' : 'incident.view';
-        if (!\App\Core\Perm::roleHas($u['role'], $view)) {
-            throw new HttpException(403);
         }
         return $a;
     }
@@ -75,15 +89,15 @@ final class AttachmentController extends Controller
 
     public function delete(int $id): never
     {
-        $u = $this->user();
-        $a = $this->loadAuthorised($id);
-        $edit = $a['entity_type'] === 'risk' ? 'risk.edit' : 'incident.edit';
-        if (!\App\Core\Perm::roleHas($u['role'], $edit)) {
-            throw new HttpException(403);
-        }
+        $a = $this->loadAuthorised($id, true);
         Db::update('attachments', ['deleted_at' => date('Y-m-d H:i:s')], 'id = ?', [$id]);
         $this->audit('attachment.deleted', $a['entity_type'], (int)$a['entity_id'], ['attachment_id' => $id]);
-        $back = url(($a['entity_type'] === 'risk' ? 'risks/' : 'incidents/') . $a['entity_id']) . '#attachments';
-        $this->redirect($back, 'upload.deleted');
+        $base = match ($a['entity_type']) {
+            'risk' => 'risks/' . $a['entity_id'],
+            'incident' => 'incidents/' . $a['entity_id'],
+            'obligation' => 'compliance/' . $a['entity_id'],
+            default => 'policies/' . (int)Db::val('SELECT policy_id FROM policy_versions WHERE id = ?', [$a['entity_id']]),
+        };
+        $this->redirect(url($base) . '#attachments', 'upload.deleted');
     }
 }

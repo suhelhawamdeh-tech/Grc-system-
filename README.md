@@ -2,7 +2,7 @@
 
 A PHP + MySQL application built for **Bluehost shared hosting (cPanel)**. Bilingual (Arabic RTL / English LTR), navy-and-gold banking design, LYD as the default currency.
 
-> **Status:** Phase 1 (core) is implemented and automatically tested. Phase 2 modules are tracked in [`docs/PLAN.md`](docs/PLAN.md).
+> **Status:** Phase 1 (core) and Phase 2 (KRIs, risk appetite, compliance obligations, committee decisions, policies, RCSA) are implemented and covered by an automated suite (609 checks, see [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md)). Remaining gaps are listed in [`docs/PLAN.md`](docs/PLAN.md).
 > The software has **not** been deployed to Bluehost or independently security-reviewed by the author; see [Limitations](#limitations-and-what-is-not-verified). Software alone does not establish regulatory or Sharia compliance.
 
 ## Quick start
@@ -66,6 +66,18 @@ Out-of-scope records return **404** (not 403) so existence is not revealed; list
 * Labels (ar/en), qualitative descriptions, financial thresholds (LYD), score bands (ranges, colours, "counts as high") are all configurable in *Administration → Risk assessment scales*; bands must tile 1–25 exactly.
 * **The shipped thresholds, bands and criteria are DEMONSTRATION values.** A banner is shown everywhere until an authorised user records institutional approval; any later change resets the approval.
 * Financial thresholds are advisory: the risk page warns when an estimated loss implies a different impact level than the one chosen.
+
+### Phase 2 modules
+| Module | Who | What it does |
+|---|---|---|
+| **KRIs** (`/kris`) | view: admin, risk, compliance, dept manager (own dept), exec, auditor · report: risk, compliance, dept manager · define: admin, risk | Configurable amber/red thresholds (higher- or lower-is-worse), monthly/quarterly cycle, readings linked to reporting periods, automatic green/amber/red, "reading due" flag, alerts on list and dashboard; changing thresholds re-evaluates history |
+| **Risk appetite** (`/appetite`) | view: admin, risk, compliance, exec, auditor · manage: admin, risk | Appetite statements with approval metadata; live measurement (max residual score / max net loss for the current period) from stored data; *Evaluate now* opens breach records (no duplicates); breach workflow open → escalated → accepted/resolved with mandatory note |
+| **Compliance obligations** (`/compliance`) | view: admin, risk, compliance, dept manager (own dept), exec, auditor · define: admin, compliance · update status/evidence: dept manager (own dept) | Source reference, owner, frequency, due date, status with evidence attachments, "compliant" needs evidence or a note, roll-forward for recurring items, scoped CSV |
+| **Committee decisions** (`/committees`) | view: admin, risk, compliance, exec, auditor · manage: admin, risk, compliance | Decisions per committee (Board risk/audit, executive, ALCO, Sharia board, other) with follow-up actions, owners, deadlines and overdue tracking |
+| **Policies** (`/policies`) | read: everyone · manage: admin, risk, compliance | Policy/procedure/standard/charter/Sharia-resolution register; **immutable version history** with approval details and optional document; review dates; only one current version |
+| **RCSA** (`/rcsa`) | respond: dept managers/branch liaison (own scope) · manage/review: admin, risk | Bilingual questionnaires → launch per department/branch → assess → submit → reviewer approves or returns; the assessor cannot review their own assessment |
+
+Dashboard *Governance and compliance* tiles (KRIs red/amber, open breaches, overdue obligations, overdue committee actions, RCSA to review/overdue, policies past review) are computed from the tables and shown only to users with the matching permission (and scope).
 
 ### Security controls implemented
 Password hashing (`password_hash`, bcrypt/argon default, rehash on login, 12+ chars with letter+digit) · prepared statements · CSRF token on every POST · output escaping · session cookie `HttpOnly`/`SameSite=Lax`/`Secure` on HTTPS, `use_strict_mode`, ID regenerated on login, 30-min idle / 8-h absolute timeout · DB-backed login throttling (5 failures per user / 25 per IP per 15 min; no cron needed) · uniform login errors and constant-time-ish verification · server-side validation and authorisation on every route (route permission + object scope) · upload allow-list (pdf, png, jpg, txt, docx, xlsx), 5 MB, extension **and** content sniffing, random names, stored in non-public `storage/uploads`, authorised download as `attachment` with `nosniff` · CSV formula-injection neutralisation · CSP without inline scripts, `X-Frame-Options: DENY` · production errors are generic with a log reference · audit log that redacts secrets · first-run setup protected by a file-based token and permanently closed after install (also closed whenever any user exists) · no hard-coded credentials · no secrets in the repo.

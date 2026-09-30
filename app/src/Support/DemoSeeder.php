@@ -133,6 +133,63 @@ final class DemoSeeder
                 }
             }
         }
+        self::phase2($users, $dep, $cat, $riskIds, $now, $d, $br);
         return array_keys($users);
+    }
+
+    /** Synthetic Phase 2 records (KRIs, appetite, obligations, decisions, policies, RCSA). */
+    private static function phase2(array $users, array $dep, array $cat, array $riskIds, string $now, callable $d, array $br = []): void
+    {
+        $code = static function (string $table, string $prefix, int $id, int $pad) {
+            Db::update($table, ['code' => sprintf('%s-%0' . $pad . 'd', $prefix, $id)], 'id = ?', [$id]);
+        };
+        // KRIs with a few months of readings
+        foreach ([
+            ['Failed privileged logins per month', 'IT', 'demo.dept.it', 'count', 'higher_worse', 8, 15, [4, 6, 9, 12]],
+            ['Overdue loans > 30 days (% of portfolio)', 'COR', 'demo.risk', '%', 'higher_worse', 4, 7, [3, 3.5, 4.5, 6]],
+            ['Liquidity coverage ratio', 'FIN', 'demo.risk', '%', 'lower_worse', 130, 110, [160, 145, 128, 135]],
+            ['Unreconciled cash items at branches', 'RET', 'demo.dept.retail', 'count', 'higher_worse', 10, 25, [3, 5, 4, 2]],
+        ] as [$name, $dp, $own, $unit, $dir, $amber, $red, $vals]) {
+            $kid = Db::insert('kris', ['name' => $name, 'description' => 'Synthetic indicator for demonstration.', 'department_id' => $dep[$dp], 'owner_user_id' => $users[$own], 'unit' => $unit, 'direction' => $dir,
+                'amber_threshold' => Money::toDb((int)($amber * 1000)), 'red_threshold' => Money::toDb((int)($red * 1000)), 'frequency' => 'monthly', 'is_active' => 1, 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('kris', 'KRI', $kid, 4);
+            foreach ($vals as $i => $val) {
+                $v = (int)round($val * 1000);
+                Db::insert('kri_readings', ['kri_id' => $kid, 'reading_date' => date('Y-m-d', strtotime('first day of -' . (count($vals) - 1 - $i) . ' month')), 'value' => Money::toDb($v),
+                    'status' => \App\Support\Kri::status($v, (int)($amber * 1000), (int)($red * 1000), $dir), 'comment' => null, 'entered_by' => $users['demo.risk'], 'created_at' => $now]);
+            }
+        }
+        // Appetite (limits are demonstration values, not approved)
+        foreach ([['Residual risk ceiling', 'No active risk should carry a residual score above 10 without explicit committee acceptance.', 'max_residual_score', 10000, null], ['Sharia non-compliance tolerance', 'Residual score for Sharia non-compliance risk must not exceed 8.', 'max_residual_score', 8000, 'ISL-SNC'], ['Annual operational net loss cap', 'Operational net losses should stay below the synthetic cap.', 'max_net_loss', 200000000, 'OP']] as [$t, $st, $m, $lim, $cc]) {
+            $sid = Db::insert('appetite_statements', ['title' => $t, 'statement' => $st . ' (synthetic, unapproved)', 'metric' => $m, 'limit_value' => Money::toDb($lim), 'category_id' => $cc ? $cat[$cc] : null, 'is_active' => 1, 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('appetite_statements', 'RAS', $sid, 3);
+        }
+        // Compliance obligations
+        foreach ([['Quarterly AML/CFT report to the supervisor', 'Synthetic regulatory circular reference A-01', 'CMP', 'demo.compliance', 'quarterly', -12, 'in_progress'], ['Annual review of the Sharia governance framework', 'Synthetic Sharia governance standard S-04', 'ISL', 'demo.sharia', 'annual', 25, 'not_started'],
+            ['Branch cash-handling attestation', 'Synthetic internal control standard IC-11', 'RET', 'demo.dept.retail', 'monthly', 6, 'compliant'], ['Information-security policy attestation', 'Synthetic ICT risk circular T-07', 'IT', 'demo.dept.it', 'annual', -30, 'non_compliant']] as [$t, $src, $dp, $own, $freq, $off, $st]) {
+            $oid = Db::insert('compliance_obligations', ['title' => $t, 'source' => $src, 'description' => 'Synthetic obligation for demonstration.', 'department_id' => $dep[$dp], 'owner_user_id' => $users[$own], 'frequency' => $freq, 'due_date' => $d($off), 'status' => $st,
+                'status_note' => in_array($st, ['non_compliant', 'compliant'], true) ? 'Synthetic status note.' : null, 'last_reviewed_on' => $st === 'not_started' ? null : $d(-20), 'created_by' => $users['demo.compliance'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('compliance_obligations', 'OBL', $oid, 4);
+        }
+        // Committee decisions and follow-ups
+        foreach ([['board_risk', 'Approve revised liquidity contingency plan', -40, 'in_progress', -5], ['executive_risk', 'Escalate KYC remediation programme', -25, 'not_started', 20], ['sharia_board', 'Withdraw non-conforming financing template', -60, 'completed', -30]] as [$cm, $t, $off, $ast, $aoff]) {
+            $did = Db::insert('committee_decisions', ['committee' => $cm, 'meeting_date' => $d($off), 'title' => $t, 'decision_text' => 'Synthetic committee decision text for demonstration.', 'status' => $ast === 'completed' ? 'implemented' : 'open', 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('committee_decisions', 'DEC', $did, 4);
+            Db::insert('decision_actions', ['decision_id' => $did, 'title' => 'Implement: ' . $t, 'owner_user_id' => $users['demo.risk'], 'deadline' => $d($aoff), 'status' => $ast, 'completed_on' => $ast === 'completed' ? $d(-31) : null, 'created_at' => $now, 'updated_at' => $now]);
+        }
+        // Policies with versions
+        foreach ([['Credit Risk Policy', 'policy', null, 'v2.0', -400], ['Operational Loss Data Collection Procedure', 'procedure', 'RSK', 'v1.2', -120], ['Sharia Compliance Charter', 'charter', 'ISL', 'v1.0', -700]] as [$t, $cty, $dp, $ver, $off]) {
+            $pid = Db::insert('policies', ['title' => $t, 'category' => $cty, 'department_id' => $dp ? $dep[$dp] : null, 'owner_user_id' => $users['demo.compliance'], 'status' => 'approved', 'review_months' => 12, 'next_review_date' => date('Y-m-d', strtotime($d($off) . ' +12 months')), 'created_by' => $users['demo.compliance'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('policies', 'POL', $pid, 3);
+            Db::insert('policy_versions', ['policy_id' => $pid, 'version_label' => $ver, 'effective_date' => $d($off), 'approved_by' => 'Synthetic approving body', 'approval_date' => $d($off - 5), 'change_summary' => 'Synthetic change summary.', 'is_current' => 1, 'created_by' => $users['demo.compliance'], 'created_at' => $now]);
+        }
+        // RCSA template + one launched assessment
+        $tid = Db::insert('rcsa_templates', ['title' => 'Branch operations self-assessment', 'description' => 'Synthetic questionnaire.', 'is_active' => 1, 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+        foreach ([['Is dual control applied to cash and vault access?', 'هل تُطبَّق الرقابة الثنائية على النقد والخزنة؟'], ['Are customer due-diligence files complete and current?', 'هل ملفات العناية الواجبة بالعملاء مكتملة ومحدّثة؟'], ['Are incidents and near misses reported within 24 hours?', 'هل يتم الإبلاغ عن الحوادث وشبه الحوادث خلال 24 ساعة؟']] as $i => [$en, $ar]) {
+            Db::insert('rcsa_questions', ['template_id' => $tid, 'sort_order' => ($i + 1) * 10, 'question_en' => $en, 'question_ar' => $ar]);
+        }
+        $aid = Db::insert('rcsa_assessments', ['template_id' => $tid, 'department_id' => $dep['RET'], 'branch_id' => $br['TRP'] ?? null, 'assessor_user_id' => $users['demo.branch.tripoli'], 'due_date' => $d(14), 'status' => 'draft', 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+        $code('rcsa_assessments', 'RCSA', $aid, 4);
+        Db::exec('INSERT INTO rcsa_answers (assessment_id, question_id) SELECT ?, q.id FROM rcsa_questions q WHERE q.template_id = ?', [$aid, $tid]);
     }
 }

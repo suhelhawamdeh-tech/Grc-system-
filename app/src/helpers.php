@@ -243,3 +243,56 @@ function heatmap(array $grid, string $prefix, array $lik, array $imp): string
     }
     return $out . '</tbody></table><p class="axis-note">' . e(t('dash.heat_axes')) . '</p>';
 }
+
+/**
+ * Form field helper. $o: required, hint, wide, options (value => label), blank (bool), dir, extra (raw attribute string).
+ * Values come from old input first (validation round-trip), then $val.
+ */
+function ff(string $type, string $name, string $labelKey, mixed $val = '', array $o = []): string
+{
+    $val = old($name, $val);
+    $err = field_error($name);
+    $req = !empty($o['required']);
+    $id = 'f_' . $name;
+    $h = '<div class="field' . (!empty($o['wide']) ? ' wide' : '') . ($err ? ' has-error' : '') . '"><label for="' . $id . '">' . e(t($labelKey)) . ($req ? ' *' : '') . '</label>';
+    $attrs = ' id="' . $id . '" name="' . e($name) . '"' . ($req ? ' required' : '') . (!empty($o['dir']) ? ' dir="' . e($o['dir']) . '"' : '') . ($o['extra'] ?? '');
+    if ($type === 'select') {
+        $h .= '<select' . $attrs . '>';
+        if (($o['blank'] ?? true) !== false) {
+            $h .= '<option value="">' . e(t($o['blank_label'] ?? 'common.select')) . '</option>';
+        }
+        foreach ($o['options'] ?? [] as $k => $label) {
+            $h .= '<option value="' . e($k) . '"' . sel($val, $k) . '>' . e($label) . '</option>';
+        }
+        $h .= '</select>';
+    } elseif ($type === 'textarea') {
+        $h .= '<textarea' . $attrs . '>' . e($val) . '</textarea>';
+    } else {
+        $h .= '<input type="' . e($type) . '"' . $attrs . ' value="' . e($val) . '">';
+    }
+    if (!empty($o['hint'])) {
+        $h .= '<p class="hint">' . e($o['hint']) . '</p>';
+    }
+    return $h . $err . '</div>';
+}
+
+/** Build an options map from rows using a label callback. */
+function opts(array $rows, callable $label, ?string $key = 'id'): array
+{
+    $out = [];
+    foreach ($rows as $r) {
+        $out[$key === null ? $r : $r[$key]] = $label($r);
+    }
+    return $out;
+}
+
+function status_badge(string $status): string
+{
+    $cls = match ($status) {
+        'green', 'compliant', 'approved', 'completed', 'implemented', 'resolved', 'effective' => 'ok',
+        'amber', 'in_progress', 'submitted', 'escalated', 'partially_effective', 'draft', 'returned' => 'warn',
+        'red', 'non_compliant', 'open', 'ineffective' => 'danger',
+        default => '',
+    };
+    return '<span class="badge ' . $cls . '">' . e(t('enum.status.' . $status)) . '</span>';
+}

@@ -13,14 +13,16 @@ final class Perm
 
     public static function matrix(): array
     {
+        // Phase 2 module permissions
+        $p2read = ['kri.view', 'appetite.view', 'compliance.view', 'committee.view', 'policy.view', 'rcsa.view'];
         return [
             'admin' => ['*'],
-            'risk_manager' => array_merge(self::WORK, ['risk.archive', 'incident.archive', 'scales.manage', 'ownership.transfer']),
-            'compliance_officer' => array_merge(self::WORK, ['risk.archive', 'incident.archive']),
-            'dept_manager' => array_merge(self::WORK, ['risk.archive', 'incident.archive']),
-            'branch_liaison' => ['risk.view', 'risk.create', 'risk.edit', 'incident.view', 'incident.create', 'incident.edit', 'dashboard.view', 'export.run'],
-            'exec_viewer' => self::READ,
-            'auditor' => array_merge(self::READ, ['audit.view']),
+            'risk_manager' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'scales.manage', 'ownership.transfer', 'kri.report', 'kri.manage', 'appetite.manage', 'committee.manage', 'policy.manage', 'rcsa.manage']),
+            'compliance_officer' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'kri.report', 'compliance.manage', 'committee.manage', 'policy.manage']),
+            'dept_manager' => array_merge(self::WORK, ['risk.archive', 'incident.archive', 'kri.view', 'kri.report', 'compliance.view', 'compliance.update', 'policy.view', 'rcsa.view', 'rcsa.respond']),
+            'branch_liaison' => ['risk.view', 'risk.create', 'risk.edit', 'incident.view', 'incident.create', 'incident.edit', 'dashboard.view', 'export.run', 'policy.view', 'rcsa.view', 'rcsa.respond'],
+            'exec_viewer' => array_merge(self::READ, $p2read),
+            'auditor' => array_merge(self::READ, $p2read, ['audit.view']),
         ];
     }
 

@@ -70,7 +70,7 @@ final class App
     {
         $status = $e instanceof HttpException ? $e->status : 500;
         if ($status === 401) {
-            Response::redirect(url('login', ['next' => Request::method() === 'GET' ? Request::path() : null]));
+            Response::redirect(url('login', ['next' => Request::method() === 'GET' ? ($_SERVER['REQUEST_URI'] ?? null) : null]));
         }
         $ref = null;
         if ($status >= 500) {

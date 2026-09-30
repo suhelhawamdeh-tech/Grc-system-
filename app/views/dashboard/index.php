@@ -30,6 +30,15 @@ $incLink = static fn(array $extra = []) => url('incidents', array_merge(['from' 
   <a class="kpi" href="<?= e($incLink()) ?>"><div class="v" style="font-size:1.35rem"><?= e(money(\App\Core\Money::toDb($d['inc']['net']))) ?></div><div class="l"><?= e(t('dash.net_loss_period')) ?><br><span class="muted"><?= e(t('incident.gross_loss')) ?>: <?= e(money(\App\Core\Money::toDb($d['inc']['gross']))) ?> · <?= e(t('incident.recoveries')) ?>: <?= e(money(\App\Core\Money::toDb($d['inc']['recoveries']))) ?></span></div></a>
 </div>
 
+<?php if (!empty($d['p2'])): $g = $d['p2']; $tile = static function (string $key, string $label, string $href, bool $alertIfPositive = true) use ($g): string { if (!isset($g[$key])) return ''; return '<a class="kpi ' . ($alertIfPositive && $g[$key] ? 'alert' : '') . '" href="' . e($href) . '"><div class="v">' . (int)$g[$key] . '</div><div class="l">' . e(t($label)) . '</div></a>'; }; ?>
+<h2 style="margin-top:8px"><?= e(t('dash.governance')) ?></h2>
+<div class="kpis">
+<?= $tile('kri_red', 'dash.kri_red', url('kris', ['status' => 'red'])) ?><?= $tile('kri_amber', 'dash.kri_amber', url('kris', ['status' => 'amber'])) ?>
+<?= $tile('breaches', 'dash.breaches', url('appetite')) ?><?= $tile('obl_overdue', 'dash.obl_overdue', url('compliance', ['overdue' => 1])) ?>
+<?= $tile('dec_overdue', 'dash.dec_overdue', url('committees', ['overdue' => 1])) ?><?= $tile('rcsa_review', 'dash.rcsa_review', url('rcsa', ['status' => 'submitted']), false) ?>
+<?= $tile('rcsa_overdue', 'dash.rcsa_overdue', url('rcsa', ['overdue' => 1])) ?><?= $tile('pol_overdue', 'dash.pol_overdue', url('policies', ['review_overdue' => 1])) ?>
+</div><?php endif; ?>
+
 <div class="grid cols-2">
   <section class="card" aria-labelledby="h-inh"><h2 id="h-inh"><?= e(t('dash.heat_inh')) ?></h2><?= heatmap($d['heat_inh'], 'inh', $lik, $imp) ?></section>
   <section class="card" aria-labelledby="h-res"><h2 id="h-res"><?= e(t('dash.heat_res')) ?></h2><?= heatmap($d['heat_res'], 'res', $lik, $imp) ?></section>

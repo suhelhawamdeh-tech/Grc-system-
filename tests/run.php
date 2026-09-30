@@ -140,7 +140,7 @@ check('Perm: only admin manages users/org/settings', array_reduce(Perm::ROLES, f
 check('Perm: seven roles', count(Perm::ROLES) === 7);
 check('Scope::sql fails closed for unassigned dept manager', Scope::sql(['role' => 'dept_manager', 'department_id' => null], 'r') === ['r.department_id = ?', [0]]);
 check('Scope::allows branch liaison', Scope::allows(['role' => 'branch_liaison', 'branch_id' => 3], ['branch_id' => 3]) && !Scope::allows(['role' => 'branch_liaison', 'branch_id' => 3], ['branch_id' => 4]) && !Scope::allows(['role' => 'branch_liaison', 'branch_id' => 3], ['branch_id' => null]));
-$en = require $root . '/app/lang/en.php'; $ar = require $root . '/app/lang/ar.php';
+$en = App\Core\I18n::load('en'); $ar = App\Core\I18n::load('ar');
 check('i18n: en/ar have identical keys', array_keys($en) === array_keys($ar) || (array_diff_key($en, $ar) === [] && array_diff_key($ar, $en) === []), 'missing in ar: ' . implode(',', array_keys(array_diff_key($en, $ar))) . ' missing in en: ' . implode(',', array_keys(array_diff_key($ar, $en))));
 check('i18n: no empty Arabic values', count(array_filter($ar, fn($v) => trim($v) === '')) === 0);
 check('i18n: Arabic values contain Arabic script (except tokens)', count(array_filter($ar, fn($v, $k) => !preg_match('/\p{Arabic}/u', $v) && !in_array($k, ['common.csv_note'], true), ARRAY_FILTER_USE_BOTH)) === 0, implode(',', array_keys(array_filter($ar, fn($v) => !preg_match('/\p{Arabic}/u', $v)))));
@@ -151,11 +151,11 @@ foreach ($it as $f) {
     if (!str_ends_with((string)$f, '.php') || str_contains((string)$f, '/lang/')) continue;
     $src = file_get_contents((string)$f);
     preg_match_all("/\bt\('([a-z_]+\.[a-z_0-9]+)'/", $src, $m); $used = array_merge($used, $m[1]);
-    preg_match_all("/'((?:account|action|admin|audit|auth|common|dash|error|incident|nav|password|report|risk|scales|settings|setup|sys|upload|validation|history)\.[a-z_0-9]+)'/", $src, $m2); $used = array_merge($used, $m2[1]);
+    preg_match_all("/'((?:account|action|admin|appetite|audit|auth|cmt|comp|common|dash|error|incident|kri|nav|password|pol|rcsa|report|risk|scales|settings|setup|sys|upload|validation|history)\.[a-z_0-9]+)'/", $src, $m2); $used = array_merge($used, $m2[1]);
     preg_match_all("/enum_label\('([a-z_]+)', '([a-z_]+)'\)/", $src, $m3); foreach ($m3[1] as $i => $g) $used[] = "enum.$g." . $m3[2][$i];
 }
 $missing = array_values(array_diff(array_unique($used), array_keys($en)));
-$missing = array_values(array_filter($missing, fn($k) => !preg_match('/^(app\.|audit\.view$|scales\.(levels_updated|bands_updated|approved)$|dash\.heat_caption_$|settings\.manage$)/', $k)));
+$missing = array_values(array_filter($missing, fn($k) => !preg_match('/^(app\.|audit\.view$|scales\.(levels_updated|bands_updated|approved)$|dash\.heat_caption_$|settings\.manage$|(appetite|kri|rcsa)\.(manage|view|report|respond|created|updated|breach_detected|breach_recorded|breach_updated|reading_added|template_created|template_updated)$)/', $k)));
 check('i18n: all referenced keys exist', $missing === [], implode(',', $missing));
 $css = file_get_contents($root . '/public/assets/css/app.css');
 check('RTL: stylesheet uses logical properties only', !preg_match('/(margin|padding)-(left|right)\s*:|text-align\s*:\s*(left|right)|\b(left|right)\s*:\s*-?\d/', $css));
@@ -553,6 +553,9 @@ check('system status page for admin', $admin->get('/admin/system')['code'] === 2
 $sys = $admin->post('/admin/system/migrate', [], '/admin/system'); check('migrate with nothing pending is a no-op', $sys['code'] === 302);
 
 // =========================================================================
+require __DIR__ . '/phase2.php';
+
+// =========================================================================
 section('Language switch, RTL / LTR rendering');
 $a = new Client($B);
 $p = $a->get('/login'); check('default (ar) login: lang=ar dir=rtl', str_contains($p['body'], '<html lang="ar" dir="rtl">'));
@@ -565,10 +568,10 @@ $a->login('admin', $ADMIN_PW);
 $dEn = $a->get('/')['body']; check('English dashboard: LTR, English labels', str_contains($dEn, 'dir="ltr"') && str_contains($dEn, 'Active risks') && str_contains($dEn, 'Residual risk heat map'));
 $a->get('/lang?l=ar'); $dAr = $a->get('/')['body']; check('Arabic dashboard: RTL, Arabic labels', str_contains($dAr, 'dir="rtl"') && str_contains($dAr, 'المخاطر النشطة') && str_contains($dAr, 'خريطة حرارة'));
 check('language persisted on user profile', $pdo->query("SELECT lang FROM users WHERE username='admin'")->fetchColumn() === 'ar');
-foreach (['/risks', '/risks/new', "/risks/$rid", '/incidents', '/incidents/new', '/actions', '/reports', '/admin/users', '/admin/scales', '/account'] as $pth) {
+foreach (['/risks', '/risks/new', "/risks/$rid", '/incidents', '/incidents/new', '/actions', '/reports', '/admin/users', '/admin/scales', '/account', '/kris', '/appetite', '/compliance', '/committees', '/policies', '/rcsa', '/rcsa/launch', '/rcsa/templates/new', '/kris/new', '/appetite/new', '/compliance/new', '/committees/new', '/policies/new'] as $pth) {
     $ar1 = $a->get($pth)['body']; check("Arabic $pth has no untranslated keys", !preg_match('/\b(common|risk|incident|dash|admin|scales|action|report|audit|nav|auth|account|enum|upload|validation)\.[a-z_]{3,}\b/', strip_tags(preg_replace('#<(script|style).*?</\1>#s', '', $ar1))) , $pth);
 }
-$a->get('/lang?l=en'); foreach (['/risks', '/risks/new', "/risks/$rid", '/incidents', '/incidents/new', '/actions', '/reports', '/admin/users', '/admin/scales', '/account', '/admin/settings', '/admin/system'] as $pth) {
+$a->get('/lang?l=en'); foreach (['/risks', '/risks/new', "/risks/$rid", '/incidents', '/incidents/new', '/actions', '/reports', '/admin/users', '/admin/scales', '/account', '/kris', '/appetite', '/compliance', '/committees', '/policies', '/rcsa', '/rcsa/launch', '/rcsa/templates/new', '/kris/new', '/appetite/new', '/compliance/new', '/committees/new', '/policies/new', '/admin/settings', '/admin/system'] as $pth) {
     $en1 = $a->get($pth)['body']; check("English $pth has no untranslated keys / no Arabic UI chrome", !preg_match('/\b(common|risk|incident|dash|admin|scales|action|report|audit|nav|auth|account|enum|upload|validation)\.[a-z_]{3,}\b/', strip_tags(preg_replace('#<(script|style).*?</\1>#s', '', $en1))), $pth);
 }
 $a->get('/lang?l=ar'); $ge = $a->post('/risks', $mk(['title' => '']), '/risks/new'); $pg = $a->get('/risks/new'); check('Arabic validation messages displayed', str_contains($pg['body'], 'الحقل «'));
@@ -614,6 +617,7 @@ $pg = $s->get('/grc/'); check('subdir: dashboard renders; nav links prefixed', $
 check('subdir: session cookie path scoped to /grc/', str_contains(file_get_contents($s->jar), "/grc/\tFALSE") || str_contains(file_get_contents($s->jar), "/grc/"));
 $pg = $s->get('/grc/risks/new'); check('empty install: risk form works with configured categories, no departments needed for admin view', $pg['code'] === 200);
 check('empty install dashboard shows zero (metrics derive from data, none fabricated)', (function () use ($s) { $b = $s->get('/grc/')['body']; preg_match_all('#<div class="v"[^>]*>([^<]+)</div>#', $b, $m); return $m[1][0] === '0' && $m[1][1] === '0' && $m[1][4] === '0'; })());
+$r = (new Client($S))->get('/grc/risks'); check('subdir: unauthenticated deep link redirects to /grc/login with a /grc next parameter', str_starts_with((string)$r['loc'], '/grc/login') && str_contains((string)$r['loc'], 'next=%2Fgrc%2Frisks'), (string)$r['loc']);
 check('assets served under subdir', $s->get('/grc/assets/css/app.css')['code'] === 200);
 
 // =========================================================================

@@ -49,6 +49,15 @@ $nav = static function (string $href, string $label, ?string $match = null) use 
   <?php if (can('risk.view')) { echo $nav('/risks', t('nav.risks')); echo $nav('/actions', t('nav.actions')); } ?>
   <?php if (can('incident.view')) echo $nav('/incidents', t('nav.incidents')); ?>
   <?php if (can('export.run')) echo $nav('/reports', t('nav.reports')); ?>
+  <?php if (can('kri.view') || can('appetite.view') || can('compliance.view') || can('committee.view') || can('policy.view') || can('rcsa.view')): ?>
+    <h3><?= e(t('nav.governance')) ?></h3>
+    <?php if (can('kri.view')) echo $nav('/kris', t('nav.kris')); ?>
+    <?php if (can('appetite.view')) echo $nav('/appetite', t('nav.appetite')); ?>
+    <?php if (can('compliance.view')) echo $nav('/compliance', t('nav.compliance')); ?>
+    <?php if (can('committee.view')) echo $nav('/committees', t('nav.committees')); ?>
+    <?php if (can('policy.view')) echo $nav('/policies', t('nav.policies')); ?>
+    <?php if (can('rcsa.view')) echo $nav('/rcsa', t('nav.rcsa')); ?>
+  <?php endif; ?>
   <?php if (can('audit.view')) echo $nav('/audit', t('nav.audit')); ?>
   <?php if (can('users.manage') || can('org.manage') || can('scales.manage')): ?>
     <h3><?= e(t('nav.admin')) ?></h3>

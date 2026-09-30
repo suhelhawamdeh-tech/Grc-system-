@@ -13,8 +13,18 @@ final class I18n
     public static function init(string $locale): void
     {
         self::$locale = in_array($locale, self::LOCALES, true) ? $locale : 'ar';
-        self::$msgs = require APP_ROOT . '/app/lang/' . self::$locale . '.php';
-        self::$fallback = self::$locale === 'en' ? self::$msgs : require APP_ROOT . '/app/lang/en.php';
+        self::$msgs = self::load(self::$locale);
+        self::$fallback = self::$locale === 'en' ? self::$msgs : self::load('en');
+    }
+
+    /** Base strings plus optional per-module files (<locale>_*.php). */
+    public static function load(string $locale): array
+    {
+        $m = require APP_ROOT . '/app/lang/' . $locale . '.php';
+        foreach (glob(APP_ROOT . '/app/lang/' . $locale . '_*.php') ?: [] as $f) {
+            $m = array_merge($m, require $f);
+        }
+        return $m;
     }
 
     public static function ready(): bool

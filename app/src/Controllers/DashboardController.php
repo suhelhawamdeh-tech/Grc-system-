@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Db;
 use App\Core\Money;
+use App\Core\Perm;
 use App\Core\Scope;
 use App\Support\ActionFilter;
 use App\Support\IncidentFilter;
@@ -74,6 +75,39 @@ final class DashboardController extends Controller
         $d['inc_by_category'] = Db::all("SELECT c.id AS gid, c.name_en, c.name_ar, COUNT(*) AS n, COALESCE(SUM(i.net_loss),0) AS net FROM incidents i JOIN risk_categories c ON c.id = i.category_id WHERE $iw GROUP BY c.id, c.name_en, c.name_ar ORDER BY net DESC, n DESC", $ip);
         $d['inc_by_month'] = Db::all("SELECT DATE_FORMAT(i.occurrence_date, '%Y-%m') AS m, COUNT(*) AS n, COALESCE(SUM(i.net_loss),0) AS net FROM incidents i WHERE $iw GROUP BY m ORDER BY m", $ip);
 
+        $d['p2'] = $this->governance($u);
         return $this->view('dashboard/index', ['title' => t('nav.dashboard'), 'd' => $d, 'per' => $per, 'periods' => Ref::periods(true), 'highMin' => $highMin, 'scoped' => Scope::restricted($u)]);
+    }
+
+    /** Phase 2 headline numbers (each derived from stored data, scope-aware, shown only with the matching permission). */
+    private function governance(array $u): array
+    {
+        $p = [];
+        $today = date('Y-m-d');
+        if (Perm::roleHas($u['role'], 'kri.view')) {
+            [$w, $pp] = Scope::sqlDept($u, 'k');
+            $latest = 'JOIN kri_readings lr ON lr.id = (SELECT x.id FROM kri_readings x WHERE x.kri_id = k.id ORDER BY x.reading_date DESC, x.id DESC LIMIT 1)';
+            $p['kri_red'] = (int)Db::val("SELECT COUNT(*) FROM kris k $latest WHERE k.is_active = 1 AND lr.status = 'red' AND $w", $pp);
+            $p['kri_amber'] = (int)Db::val("SELECT COUNT(*) FROM kris k $latest WHERE k.is_active = 1 AND lr.status = 'amber' AND $w", $pp);
+        }
+        if (Perm::roleHas($u['role'], 'appetite.view')) {
+            $p['breaches'] = (int)Db::val("SELECT COUNT(*) FROM appetite_breaches WHERE status IN ('open','escalated')");
+        }
+        if (Perm::roleHas($u['role'], 'compliance.view')) {
+            [$w, $pp] = Scope::sqlDept($u, 'o');
+            $p['obl_overdue'] = (int)Db::val("SELECT COUNT(*) FROM compliance_obligations o WHERE o.archived_at IS NULL AND o.status IN ('not_started','in_progress','non_compliant') AND o.due_date < ? AND $w", array_merge([$today], $pp));
+        }
+        if (Perm::roleHas($u['role'], 'committee.view')) {
+            $p['dec_overdue'] = (int)Db::val("SELECT COUNT(*) FROM decision_actions a WHERE a.status IN ('not_started','in_progress') AND a.deadline < ?", [$today]);
+        }
+        if (Perm::roleHas($u['role'], 'rcsa.view')) {
+            [$w, $pp] = Scope::sql($u, 'a');
+            $p['rcsa_review'] = (int)Db::val("SELECT COUNT(*) FROM rcsa_assessments a WHERE a.status = 'submitted' AND $w", $pp);
+            $p['rcsa_overdue'] = (int)Db::val("SELECT COUNT(*) FROM rcsa_assessments a WHERE a.status IN ('draft','returned') AND a.due_date < ? AND $w", array_merge([$today], $pp));
+        }
+        if (Perm::roleHas($u['role'], 'policy.view')) {
+            $p['pol_overdue'] = (int)Db::val("SELECT COUNT(*) FROM policies WHERE status <> 'retired' AND next_review_date < ?", [$today]);
+        }
+        return $p;
     }
 }

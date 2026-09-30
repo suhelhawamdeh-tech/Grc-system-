@@ -84,3 +84,63 @@ $router->post('/admin/system/migrate', 'SystemController@migrate', 'settings.man
 
 $router->get('/audit', 'AuditController@index', 'audit.view');
 $router->get('/audit/export', 'AuditController@export', 'audit.view');
+
+// ---- Phase 2 modules
+$router->get('/kris', 'KriController@index', 'kri.view');
+$router->get('/kris/new', 'KriController@create', 'kri.manage');
+$router->post('/kris', 'KriController@store', 'kri.manage');
+$router->get('/kris/{id}', 'KriController@show', 'kri.view');
+$router->get('/kris/{id}/edit', 'KriController@edit', 'kri.manage');
+$router->post('/kris/{id}', 'KriController@update', 'kri.manage');
+$router->post('/kris/{id}/readings', 'KriController@addReading', 'kri.report');
+
+$router->get('/appetite', 'AppetiteController@index', 'appetite.view');
+$router->get('/appetite/new', 'AppetiteController@create', 'appetite.manage');
+$router->post('/appetite', 'AppetiteController@store', 'appetite.manage');
+$router->post('/appetite/evaluate', 'AppetiteController@evaluate', 'appetite.manage');
+$router->post('/appetite/breaches/{id}', 'AppetiteController@updateBreach', 'appetite.manage');
+$router->get('/appetite/{id}/edit', 'AppetiteController@edit', 'appetite.manage');
+$router->post('/appetite/{id}', 'AppetiteController@update', 'appetite.manage');
+$router->post('/appetite/{id}/breaches', 'AppetiteController@addBreach', 'appetite.manage');
+
+$router->get('/compliance', 'ComplianceController@index', 'compliance.view');
+$router->get('/compliance/new', 'ComplianceController@create', 'compliance.manage');
+$router->get('/compliance/export', 'ComplianceController@export', 'compliance.view');
+$router->post('/compliance', 'ComplianceController@store', 'compliance.manage');
+$router->get('/compliance/{id}', 'ComplianceController@show', 'compliance.view');
+$router->get('/compliance/{id}/edit', 'ComplianceController@edit', 'compliance.manage');
+$router->post('/compliance/{id}', 'ComplianceController@update', 'compliance.manage');
+$router->post('/compliance/{id}/status', 'ComplianceController@status', 'compliance.view');
+$router->post('/compliance/{id}/roll', 'ComplianceController@roll', 'compliance.manage');
+$router->post('/compliance/{id}/archive', 'ComplianceController@archive', 'compliance.manage');
+$router->post('/compliance/{id}/attachments', 'ComplianceController@upload', 'compliance.view');
+
+$router->get('/committees', 'CommitteeController@index', 'committee.view');
+$router->get('/committees/new', 'CommitteeController@create', 'committee.manage');
+$router->post('/committees', 'CommitteeController@store', 'committee.manage');
+$router->get('/committees/{id}', 'CommitteeController@show', 'committee.view');
+$router->get('/committees/{id}/edit', 'CommitteeController@edit', 'committee.manage');
+$router->post('/committees/{id}', 'CommitteeController@update', 'committee.manage');
+$router->post('/committees/{id}/actions', 'CommitteeController@addAction', 'committee.manage');
+$router->post('/committees/{id}/actions/{aid}', 'CommitteeController@updateAction', 'committee.manage');
+
+$router->get('/policies', 'PolicyController@index', 'policy.view');
+$router->get('/policies/new', 'PolicyController@create', 'policy.manage');
+$router->post('/policies', 'PolicyController@store', 'policy.manage');
+$router->get('/policies/{id}', 'PolicyController@show', 'policy.view');
+$router->get('/policies/{id}/edit', 'PolicyController@edit', 'policy.manage');
+$router->post('/policies/{id}', 'PolicyController@update', 'policy.manage');
+$router->post('/policies/{id}/versions', 'PolicyController@addVersion', 'policy.manage');
+$router->post('/policies/{id}/versions/{vid}/attachments', 'PolicyController@upload', 'policy.manage');
+
+$router->get('/rcsa', 'RcsaController@index', 'rcsa.view');
+$router->get('/rcsa/launch', 'RcsaController@launchForm', 'rcsa.manage');
+$router->post('/rcsa/launch', 'RcsaController@launch', 'rcsa.manage');
+$router->get('/rcsa/templates/new', 'RcsaController@templateForm', 'rcsa.manage');
+$router->post('/rcsa/templates', 'RcsaController@templateStore', 'rcsa.manage');
+$router->get('/rcsa/templates/{id}/edit', 'RcsaController@templateEdit', 'rcsa.manage');
+$router->post('/rcsa/templates/{id}', 'RcsaController@templateUpdate', 'rcsa.manage');
+$router->get('/rcsa/{id}', 'RcsaController@show', 'rcsa.view');
+$router->post('/rcsa/{id}/save', 'RcsaController@save', 'rcsa.respond');
+$router->post('/rcsa/{id}/submit', 'RcsaController@submit', 'rcsa.respond');
+$router->post('/rcsa/{id}/review', 'RcsaController@review', 'rcsa.manage');
