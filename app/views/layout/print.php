@@ -10,6 +10,7 @@ $org = lname(['name_en' => Settings::get('org_name_en'), 'name_ar' => Settings::
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title><?= e($title ?? '') ?> — <?= e($org) ?></title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 </head>

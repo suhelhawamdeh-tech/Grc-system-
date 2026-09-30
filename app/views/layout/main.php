@@ -18,6 +18,7 @@ $nav = static function (string $href, string $label, ?string $match = null) use 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title><?= e($title ?? '') ?> — <?= e($org) ?></title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="<?= e(asset('css/app.css')) ?>">
 <script src="<?= e(asset('js/app.js')) ?>" defer></script>
 </head>
