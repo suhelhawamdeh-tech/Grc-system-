@@ -62,7 +62,7 @@ final class KriController extends Controller
     {
         $k = $this->load($id);
         $readings = Db::all('SELECT r.*, u.full_name, p.name_en AS p_en, p.name_ar AS p_ar FROM kri_readings r JOIN users u ON u.id = r.entered_by LEFT JOIN reporting_periods p ON p.id = r.period_id WHERE r.kri_id = ? ORDER BY r.reading_date DESC, r.id DESC LIMIT 60', [$id]);
-        return $this->view('kris/show', ['title' => $k['code'] . ' — ' . $k['name'], 'k' => $k, 'readings' => $readings, 'breaches' => Db::all('SELECT b.*, r.reading_date, r.value FROM kri_breaches b JOIN kri_readings r ON r.id = b.reading_id WHERE b.kri_id = ? ORDER BY b.id DESC LIMIT 30', [$id]), 'periods' => Ref::periods(true), 'linked' => $k['risk_id'] ? Db::one('SELECT id, risk_code, title FROM risks WHERE id = ?', [$k['risk_id']]) : null]);
+        return $this->view('kris/show', ['title' => $k['code'] . ' — ' . $k['name'], 'k' => $k, 'readings' => $readings, 'components' => Db::all('SELECT c.weight_milli, k.id, k.code, k.name, k.unit, (SELECT r.value FROM kri_readings r WHERE r.kri_id = k.id ORDER BY r.reading_date DESC, r.id DESC LIMIT 1) AS last_value FROM kri_components c JOIN kris k ON k.id = c.component_kri_id WHERE c.kri_id = ? ORDER BY k.code', [$id]), 'compositeNow' => (int)$k['is_composite'] === 1 ? self::compositeValue($id) : null, 'breaches' => Db::all('SELECT b.*, r.reading_date, r.value FROM kri_breaches b JOIN kri_readings r ON r.id = b.reading_id WHERE b.kri_id = ? ORDER BY b.id DESC LIMIT 30', [$id]), 'periods' => Ref::periods(true), 'linked' => $k['risk_id'] ? Db::one('SELECT id, risk_code, title FROM risks WHERE id = ?', [$k['risk_id']]) : null]);
     }
 
     public function create(): string
@@ -73,6 +73,7 @@ final class KriController extends Controller
     public function edit(int $id): string
     {
         $k = $this->load($id);
+        $k['weights'] = array_column(Db::all('SELECT component_kri_id, weight_milli FROM kri_components WHERE kri_id = ?', [$id]), 'weight_milli', 'component_kri_id');
         foreach (['amber_threshold', 'red_threshold'] as $c) {
             $k[$c] = Money::plain($k[$c]);
         }
@@ -81,7 +82,7 @@ final class KriController extends Controller
 
     private function lists(): array
     {
-        return ['departments' => Ref::departments(true), 'categories' => Ref::categories(true), 'users' => Ref::users(true), 'risks' => Db::all('SELECT id, risk_code, title FROM risks WHERE archived_at IS NULL ORDER BY id DESC LIMIT 500')];
+        return ['components' => Db::all('SELECT id, code, name FROM kris WHERE is_composite = 0 AND is_active = 1 ORDER BY code'), 'departments' => Ref::departments(true), 'categories' => Ref::categories(true), 'users' => Ref::users(true), 'risks' => Db::all('SELECT id, risk_code, title FROM risks WHERE archived_at IS NULL ORDER BY id DESC LIMIT 500')];
     }
 
     public function store(): never
@@ -134,12 +135,40 @@ final class KriController extends Controller
             $v->fail('critical_threshold', 'kri.err_critical');
         }
         $v->in('data_source', 'kri.data_source', ['manual', 'import', 'api'], false);
+        $composite = isset($_POST['is_composite']);
+        $comps = [];
+        if ($composite) {
+            foreach ((array)($_POST['weight'] ?? []) as $cid => $w) {
+                $w = trim((string)$w);
+                if ($w === '') {
+                    continue;
+                }
+                $wm = \App\Core\Money::parse($w, 3);
+                $cid = (int)$cid;
+                $row = Db::one('SELECT id, is_composite FROM kris WHERE id = ?', [$cid]);
+                if ($wm === null || $wm <= 0 || $wm > 1000000) {
+                    $v->fail('components', 'kri.err_weight');
+                } elseif (!$row || (int)$row['is_composite'] === 1 || ($ex && (int)$ex['id'] === $cid)) {
+                    $v->fail('components', 'kri.err_component');
+                } else {
+                    $comps[$cid] = $wm;
+                }
+            }
+            if (count($comps) < 2) {
+                $v->fail('components', 'kri.err_components_min');
+            }
+            if ($ex && !$ex['is_composite'] && Db::val('SELECT 1 FROM kri_components WHERE component_kri_id = ?', [$ex['id']])) {
+                $v->fail('components', 'kri.err_component_used');
+            }
+        } elseif ($ex && Db::val('SELECT 1 FROM kri_components WHERE component_kri_id = ?', [$ex['id']]) && isset($_POST['is_composite'])) {
+            $v->fail('components', 'kri.err_component_used');
+        }
         $back = $ex ? url('kris/' . $ex['id'] . '/edit') : url('kris/new');
         if (!$v->ok()) {
             $this->invalid($v->errors(), $back);
         }
         $data = ['name' => $v->str('name'), 'description' => $v->str('description') ?: null, 'category_id' => $cat, 'department_id' => $dept, 'owner_user_id' => $owner, 'risk_id' => $risk,
-            'unit' => $v->str('unit'), 'direction' => $v->str('direction'), 'amber_threshold' => Money::toDb($amber), 'red_threshold' => Money::toDb($red), 'critical_threshold' => $crit === null ? null : Money::toDb($crit), 'data_source' => $v->str('data_source') ?: 'manual', 'frequency' => $v->str('frequency'),
+            'unit' => $v->str('unit'), 'direction' => $v->str('direction'), 'amber_threshold' => Money::toDb($amber), 'red_threshold' => Money::toDb($red), 'critical_threshold' => $crit === null ? null : Money::toDb($crit), 'data_source' => $v->str('data_source') ?: 'manual', 'is_composite' => $composite ? 1 : 0, 'frequency' => $v->str('frequency'),
             'is_active' => $ex ? (!empty($_POST['is_active']) ? 1 : 0) : 1, 'updated_at' => date('Y-m-d H:i:s')];
         if ($ex) {
             $ch = $this->diff($ex, $data, ['name', 'department_id', 'owner_user_id', 'direction', 'amber_threshold', 'red_threshold', 'critical_threshold', 'frequency', 'is_active']);
@@ -148,13 +177,40 @@ final class KriController extends Controller
             $this->recompute((int)$ex['id'], $amber, $red, $data['direction'], $crit);
             $this->audit('kri.updated', 'kri', (int)$ex['id'], ['changes' => $ch]);
             $id = (int)$ex['id'];
+            $this->saveComponents($id, $comps);
         } else {
             $u = $this->user();
             $id = Db::insert('kris', $data + ['created_by' => $u['id'], 'created_at' => $data['updated_at']]);
             Db::update('kris', ['code' => sprintf('KRI-%04d', $id)], 'id = ?', [$id]);
-            $this->audit('kri.created', 'kri', $id, ['name' => $data['name']]);
+            $this->audit('kri.created', 'kri', $id, ['name' => $data['name'], 'composite' => $composite]);
+            $this->saveComponents($id, $comps);
         }
         $this->redirect(url('kris/' . $id), 'admin.saved');
+    }
+
+    private function saveComponents(int $id, array $comps): void
+    {
+        Db::exec('DELETE FROM kri_components WHERE kri_id = ?', [$id]);
+        foreach ($comps as $cid => $wm) {
+            Db::exec('INSERT INTO kri_components (kri_id, component_kri_id, weight_milli) VALUES (?, ?, ?)', [$id, $cid, $wm]);
+        }
+    }
+
+    /** Weighted sum of the latest component readings (integer thousandths); null if a component has no reading yet. */
+    public static function compositeValue(int $kriId): ?int
+    {
+        $sum = 0;
+        $rows = Db::all('SELECT c.weight_milli, (SELECT r.value FROM kri_readings r WHERE r.kri_id = c.component_kri_id ORDER BY r.reading_date DESC, r.id DESC LIMIT 1) AS v FROM kri_components c WHERE c.kri_id = ?', [$kriId]);
+        if (!$rows) {
+            return null;
+        }
+        foreach ($rows as $r) {
+            if ($r['v'] === null) {
+                return null;
+            }
+            $sum += intdiv(Money::fromDb($r['v']) * (int)$r['weight_milli'] + 500, 1000);
+        }
+        return $sum;
     }
 
     private function recompute(int $kriId, int $amber, int $red, string $dir, ?int $crit = null): void
@@ -170,9 +226,16 @@ final class KriController extends Controller
         $k = $this->load($id);
         $v = new Validator($_POST);
         $v->date('reading_date', 'kri.reading_date')->max('comment', 'kri.comment', 2000);
-        $val = Money::parse($v->str('value'), Money::decimals());
-        if ($v->str('value') === '' || $val === null) {
-            $v->fail('value', 'validation.amount', ['field' => t('kri.value')]);
+        if ((int)$k['is_composite'] === 1) {
+            $val = self::compositeValue($id);
+            if ($val === null) {
+                $v->fail('value', 'kri.err_components_missing');
+            }
+        } else {
+            $val = Money::parse($v->str('value'), Money::decimals());
+            if ($v->str('value') === '' || $val === null) {
+                $v->fail('value', 'validation.amount', ['field' => t('kri.value')]);
+            }
         }
         if ($v->str('reading_date') > date('Y-m-d')) {
             $v->fail('reading_date', 'validation.not_future', ['field' => t('kri.reading_date')]);

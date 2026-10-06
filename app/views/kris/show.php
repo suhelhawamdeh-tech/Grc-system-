@@ -18,7 +18,8 @@
 <section class="card" id="reading"><h2><?= e(t('kri.add_reading')) ?></h2>
 <form method="post" action="<?= e(url('kris/' . $k['id'] . '/readings')) ?>" class="form-grid" novalidate><?= csrf_field() ?>
 <?= ff('date', 'reading_date', 'kri.reading_date', date('Y-m-d'), ['required' => true]) ?>
-<?= ff('text', 'value', 'kri.value', '', ['required' => true, 'extra' => ' inputmode="decimal"']) ?>
+<?php if ((int)$k['is_composite'] === 1): ?><div class="field"><span class="lbl"><?= e(t('kri.value')) ?></span><p><strong><?= $compositeNow === null ? e(t('kri.err_components_missing')) : e(\App\Core\Money::plain(\App\Core\Money::toDb($compositeNow)) . ' ' . $k['unit']) ?></strong></p><p class="hint"><?= e(t('kri.composite_auto')) ?></p></div>
+<?php else: ?><?= ff('text', 'value', 'kri.value', '', ['required' => true, 'extra' => ' inputmode="decimal"']) ?><?php endif; ?>
 <?= ff('select', 'period_id', 'kri.period', '', ['options' => opts($periods, fn($p) => lname($p))]) ?>
 <?= ff('textarea', 'comment', 'kri.comment', '', ['wide' => true, 'hint' => t('kri.comment_hint')]) ?>
 <div class="field"><button class="btn" type="submit"><?= e(t('common.save')) ?></button></div></form></section><?php endif; ?>
@@ -35,3 +36,5 @@
 <div class="field"><label for="n<?= (int)$b['id'] ?>"><?= e(t('kri.resolution_note')) ?></label><textarea id="n<?= (int)$b['id'] ?>" name="resolution_note" rows="2"></textarea></div>
 <button class="btn" type="submit"><?= e(t('common.save')) ?></button></form>
 <?php else: ?><dl class="details"><dt><?= e(t('kri.justification')) ?></dt><dd class="pre"><?= e($b['justification'] ?? '—') ?></dd><dt><?= e(t('kri.action_plan')) ?></dt><dd class="pre"><?= e($b['action_plan'] ?? '—') ?></dd><dt><?= e(t('kri.resolution_note')) ?></dt><dd class="pre"><?= e($b['resolution_note'] ?? '—') ?></dd></dl><?php endif; ?></li></ul></div><?php endforeach; ?></section><?php endif; ?>
+<?php if ($components): ?><section class="card"><h2><?= e(t('kri.components')) ?></h2><div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('kri.id')) ?></th><th><?= e(t('kri.name')) ?></th><th class="num"><?= e(t('kri.weight')) ?></th><th class="num"><?= e(t('kri.last_value')) ?></th></tr></thead><tbody>
+<?php foreach ($components as $cm): ?><tr><td><a href="<?= e(url('kris/' . $cm['id'])) ?>"><?= e($cm['code']) ?></a></td><td><?= e($cm['name']) ?></td><td class="num"><?= e(rtrim(rtrim(number_format($cm['weight_milli'] / 1000, 3, '.', ''), '0'), '.')) ?></td><td class="num"><?= $cm['last_value'] !== null ? e(\App\Core\Money::plain($cm['last_value']) . ' ' . $cm['unit']) : '—' ?></td></tr><?php endforeach; ?></tbody></table></div></section><?php endif; ?>

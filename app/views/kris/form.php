@@ -16,6 +16,10 @@
 <?= ff('text', 'critical_threshold', 'kri.critical', isset($k['critical_threshold']) ? \App\Core\Money::plain($k['critical_threshold']) : '', ['extra' => ' inputmode="decimal"', 'hint' => t('kri.critical_hint')]) ?>
 <?= ff('select', 'data_source', 'kri.data_source', $k['data_source'] ?? 'manual', ['blank' => false, 'options' => ['manual' => t('enum.kds.manual'), 'import' => t('enum.kds.import'), 'api' => t('enum.kds.api')], 'hint' => t('kri.data_source_hint')]) ?>
 </div>
+<fieldset><legend><?= e(t('kri.composite')) ?></legend><div class="field"><label class="check"><input type="checkbox" name="is_composite" value="1"<?= checked(old('is_composite', $k['is_composite'] ?? 0)) ?>> <?= e(t('kri.is_composite')) ?></label><p class="hint"><?= e(t('kri.composite_hint')) ?></p><?= field_error('components') ?></div>
+<?php $oldW = old('weight', null); foreach ($lists['components'] as $cm): if ($existing && (int)$cm['id'] === (int)$existing['id']) continue;
+  $wv = is_array($oldW) ? (string)($oldW[$cm['id']] ?? '') : (isset($k['weights'][$cm['id']]) ? rtrim(rtrim(number_format($k['weights'][$cm['id']] / 1000, 3, '.', ''), '0'), '.') : ''); ?>
+<div class="field"><label for="w<?= (int)$cm['id'] ?>"><?= e($cm['code'] . ' — ' . $cm['name']) ?></label><input type="text" id="w<?= (int)$cm['id'] ?>" name="weight[<?= (int)$cm['id'] ?>]" value="<?= e($wv) ?>" inputmode="decimal" placeholder="<?= e(t('kri.weight')) ?>"></div><?php endforeach; ?></fieldset>
 <?php if ($existing): ?><div class="field"><label class="check"><input type="checkbox" name="is_active" value="1"<?= checked(old('is_active', $k['is_active'] ?? 1)) ?>> <?= e(t('common.active')) ?></label></div><?php endif; ?>
 <p class="muted"><?= e(t('kri.demo_note')) ?></p>
 <div class="actions"><button class="btn" type="submit"><?= e(t('common.save')) ?></button><a class="btn secondary" href="<?= e(url('kris')) ?>"><?= e(t('common.cancel')) ?></a></div></form>
