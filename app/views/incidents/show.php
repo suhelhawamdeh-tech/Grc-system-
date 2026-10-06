@@ -40,3 +40,4 @@
 <?php if ($i['escalated_at']): ?><div class="msg error" role="alert"><?= e(t('incident.escalated_note', ['at' => fdatetime($i['escalated_at'])])) ?></div><?php endif; ?>
 <?php if (count($similar) >= 2): ?><section class="card"><h2><?= icon('alert') ?> <?= e(t('incident.recurrence')) ?></h2><p><?= e(t('incident.recurrence_note', ['n' => count($similar)])) ?></p>
 <ul class="task-list"><?php foreach ($similar as $x): ?><li><a href="<?= e(url('incidents/' . $x['id'])) ?>"><?= e($x['incident_code'] . ' — ' . $x['title']) ?></a><span class="badge"><?= e(fdate($x['occurrence_date'])) ?></span></li><?php endforeach; ?></ul></section><?php endif; ?>
+<?php if ($i['status'] === 'pending_closure'): ?><div class="msg info"><?= e(t('incident.closure_pending')) ?></div><?php endif; ?>

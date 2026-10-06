@@ -70,6 +70,7 @@ $disp = static function (string $k, $v): string {
     <span class="badge <?= $ctl['last_result'] === 'effective' ? 'ok' : ($ctl['last_result'] === 'ineffective' ? 'danger' : ($ctl['last_result'] ? 'warn' : '')) ?>"><?= e($ctl['last_result'] ? t('enum.rating.' . $ctl['last_result']) : t('ctl.never_tested')) ?></span></li><?php endforeach; ?></ul><?php endif; ?></section>
 <?php endif; ?>
 
+<?php if (($r['acceptance_status'] ?? 'none') !== 'none'): ?><div class="msg <?= $r['acceptance_status'] === 'approved' ? 'success' : ($r['acceptance_status'] === 'rejected' ? 'error' : 'info') ?>"><strong><?= e(t('risk.acceptance_' . $r['acceptance_status'])) ?></strong> — <?= e(t('risk.acceptance_note', ['n' => \App\Controllers\RiskController::level2Threshold()])) ?></div><?php endif; ?>
 <section class="card" id="actions"><h2><?= e(t('action.title_plural')) ?></h2>
   <?php if (!$actions): ?><p class="muted"><?= e(t('action.none')) ?></p><?php else: ?>
   <div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('action.title')) ?></th><th><?= e(t('action.owner')) ?></th><th><?= e(t('action.deadline')) ?></th><th><?= e(t('action.status')) ?></th><?php if ($canEdit): ?><th></th><?php endif; ?></tr></thead><tbody>

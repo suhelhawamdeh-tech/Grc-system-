@@ -11,7 +11,7 @@ use App\Support\Bia;
 /** Approval inbox for deciders (maker-checker): pending requests plus the user's own requests. */
 final class ApprovalController extends Controller
 {
-    private const LABEL = ['bia_process' => ['table' => 'bia_processes', 'url' => 'bia/'], 'policy_version' => ['table' => 'policy_versions', 'url' => 'policies/']];
+    private const LABEL = ['bia_process' => ['table' => 'bia_processes', 'url' => 'bia/', 'code' => 'code', 'name' => 'name'], 'policy_version' => ['table' => 'policy_versions', 'url' => 'policies/'], 'risk_acceptance' => ['table' => 'risks', 'url' => 'risks/', 'code' => 'risk_code', 'name' => 'title'], 'incident_closure' => ['table' => 'incidents', 'url' => 'incidents/', 'code' => 'incident_code', 'name' => 'title']];
 
     public function index(): string
     {
@@ -27,7 +27,7 @@ final class ApprovalController extends Controller
                     $a['link'] = $e ? url('policies/' . $e['pid']) : null;
                     continue;
                 }
-                $e = $t ? Db::one('SELECT code, name FROM ' . $t['table'] . ' WHERE id = ?', [$a['entity_id']]) : null;
+                $e = $t ? Db::one('SELECT ' . $t['code'] . ' AS code, ' . $t['name'] . ' AS name FROM ' . $t['table'] . ' WHERE id = ?', [$a['entity_id']]) : null;
                 $a['label'] = $e ? $e['code'] . ' — ' . $e['name'] : $a['entity_type'] . ' #' . $a['entity_id'];
                 $a['link'] = $t ? url($t['url'] . $a['entity_id']) : null;
             }
@@ -44,9 +44,18 @@ final class ApprovalController extends Controller
         $a = Db::one('SELECT * FROM approvals WHERE id = ?', [$id]);
         $a || $this->notFound();
         $approve = Request::str('decision') === 'approve';
-        $back = Request::str('back') === 'entity' && $a['entity_type'] === 'bia_process' ? url('bia/' . $a['entity_id']) : url('approvals');
+        $back = url('approvals');
+        if (Request::str('back') === 'entity') {
+            $back = match ($a['entity_type']) { 'bia_process' => url('bia/' . $a['entity_id']), 'risk_acceptance' => url('risks/' . $a['entity_id']), 'incident_closure' => url('incidents/' . $a['entity_id']), default => $back };
+        }
         if ($a['entity_type'] === 'bia_process' && $approve && Bia::gaps((int)$a['entity_id'])) {
             $this->redirect($back, 'bia.err_gaps', 'error');
+        }
+        if ($a['entity_type'] === 'risk_acceptance' && $approve && $u['role'] !== 'admin') {
+            $score = (int)Db::val('SELECT res_score FROM risks WHERE id = ?', [$a['entity_id']]);
+            if ($score >= RiskController::level2Threshold()) {
+                $this->redirect($back, 'appr.err_authority', 'error', ['n' => RiskController::level2Threshold()]);
+            }
         }
         $err = Db::tx(function () use ($id, $u, $approve, $a) {
             $err = Approvals::decide($id, (int)$u['id'], $approve, Request::str('comment'));
@@ -60,6 +69,14 @@ final class ApprovalController extends Controller
                 } elseif ($v) {
                     Db::update('policy_versions', ['status' => 'rejected'], 'id = ?', [$v['id']]);
                 }
+            }
+            if ($err === null && $a['entity_type'] === 'risk_acceptance') {
+                $now = date('Y-m-d H:i:s');
+                Db::update('risks', $approve ? ['acceptance_status' => 'approved', 'acceptance_decided_at' => $now] : ['acceptance_status' => 'rejected', 'acceptance_decided_at' => $now, 'treatment_decision' => 'mitigate'], 'id = ?', [$a['entity_id']]);
+                Db::insert('risk_history', ['risk_id' => $a['entity_id'], 'user_id' => $u['id'], 'event' => $approve ? 'acceptance_approved' : 'acceptance_rejected', 'changes' => null, 'created_at' => $now]);
+            }
+            if ($err === null && $a['entity_type'] === 'incident_closure') {
+                Db::update('incidents', ['status' => $approve ? 'closed' : 'investigating', 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$a['entity_id']]);
             }
             if ($err === null && $a['entity_type'] === 'bia_process') {
                 $now = date('Y-m-d H:i:s');

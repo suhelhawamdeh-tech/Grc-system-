@@ -12,7 +12,7 @@ use App\Support\Upload;
 
 final class SettingsController extends Controller
 {
-    private const KEYS = ['org_name_en', 'org_name_ar', 'currency_code', 'currency_decimals', 'currency_symbol_en', 'currency_symbol_ar', 'default_lang', 'review_warning_days', 'incident_escalation_threshold'];
+    private const KEYS = ['org_name_en', 'org_name_ar', 'currency_code', 'currency_decimals', 'currency_symbol_en', 'currency_symbol_ar', 'default_lang', 'review_warning_days', 'incident_escalation_threshold', 'accept_level2_min'];
 
     public function index(): string
     {
@@ -26,6 +26,9 @@ final class SettingsController extends Controller
             ->in('default_lang', 'settings.default_lang', ['ar', 'en'])->in('currency_decimals', 'settings.currency_decimals', ['0', '1', '2', '3'])
             ->required('currency_symbol_en', 'settings.symbol_en')->max('currency_symbol_en', 'settings.symbol_en', 10)->required('currency_symbol_ar', 'settings.symbol_ar')->max('currency_symbol_ar', 'settings.symbol_ar', 10)
             ->intRange('review_warning_days', 'settings.review_warning_days', 0, 365);
+        if ($v->str('accept_level2_min') !== '') {
+            $v->intRange('accept_level2_min', 'settings.accept_level2', 1, 25);
+        }
         if (!preg_match('/^[A-Z]{3}$/', strtoupper($v->str('currency_code')))) {
             $v->fail('currency_code', 'settings.err_currency');
         }

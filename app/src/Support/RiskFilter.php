@@ -42,6 +42,7 @@ final class RiskFilter
             'overdue_review' => !empty($q['overdue_review']) ? '1' : '',
             'high' => !empty($q['high']) ? '1' : '',
             'unproven' => !empty($q['unproven']) ? '1' : '',
+            'acceptance' => isset($q['acceptance']) && in_array($q['acceptance'], ['pending', 'approved', 'rejected'], true) ? $q['acceptance'] : '',
             'sort' => isset($q['sort']) && is_string($q['sort']) && isset(self::SORTS[$q['sort']]) ? $q['sort'] : 'code',
             'dir' => ($q['dir'] ?? '') === 'asc' ? 'asc' : 'desc',
         ];
@@ -100,6 +101,10 @@ final class RiskFilter
         if ($f['overdue_review'] === '1') {
             $where[] = 'r.review_date < ? AND r.status = ?';
             array_push($params, date('Y-m-d'), 'active');
+        }
+        if ($f['acceptance'] !== '') {
+            $where[] = 'r.acceptance_status = ?';
+            $params[] = $f['acceptance'];
         }
         if ($f['unproven'] === '1') {
             $where[] = self::UNPROVEN;

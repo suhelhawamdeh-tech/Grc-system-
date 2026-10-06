@@ -1,6 +1,9 @@
 <?php
 // Business impact analysis and approvals strings (English). Keep keys identical to ar_bia.php.
 return [
+    'enum.incident_status.pending_closure' => 'Closure awaiting approval', 'appr.err_authority' => 'Accepting a residual score of :n or more needs the administrator (senior management level).', 'history.acceptance_requested' => 'Risk acceptance sent for approval', 'history.acceptance_approved' => 'Risk acceptance approved', 'history.acceptance_rejected' => 'Risk acceptance rejected: returned to mitigate',
+    'risk.acceptance_pending' => 'Acceptance awaiting approval', 'risk.acceptance_approved' => 'Acceptance approved', 'risk.acceptance_rejected' => 'Acceptance rejected', 'risk.acceptance_note' => 'This high residual risk is accepted only once another person approves it in Approvals. Scores of :n or more need the administrator.',
+    'incident.closure_pending' => 'Closing this incident needs approval because the loss is above the escalation threshold. Another person approves it in Approvals.', 'settings.accept_level2' => 'Risk acceptance: score needing senior approval', 'settings.accept_level2_hint' => 'Residual scores at or above this value can only be accepted by the administrator. Lower high scores can be approved by a risk manager or compliance officer.',
     'pol.needs_approval' => 'Send for approval instead of recording an approved version', 'pol.needs_approval_hint' => 'The version stays pending and does not replace the current one until another person (risk manager or compliance officer) approves it in Approvals.', 'pol.pending_approval' => 'Awaiting approval', 'pol.version_pending' => 'Version sent for approval. It becomes current when approved.',
     'nav.bia' => 'Business impact analysis', 'nav.approvals' => 'Approvals',
     'enum.crit.critical' => 'Critical', 'enum.crit.high' => 'High', 'enum.crit.medium' => 'Medium', 'enum.crit.low' => 'Low',

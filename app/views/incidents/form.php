@@ -43,7 +43,7 @@ $sel_linked = array_map('intval', (array)old('risk_ids', $linked));
   <fieldset><legend><?= e(t('incident.section_analysis')) ?></legend><div class="form-grid">
     <?= $area('root_cause', 'incident.root_cause', $v('root_cause')) ?>
     <?= $area('corrective_actions', 'incident.corrective_actions', $v('corrective_actions')) ?>
-    <div class="field<?= $err('status') ?>"><label for="status"><?= e(t('incident.status')) ?></label><select id="status" name="status"><?php foreach (['open', 'investigating', 'closed'] as $s): ?><option value="<?= $s ?>"<?= sel($v('status', 'open'), $s) ?>><?= e(enum_label('incident_status', $s)) ?></option><?php endforeach; ?></select><?= field_error('status') ?></div>
+    <div class="field<?= $err('status') ?>"><label for="status"><?= e(t('incident.status')) ?></label><select id="status" name="status"><?php foreach (($existing && $existing['status'] === 'pending_closure' ? ['open', 'investigating', 'pending_closure', 'closed'] : ['open', 'investigating', 'closed']) as $s): ?><option value="<?= $s ?>"<?= sel($v('status', 'open'), $s) ?>><?= e(enum_label('incident_status', $s)) ?></option><?php endforeach; ?></select><?= field_error('status') ?></div>
     <div class="field wide<?= $err('risk_ids') ?>"><label for="risk_ids"><?= e(t('incident.linked_risks')) ?></label>
       <select id="risk_ids" name="risk_ids[]" multiple size="6"><?php foreach ($risks as $rk): ?><option value="<?= (int)$rk['id'] ?>"<?= in_array((int)$rk['id'], $sel_linked, true) ? ' selected' : '' ?>><?= e($rk['risk_code'] . ' — ' . $rk['title']) ?></option><?php endforeach; ?></select>
       <p class="hint"><?= e(t('incident.linked_hint')) ?></p><?= field_error('risk_ids') ?></div>

@@ -975,4 +975,13 @@ CREATE TABLE IF NOT EXISTS governance_attendance (
 
 INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('013_governance', NOW());
 
+-- ===== migration 014_acceptance_closure =====
+ALTER TABLE risks
+  ADD COLUMN acceptance_status ENUM('none','pending','approved','rejected') NOT NULL DEFAULT 'none',
+  ADD COLUMN acceptance_decided_at DATETIME NULL;
+
+ALTER TABLE incidents MODIFY status ENUM('open','investigating','pending_closure','closed') NOT NULL DEFAULT 'open';
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('014_acceptance_closure', NOW());
+
 SET FOREIGN_KEY_CHECKS = 1;

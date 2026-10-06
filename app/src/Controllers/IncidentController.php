@@ -152,6 +152,17 @@ final class IncidentController extends Controller
         if ($errors) {
             $this->invalid($errors, url('incidents/' . $id . '/edit'));
         }
+        // Closing a large incident needs a second person's approval (maker-checker).
+        $closure = false;
+        $th = Money::parse((string)(Settings::get('incident_escalation_threshold', '') ?? ''), Money::decimals());
+        if ($data['status'] === 'closed' && $old['status'] !== 'closed' && $th !== null && $th > 0 && Money::fromDb($data['net_loss']) >= $th) {
+            $data['status'] = 'pending_closure';
+            $closure = true;
+        } elseif ($old['status'] === 'pending_closure' && $data['status'] === 'closed') {
+            $data['status'] = 'pending_closure';
+        } elseif ($old['status'] === 'pending_closure' && $data['status'] !== 'pending_closure') {
+            Db::exec("UPDATE approvals SET status = 'rejected', decided_at = NOW(), comment = 'Withdrawn' WHERE entity_type = 'incident_closure' AND entity_id = ? AND status = 'pending'", [$id]);
+        }
         $changes = $this->diff($old, $data, self::TRACKED);
         $now = date('Y-m-d H:i:s');
         Db::tx(function () use ($id, $data, $links, $u, $now) {
@@ -164,6 +175,10 @@ final class IncidentController extends Controller
             }
         });
         $this->audit('incident.updated', 'incident', $id, ['changes' => $changes]);
+        if ($closure) {
+            \App\Support\Approvals::request('incident_closure', $id, (int)$u['id']);
+            $this->audit('incident.closure_requested', 'incident', $id);
+        }
         $this->afterSave($id, $data + ['escalated_at' => $old['escalated_at']], $links);
         $this->redirect(url('incidents/' . $id), 'incident.updated');
     }
@@ -176,7 +191,7 @@ final class IncidentController extends Controller
             ->required('description', 'incident.description')->max('description', 'incident.description', 5000)
             ->date('occurrence_date', 'incident.occurrence_date')->date('discovery_date', 'incident.discovery_date')
             ->max('root_cause', 'incident.root_cause', 5000)->max('corrective_actions', 'incident.corrective_actions', 5000)
-            ->in('status', 'incident.status', ['open', 'investigating', 'closed']);
+            ->in('status', 'incident.status', ['open', 'investigating', 'pending_closure', 'closed']);
 
         $refId = static function (string $key, array $set, ?int $current = null): ?int {
             $val = Request::int($key);

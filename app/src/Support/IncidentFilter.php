@@ -21,7 +21,7 @@ final class IncidentFilter
             'branch' => $int('branch'),
             'risk' => $int('risk'),
             'type' => isset($q['type']) && in_array($q['type'], ['incident', 'near_miss'], true) ? $q['type'] : '',
-            'status' => isset($q['status']) && in_array($q['status'], ['open', 'investigating', 'closed'], true) ? $q['status'] : '',
+            'status' => isset($q['status']) && in_array($q['status'], ['open', 'investigating', 'pending_closure', 'closed'], true) ? $q['status'] : '',
             'from' => $date('from'),
             'to' => $date('to'),
             'archived' => isset($q['archived']) && in_array($q['archived'], ['1', 'all'], true) ? $q['archived'] : '',

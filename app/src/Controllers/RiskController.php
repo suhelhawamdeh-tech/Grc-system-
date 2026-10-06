@@ -132,6 +132,7 @@ final class RiskController extends Controller
             return $id;
         });
         $this->audit('risk.created', 'risk', $id, ['title' => $data['title'], 'inh_score' => $data['inh_score'], 'res_score' => $data['res_score']]);
+        $this->acceptanceFlow($id, $data, null);
         $this->redirect(url('risks/' . $id), 'risk.created');
     }
 
@@ -156,6 +157,7 @@ final class RiskController extends Controller
             Db::insert('risk_history', ['risk_id' => $id, 'user_id' => $u['id'], 'event' => 'updated', 'changes' => json_encode($changes, JSON_UNESCAPED_UNICODE), 'created_at' => $now]);
         });
         $this->audit('risk.updated', 'risk', $id, ['fields' => array_keys($changes)]);
+        $this->acceptanceFlow($id, $data, $old);
         $this->redirect(url('risks/' . $id), 'risk.updated');
     }
 
@@ -254,6 +256,34 @@ final class RiskController extends Controller
             'treatment_decision' => $v->str('treatment_decision'), 'treatment_notes' => $nz($v->str('treatment_notes')), 'status' => $v->str('status'),
         ];
         return [$data, $v->errors()];
+    }
+
+    /** Accepting a high residual risk needs a second person's approval; the authority level depends on the score. */
+    private function acceptanceFlow(int $id, array $data, ?array $old): void
+    {
+        $needs = $data['treatment_decision'] === 'accept' && (int)$data['res_score'] >= $this->highThreshold();
+        $cur = $old['acceptance_status'] ?? 'none';
+        $now = date('Y-m-d H:i:s');
+        if (!$needs) {
+            if ($cur !== 'none') {
+                Db::update('risks', ['acceptance_status' => 'none', 'acceptance_decided_at' => null], 'id = ?', [$id]);
+                Db::exec("UPDATE approvals SET status = 'rejected', decided_at = ?, comment = 'Withdrawn' WHERE entity_type = 'risk_acceptance' AND entity_id = ? AND status = 'pending'", [$now, $id]);
+            }
+            return;
+        }
+        if ($old && $old['treatment_decision'] === 'accept' && (int)$old['res_score'] === (int)$data['res_score'] && in_array($cur, ['approved', 'pending'], true)) {
+            return;
+        }
+        Db::update('risks', ['acceptance_status' => 'pending', 'acceptance_decided_at' => null], 'id = ?', [$id]);
+        \App\Support\Approvals::request('risk_acceptance', $id, (int)$this->user()['id']);
+        Db::insert('risk_history', ['risk_id' => $id, 'user_id' => $this->user()['id'], 'event' => 'acceptance_requested', 'changes' => json_encode(['res_score' => $data['res_score']]), 'created_at' => $now]);
+        $this->audit('risk.acceptance_requested', 'risk', $id, ['res_score' => $data['res_score']]);
+    }
+
+    public static function level2Threshold(): int
+    {
+        $v = (int)(\App\Core\Settings::get('accept_level2_min', '') ?? '');
+        return $v >= 1 ? min(25, $v) : 20;
     }
 
     private function highThreshold(): int
