@@ -20,6 +20,17 @@ $router->post('/account/language', 'AuthController@setLanguagePref');
 $router->get('/attachments/{id}', 'AttachmentController@download');
 $router->post('/attachments/{id}/delete', 'AttachmentController@delete');
 
+// Usability: help centre, notes/reminders, my tasks (any signed-in user)
+$router->get('/my', 'MyController@index');
+$router->get('/help', 'HelpController@index');
+$router->get('/help/panel', 'HelpController@panel');
+$router->post('/help/dismiss', 'HelpController@dismiss');
+$router->get('/notes', 'NoteController@index');
+$router->get('/notes/panel', 'NoteController@panel');
+$router->post('/notes', 'NoteController@store');
+$router->post('/notes/{id}/done', 'NoteController@done');
+$router->post('/notes/{id}/delete', 'NoteController@delete');
+
 // Dashboard
 $router->get('/', 'DashboardController@index', 'dashboard.view');
 

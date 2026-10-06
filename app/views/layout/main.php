@@ -6,11 +6,13 @@ $u = Auth::user();
 $loc = locale();
 $org = lname(['name_en' => Settings::get('org_name_en'), 'name_ar' => Settings::get('org_name_ar')]);
 $path = \App\Core\Request::path();
-$nav = static function (string $href, string $label, ?string $match = null) use ($path): string {
+$nav = static function (string $href, string $label, ?string $match = null, string $ico = '') use ($path): string {
     $m = $match ?? $href;
     $cur = $m === '/' ? $path === '/' : ($path === $m || str_starts_with($path, $m . '/'));
-    return '<a href="' . e(url($href)) . '"' . ($cur ? ' aria-current="page"' : '') . '>' . e($label) . '</a>';
+    return '<a href="' . e(url($href)) . '"' . ($cur ? ' aria-current="page"' : '') . '>' . ($ico !== '' ? icon($ico) : '') . '<span>' . e($label) . '</span></a>';
 };
+$todo = $u ? \App\Support\Attention::count($u) : 0;
+$showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'welcome_seen') === null;
 ?><!doctype html>
 <html lang="<?= e($loc) ?>" dir="<?= is_rtl() ? 'rtl' : 'ltr' ?>">
 <head>
@@ -32,6 +34,11 @@ $nav = static function (string $href, string $label, ?string $match = null) use 
     <a href="<?= e(url('lang', ['l' => 'en', 'next' => $_SERVER['REQUEST_URI'] ?? '/'])) ?>" lang="en" <?= $loc === 'en' ? 'aria-current="true"' : '' ?>>English</a>
   </div>
   <?php if ($u): ?>
+  <div class="tools">
+    <a class="tool" href="<?= e(url('my')) ?>" title="<?= e(t('nav.my')) ?>"><?= icon('tasks') ?><span class="sr-only"><?= e(t('nav.my')) ?></span><?php if ($todo): ?><span class="badge-count" aria-label="<?= e(t('my.count', ['n' => $todo])) ?>"><?= (int)$todo ?></span><?php endif; ?></a>
+    <a class="tool" href="<?= e(url('notes')) ?>" data-panel="notes" aria-controls="side-panel" title="<?= e(t('notes.title')) ?>"><?= icon('note') ?><span class="sr-only"><?= e(t('notes.title')) ?></span></a>
+    <a class="tool" href="<?= e(url('help', ['t' => \App\Support\Help::slugForPath($path) ?? 'start'])) ?>" data-panel="help" aria-controls="side-panel" title="<?= e(t('help.title')) ?>"><?= icon('help') ?><span class="sr-only"><?= e(t('help.title')) ?></span></a>
+  </div>
   <div class="user">
     <span><?= e($u['full_name']) ?> · <?= e(enum_label('role', $u['role'])) ?></span>
     <a href="<?= e(url('account')) ?>"><?= e(t('nav.account')) ?></a>
@@ -46,25 +53,26 @@ $nav = static function (string $href, string $label, ?string $match = null) use 
 <div class="shell">
 <?php if ($u): ?>
 <nav class="sidenav" id="sidenav" aria-label="<?= e(t('common.main_nav')) ?>">
-  <?php if (can('dashboard.view')) echo $nav('/', t('nav.dashboard')); ?>
-  <?php if (can('risk.view')) { echo $nav('/risks', t('nav.risks')); echo $nav('/actions', t('nav.actions')); } ?>
-  <?php if (can('incident.view')) echo $nav('/incidents', t('nav.incidents')); ?>
-  <?php if (can('export.run')) echo $nav('/reports', t('nav.reports')); ?>
+  <?php echo $nav('/my', t('nav.my'), null, 'tasks'); ?>
+  <?php if (can('dashboard.view')) echo $nav('/', t('nav.dashboard'), null, 'home'); ?>
+  <?php if (can('risk.view')) { echo $nav('/risks', t('nav.risks'), null, 'shield'); echo $nav('/actions', t('nav.actions'), null, 'check'); } ?>
+  <?php if (can('incident.view')) echo $nav('/incidents', t('nav.incidents'), null, 'alert'); ?>
+  <?php if (can('export.run')) echo $nav('/reports', t('nav.reports'), null, 'file'); ?>
   <?php if (can('kri.view') || can('appetite.view') || can('compliance.view') || can('committee.view') || can('policy.view') || can('rcsa.view')): ?>
     <h3><?= e(t('nav.governance')) ?></h3>
-    <?php if (can('kri.view')) echo $nav('/kris', t('nav.kris')); ?>
-    <?php if (can('appetite.view')) echo $nav('/appetite', t('nav.appetite')); ?>
-    <?php if (can('compliance.view')) echo $nav('/compliance', t('nav.compliance')); ?>
-    <?php if (can('committee.view')) echo $nav('/committees', t('nav.committees')); ?>
-    <?php if (can('policy.view')) echo $nav('/policies', t('nav.policies')); ?>
-    <?php if (can('rcsa.view')) echo $nav('/rcsa', t('nav.rcsa')); ?>
+    <?php if (can('kri.view')) echo $nav('/kris', t('nav.kris'), null, 'pulse'); ?>
+    <?php if (can('appetite.view')) echo $nav('/appetite', t('nav.appetite'), null, 'target'); ?>
+    <?php if (can('compliance.view')) echo $nav('/compliance', t('nav.compliance'), null, 'scale'); ?>
+    <?php if (can('committee.view')) echo $nav('/committees', t('nav.committees'), null, 'users'); ?>
+    <?php if (can('policy.view')) echo $nav('/policies', t('nav.policies'), null, 'book'); ?>
+    <?php if (can('rcsa.view')) echo $nav('/rcsa', t('nav.rcsa'), null, 'clipboard'); ?>
   <?php endif; ?>
-  <?php if (can('audit.view')) echo $nav('/audit', t('nav.audit')); ?>
+  <?php if (can('audit.view')) echo $nav('/audit', t('nav.audit'), null, 'search'); ?>
   <?php if (can('users.manage') || can('org.manage') || can('scales.manage')): ?>
     <h3><?= e(t('nav.admin')) ?></h3>
-    <?php if (can('users.manage')) echo $nav('/admin/users', t('admin.users')); ?>
+    <?php if (can('users.manage')) echo $nav('/admin/users', t('admin.users'), null, 'user'); ?>
     <?php if (can('org.manage')) { echo $nav('/admin/departments', t('admin.departments')); echo $nav('/admin/branches', t('admin.branches')); echo $nav('/admin/categories', t('admin.categories')); echo $nav('/admin/periods', t('admin.periods')); } ?>
-    <?php if (can('scales.manage')) echo $nav('/admin/scales', t('scales.title')); ?>
+    <?php if (can('scales.manage')) echo $nav('/admin/scales', t('scales.title'), null, 'sliders'); ?>
     <?php if (can('settings.manage')) { echo $nav('/admin/settings', t('admin.settings')); echo $nav('/admin/system', t('admin.system')); } ?>
   <?php endif; ?>
 </nav>
@@ -73,8 +81,23 @@ $nav = static function (string $href, string $label, ?string $match = null) use 
 <?php foreach (\App\Core\Session::messages() as $m): ?>
   <div class="msg <?= e($m['type']) ?>" role="<?= $m['type'] === 'error' ? 'alert' : 'status' ?>"><?= e($m['text']) ?></div>
 <?php endforeach; ?>
+<?php if ($showWelcome): $qs = \App\Support\Help::quickStart($u['role']); ?>
+<section class="welcome card" aria-labelledby="welcome-h">
+  <h2 id="welcome-h"><?= e(t('help.welcome', ['name' => $u['full_name']])) ?></h2>
+  <p><?= e($qs['intro']) ?></p>
+  <ol class="steps"><?php foreach ($qs['steps'] as [$sl, $txt]): ?><li><a href="<?= e(url('help', ['t' => $sl])) ?>"><?= e($txt) ?></a></li><?php endforeach; ?></ol>
+  <div class="actions"><a class="btn gold" href="<?= e(url('help')) ?>"><?= e(t('help.open_center')) ?></a>
+    <form method="post" action="<?= e(url('help/dismiss')) ?>" class="inline"><?= csrf_field() ?><input type="hidden" name="key" value="welcome_seen"><button class="btn secondary" type="submit"><?= e(t('help.dismiss')) ?></button></form></div>
+</section>
+<?php endif; ?>
 <?= $content ?>
 </main>
 </div>
+<?php if ($u): ?>
+<aside id="side-panel" class="side-panel" data-base="<?= e(base_path()) ?>" role="dialog" aria-modal="false" aria-labelledby="panel-title" hidden tabindex="-1">
+  <button type="button" class="panel-close" data-panel-close aria-label="<?= e(t('common.close')) ?>"><?= icon('close') ?></button>
+  <div class="panel-body" data-panel-body></div>
+</aside>
+<?php endif; ?>
 </body>
 </html>
