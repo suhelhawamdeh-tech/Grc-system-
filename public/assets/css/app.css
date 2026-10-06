@@ -269,3 +269,12 @@ ol.steps li a { font-weight: 600; }
 .stepper li.done { background: #dff2e3; color: var(--ok); } .stepper li.done::before { background: var(--ok); content: "✓"; }
 .stepper li.current { background: var(--navy); color: #fff; } .stepper li.current::before { background: var(--gold); color: var(--navy); }
 @media (max-width: 600px) { .stepper { flex-direction: column; } .stepper li { text-align: start; } }
+
+/* Scorecard */
+.obj { display: block; text-decoration: none; color: var(--text); padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; background: #fbfcfe; transition: box-shadow var(--ease), transform var(--ease); }
+.obj:hover { box-shadow: var(--shadow-hover); transform: translateY(-1px); }
+.obj-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-bottom: 6px; }
+.obj-meta { color: var(--muted); font-size: .85rem; margin-top: 6px; }
+.meter { background: #e5eaf1; border-radius: 999px; height: 12px; overflow: hidden; } .meter.big { height: 18px; }
+.meter .fill { display: block; height: 100%; border-radius: 999px; transition: width .4s ease; }
+.meter .fill.green { background: #2e7d32; } .meter .fill.amber { background: #f9a825; } .meter .fill.red { background: #c62828; }

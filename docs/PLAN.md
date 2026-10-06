@@ -56,3 +56,7 @@ Not started: GRC-008 to GRC-014, GRC-016 to GRC-019, GRC-021 to GRC-038 (see GAP
 Done and tested: GRC-003 (flag for unproven control reliance), GRC-004 extended to policy versions, GRC-008 (critical level, breaches, data-quality gate), GRC-009, GRC-010 (escalation threshold, closure gate, recurrence), GRC-018 circulars, GRC-022 boards and committees.
 Still open inside those items: composite KRIs, KRI file import and API feeds (GRC-008); GL reconciliation of losses (GRC-009); approvals for incident closure and risk acceptance (GRC-004, GRC-011); strategic objectives and balanced scorecards (GRC-022 scope).
 Next in the backlog: GRC-011, GRC-012, GRC-013, GRC-014, GRC-016, GRC-019, GRC-023 to GRC-027, then R3/R4 items.
+
+## Release 1.3 progress
+Done and tested: GRC-011 (acceptance authority levels), GRC-004 (approvals now cover BIA, policy versions, risk acceptance and large-incident closure), GRC-012, GRC-013, GRC-014, composite KRIs (GRC-008 remainder), ledger reconciliation (GRC-009 remainder), strategic objectives (GRC-022 remainder).
+Remaining from the backlog: GRC-016 BCP and exercises, GRC-017 emergency notification, GRC-019 periodic compliance tests, GRC-021 Islamic risk assessments, GRC-023 to GRC-027 (org hierarchy, process/product/asset libraries, policy attestation, report designer, Hijri calendar), GRC-028 to GRC-038 (internal audit, third parties, IT/cyber risk, REST API, SSO, core-banking integration, ESG, stress testing, analytics, AI, capital data), GRC-039 production architecture and GRC-040 penetration test.

@@ -59,8 +59,9 @@ $showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'we
   <?php if (can('incident.view')) echo $nav('/incidents', t('nav.incidents'), null, 'alert'); ?>
   <?php if (can('export.run')) echo $nav('/reports', t('nav.reports'), null, 'file'); ?>
   <?php if (can('risk.create') && (can('kri.report') || can('compliance.manage'))) echo $nav('/import', t('nav.import'), null, 'file'); ?>
-  <?php if (can('governance.view') || can('circular.view') || can('bia.view') || can('sharia.view') || can('control.view') || can('kri.view') || can('appetite.view') || can('compliance.view') || can('committee.view') || can('policy.view') || can('rcsa.view')): ?>
+  <?php if (can('strategy.view') || can('governance.view') || can('circular.view') || can('bia.view') || can('sharia.view') || can('control.view') || can('kri.view') || can('appetite.view') || can('compliance.view') || can('committee.view') || can('policy.view') || can('rcsa.view')): ?>
     <h3><?= e(t('nav.governance')) ?></h3>
+    <?php if (can('strategy.view')) echo $nav('/strategy', t('nav.strategy'), null, 'target'); ?>
     <?php if (can('governance.view')) echo $nav('/governance', t('nav.governance_bodies'), null, 'users'); ?>
     <?php if (can('circular.view')) echo $nav('/circulars', t('nav.circulars'), null, 'file'); ?>
     <?php if (can('bia.view')) echo $nav('/bia', t('nav.bia'), null, 'layers'); ?>

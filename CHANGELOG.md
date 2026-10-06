@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.3.0
+- Risk acceptance authority (two levels, second needs the administrator) and approval-gated closure of large incidents (GRC-011, GRC-004).
+- Two-step verification (TOTP, recovery codes, optional enforcement) and password reset by e-mail (GRC-013).
+- Recurring RCSA schedules launched by the daily job, plus event-triggered reassessments (GRC-012).
+- Bulk CSV import with all-or-nothing preview for risks, KRI readings, obligations and ledger entries (GRC-014).
+- Composite KRIs, loss reconciliation with the general ledger, strategic objectives scorecard.
+- Migrations 014 to 019. 1234 automated checks.
+
 ## 1.2.0
 - Incidents: Basel event type and business line, recovery source, non-financial impact, closure gate, escalation threshold (setting), recurrence detection with automatic risk reassessment trigger, patterns page (GRC-009, GRC-010 partial).
 - Advanced KRIs: critical level, breach register with justification/action plan, data-quality gate on outlier readings (GRC-008 partial).

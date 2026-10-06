@@ -98,3 +98,11 @@ and, inside `'app'`, `'base_url' => 'https://grc.example.com'` so digests contai
 - Shared hosting has no high availability or disaster recovery. For production use at a bank, decide on a bank-controlled server, automated off-site backups and a tested restore (backlog GRC-039).
 - Commission an independent penetration test before holding real data (GRC-040).
 - SSO/LDAP, REST API and core-banking integration are not implemented (GRC-031 to GRC-033).
+
+
+## 15. Release 1.3 configuration notes
+- **Daily job**: `bin/notify.php` now also launches due RCSA schedules (even when mail is not configured). Keep the cron job from section 13.
+- **Password reset by e-mail** needs both the `mail` section and `'app' => ['base_url' => 'https://your-host/path']`. Without `base_url` the reset link is not offered (the link is never built from the request host, to prevent host-header attacks).
+- **Two-step verification** secrets are encrypted in the database with a key derived from `app.secret` in the config file (add a long random string there). If `app.secret` is absent, a key derived from the database credentials is used: set it before users enrol, because changing it later invalidates enrolled authenticators.
+- Administration → Settings now has: incident escalation threshold, risk-acceptance senior level, reconciliation tolerance, and "require two-step verification for everyone".
+- Apply migrations 014–019 from Administration → System.

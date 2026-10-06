@@ -223,6 +223,14 @@ final class DemoSeeder
             }
             Db::insert('governance_meetings', ['body_id' => $gid, 'meeting_date' => date('Y-m-d', strtotime('+21 days')), 'status' => 'planned', 'agenda' => 'Synthetic agenda.', 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
         }
+        // Strategic objectives (synthetic)
+        foreach ([['Grow retail deposits', 'financial', 'higher_better', 100, 130, 112, 'million LYD'], ['Reduce net operational losses', 'internal', 'lower_better', 5, 3, 3.6, 'million LYD'], ['Improve customer satisfaction', 'customer', 'higher_better', 70, 85, 71, '%'], ['Train all staff on risk awareness', 'learning', 'higher_better', 20, 100, 92, '%']] as [$ti, $pe, $di, $bs, $tg, $cu, $un]) {
+            $oid = Db::insert('strategic_objectives', ['title' => $ti, 'description' => 'Synthetic objective for demonstration.', 'perspective' => $pe, 'owner_user_id' => $users['demo.risk'], 'unit' => $un, 'direction' => $di, 'baseline' => $bs, 'target' => $tg, 'current_value' => $cu, 'due_date' => date('Y-m-d', strtotime('+8 months')), 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('strategic_objectives', 'OBJ', $oid, 4);
+            foreach (array_slice(array_values($riskIds), $oid % 5, 2) as $rid) {
+                Db::exec('INSERT IGNORE INTO objective_risks (objective_id, risk_id) VALUES (?, ?)', [$oid, $rid]);
+            }
+        }
         // KRIs with a few months of readings
         foreach ([
             ['Failed privileged logins per month', 'IT', 'demo.dept.it', 'count', 'higher_worse', 8, 15, [4, 6, 9, 12]],

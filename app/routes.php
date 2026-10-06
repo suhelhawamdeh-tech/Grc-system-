@@ -249,6 +249,18 @@ $router->post('/circulars/{id}/distribute', 'CircularController@distribute', 'ci
 $router->post('/circulars/{id}/acknowledge', 'CircularController@acknowledge', 'circular.ack');
 $router->post('/circulars/{id}/attachments', 'CircularController@upload', 'circular.manage');
 
+// ---- Release 3: strategic objectives
+$router->get('/strategy', 'StrategyController@index', 'strategy.view');
+$router->get('/strategy/new', 'StrategyController@create', 'strategy.manage');
+$router->post('/strategy', 'StrategyController@store', 'strategy.manage');
+$router->get('/strategy/{id}', 'StrategyController@show', 'strategy.view');
+$router->get('/strategy/{id}/edit', 'StrategyController@edit', 'strategy.manage');
+$router->post('/strategy/{id}', 'StrategyController@update', 'strategy.manage');
+$router->post('/strategy/{id}/progress', 'StrategyController@progress', 'strategy.manage');
+$router->post('/strategy/{id}/risks', 'StrategyController@link', 'strategy.manage');
+$router->post('/strategy/{id}/risks/{rid}/remove', 'StrategyController@unlink', 'strategy.manage');
+$router->post('/strategy/{id}/archive', 'StrategyController@archive', 'strategy.manage');
+
 // ---- Release 3: board and committee governance
 $router->get('/governance', 'GovernanceController@index', 'governance.view');
 $router->get('/governance/new', 'GovernanceController@bodyNew', 'governance.manage');
