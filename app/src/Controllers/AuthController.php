@@ -108,4 +108,11 @@ final class AuthController extends Controller
         }
         Response::redirect(Response::safeNext(Request::str('next', true), url('')));
     }
+
+    public function setNotifications(): never
+    {
+        $u = $this->user();
+        \App\Support\Prefs::set((int)$u['id'], 'email_notifications', isset($_POST['email_on']) ? '1' : '0');
+        $this->redirect(url('account'), 'account.email_saved');
+    }
 }

@@ -293,3 +293,49 @@ $c['retail']->post("/bia/$bp/archive", [], "/bia/$bp"); check('process archived 
 check('BIA and approval actions are audited', (int)$pdo->query("SELECT COUNT(DISTINCT action) FROM audit_log WHERE action IN ('bia.created','bia.updated','bia.submitted','bia.archived','bia.system_created','bia.system_updated','approval.approved','approval.rejected')")->fetchColumn() === 8);
 check('help topic for BIA exists in both languages', isset($helpEn['topics']['bia'], $helpAr['topics']['bia']));
 check('BIA pages render in English without missing keys', (function () use ($c, $bp, $sys1) { $a = $c['risk']; $a->get('/lang?l=en&next=/'); $ok = true; foreach (['/bia', "/bia/$bp", '/bia/new', "/bia/$bp/edit", '/bia/systems', '/bia/systems/new', "/bia/systems/$sys1/edit", '/bia/report', '/approvals', '/'] as $p) { if (preg_match('/\b(bia|appr|sha|ctl)\.[a-z_]+\b/', strip_tags($a->get($p)['body']))) { fwrite(STDERR, "missing key on $p\n"); $ok = false; } } $a->get('/lang?l=ar&next=/'); return $ok; })());
+
+section('E-mail notifications');
+$smtpOut = "$work/smtp.txt"; @unlink($smtpOut);
+$smtp = proc_open(['php', "$root/tests/fake_smtp.php", '2525', $smtpOut], [], $sp); usleep(400000);
+$cfgFile = "$work/cfg/config.php"; $cfg0 = file_get_contents($cfgFile); $cfgArr = require $cfgFile;
+$msgs = fn() => is_file($smtpOut) ? substr_count((string)file_get_contents($smtpOut), '=====END=====') : 0;
+check('admin system page shows no test form while mail is unconfigured', !str_contains($admin->get('/admin/system')['body'], 'admin/system/test-mail'));
+$cfgArr['mail'] = ['host' => '127.0.0.1', 'port' => 2525, 'secure' => 'none', 'user' => 'u', 'pass' => 'p', 'from' => 'grc@example.invalid', 'from_name' => 'GRC', 'escalation_days' => 7];
+$cfgArr['app']['base_url'] = 'https://grc.example.invalid/grc';
+file_put_contents($cfgFile, "<?php\nreturn " . var_export($cfgArr, true) . ";\n"); sleep(3); // opcache revalidation window of the dev server
+check('admin system page shows the test-mail form when configured', str_contains($admin->get('/admin/system')['body'], 'admin/system/test-mail'));
+$admin->post('/admin/system/test-mail', ['to' => 'someone@example.invalid'], '/admin/system'); usleep(200000);
+check('test message delivered to the SMTP sink and logged', $msgs() === 1 && str_contains((string)file_get_contents($smtpOut), 'RCPT TO:<someone@example.invalid>') && (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE kind='test' AND status='sent'")->fetchColumn() === 1);
+$admin->post('/admin/system/test-mail', ['to' => "bad\nBcc: x@evil.invalid"], '/admin/system'); check('header injection in recipient refused', $msgs() === 1 && (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE kind='test' AND status='failed'")->fetchColumn() === 1);
+$c['risk']->post('/admin/system/test-mail', ['to' => 'x@example.invalid'], '/'); check('non-admin cannot send test mail', $msgs() === 1);
+// CLI digest
+$pdo->exec("UPDATE users SET lang='en' WHERE username='demo.risk'");
+$ncmd = fn(string $a = '') => 'GRC_CONFIG_FILE=' . escapeshellarg($cfgFile) . ' php ' . escapeshellarg("$work/root/bin/notify.php") . " $a 2>&1";
+exec($ncmd('--dry-run'), $o1, $rc1); check('notify --dry-run reports counts and sends nothing', $rc1 === 0 && preg_match('/sent=(\d+)/', implode(' ', $o1), $m1) && (int)$m1[1] > 0 && $msgs() === 1 && str_contains(implode(' ', $o1), 'dry run'));
+$pdo->exec("INSERT INTO user_notes (user_id, body, remind_on, created_at) VALUES (" . $uidN('demo.compliance') . ", 'NOTIFY-MARKER', CURDATE(), NOW())");
+$pdo->exec("UPDATE users SET email='not-an-email' WHERE username='demo.auditor'");
+exec($ncmd(), $o2, $rc2);
+$sent = (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE kind='digest' AND status='sent'")->fetchColumn(); usleep(200000);
+$sink = (string)file_get_contents($smtpOut);
+check('notify sends one digest per user with open work, over SMTP with AUTH', $sent > 0 && $msgs() === 1 + $sent + (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE kind='escalation' AND status='sent'")->fetchColumn());
+check('digest is UTF-8 base64 with encoded subject, no raw non-ASCII headers', str_contains($sink, 'Content-Transfer-Encoding: base64') && str_contains($sink, 'Subject: =?UTF-8?B?') && !preg_match('/^(Subject|From):.*[^\x20-\x7e\r\n]/m', $sink));
+$dec = ''; foreach (explode('=====END=====', $sink) as $blk) { if (preg_match("/RCPT TO:<demo\.compliance@example\.invalid>/", $blk) && preg_match('/\r?\n\r?\n(.+)$/s', $blk, $mm)) { $dec = base64_decode(preg_replace('/\s+/', '', $mm[1])); } }
+check('digest body lists the due reminder and the base-URL link', str_contains($dec, 'NOTIFY-MARKER') && str_contains($dec, 'https://grc.example.invalid/grc/my'));
+check('invalid e-mail address is logged as failed, not sent', (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE recipient='not-an-email' AND status='failed'")->fetchColumn() >= 0);
+exec($ncmd(), $o3, $rc3); check('running notify twice in a day does not send duplicates', $sent === (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE kind='digest' AND status='sent'")->fetchColumn());
+$c['compliance']->post('/account/notifications', [], '/account'); check('user can switch off e-mail reminders', $pdo->query("SELECT pvalue FROM user_prefs WHERE pkey='email_notifications' AND user_id=" . $uidN('demo.compliance'))->fetchColumn() === '0');
+// escalation: an action overdue by 30 days
+$rid2 = (int)$pdo->query('SELECT id FROM risks WHERE archived_at IS NULL LIMIT 1')->fetchColumn(); $own = $uidN('demo.dept.it');
+$pdo->exec("INSERT INTO risk_actions (risk_id, title, owner_user_id, deadline, status, created_by, created_at, updated_at) VALUES ($rid2, 'ESCALATE-ME', $own, DATE_SUB(CURDATE(), INTERVAL 30 DAY), 'not_started', $own, NOW(), NOW())");
+$pdo->exec("DELETE FROM email_log WHERE kind IN ('digest','escalation')");
+exec($ncmd(), $o4, $rc4); usleep(200000); $sink = (string)file_get_contents($smtpOut);
+check('escalation e-mail goes to risk managers and names the overdue item', (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE kind='escalation' AND status='sent' AND recipient='demo.risk@example.invalid'")->fetchColumn() === 1);
+$dec = ''; foreach (array_reverse(explode('=====END=====', $sink)) as $blk) { if (str_contains($blk, 'RCPT TO:<demo.risk@example.invalid>') && preg_match('/Subject: =\?UTF-8\?B\?(\S+)\?=/', $blk, $sm) && str_contains(base64_decode($sm[1]), 'escalation') && preg_match('/\r?\n\r?\n(.+)$/s', $blk, $mm)) { $dec = base64_decode(preg_replace('/\s+/', '', $mm[1])); break; } }
+check('escalation body lists the overdue action owner', str_contains($dec, 'ESCALATE-ME') && str_contains($dec, 'Demo IT Dept Manager'));
+check('email_log never stores message bodies or credentials', (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE subject LIKE '%NOTIFY-MARKER%' OR error LIKE '%p%word%'")->fetchColumn() === 0);
+// unreachable server
+$cfgArr['mail']['port'] = 2599; file_put_contents($cfgFile, "<?php\nreturn " . var_export($cfgArr, true) . ";\n");
+$pdo->exec("DELETE FROM email_log WHERE kind IN ('digest','escalation')"); exec($ncmd(), $o5, $rc5);
+check('unreachable SMTP: CLI exits non-zero and failures are logged', $rc5 === 1 && (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE status='failed' AND error LIKE 'Cannot connect%'")->fetchColumn() > 0);
+file_put_contents($cfgFile, $cfg0); exec($ncmd(), $o6, $rc6); check('notify without mail config exits with code 3', $rc6 === 3);
+proc_terminate($smtp);

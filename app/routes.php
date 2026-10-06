@@ -92,6 +92,8 @@ $router->get('/admin/settings', 'SettingsController@index', 'settings.manage');
 $router->post('/admin/settings', 'SettingsController@save', 'settings.manage');
 $router->get('/admin/system', 'SystemController@index', 'settings.manage');
 $router->post('/admin/system/migrate', 'SystemController@migrate', 'settings.manage');
+$router->post('/admin/system/test-mail', 'SystemController@testMail', 'settings.manage');
+$router->post('/account/notifications', 'AuthController@setNotifications');
 
 $router->get('/audit', 'AuditController@index', 'audit.view');
 $router->get('/audit/export', 'AuditController@export', 'audit.view');

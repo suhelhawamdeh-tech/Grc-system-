@@ -26,3 +26,7 @@
   </form>
 </div>
 </div>
+<section class="card"><h2><?= e(t('account.email_notifications')) ?></h2>
+<form method="post" action="<?= e(url('account/notifications')) ?>"><?= csrf_field() ?>
+<div class="field"><label class="check"><input type="checkbox" name="email_on" value="1"<?= checked(\App\Support\Prefs::get((int)$user['id'], 'email_notifications') !== '0') ?>> <?= e(t('account.email_on')) ?></label></div>
+<button class="btn secondary" type="submit"><?= e(t('common.save')) ?></button></form></section>
