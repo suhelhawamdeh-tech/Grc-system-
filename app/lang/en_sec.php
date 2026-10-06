@@ -1,6 +1,9 @@
 <?php
 // Security strings: MFA and password reset (English). Keep keys identical to ar_sec.php.
 return [
+    'rcsa.schedules' => 'RCSA schedules', 'rcsa.schedules_hint' => 'Assessments launched automatically each cycle by the daily job', 'rcsa.schedule_new' => 'New schedule', 'rcsa.schedule_add' => 'Add schedule', 'rcsa.schedule_saved' => 'Schedule saved.', 'rcsa.frequency' => 'Cycle', 'rcsa.next_run' => 'Next launch', 'rcsa.next_run_hint' => 'The assessment is created on this date by the daily job.', 'rcsa.last_run' => 'Last launch',
+    'rcsa.lead_days' => 'Days to complete', 'rcsa.lead_days_hint' => 'The due date is this many days after the launch.', 'rcsa.pause' => 'Pause', 'rcsa.resume' => 'Resume', 'rcsa.err_next_run_past' => 'The next launch date cannot be in the past.',
+    'rcsa.trigger_note' => 'A department with an active schedule also gets one extra assessment (due in 14 days) when a major incident or repeated incidents occur, or when a key control fails its test. At most one per month.',
     'mfa.title' => 'Two-step verification', 'mfa.subtitle' => 'Protect your account with a code from an authenticator app', 'mfa.setup' => 'Turn on two-step verification', 'mfa.is_on' => 'Two-step verification', 'mfa.on' => 'On',
     'mfa.step1' => 'Install an authenticator app on your phone (any app that supports time-based codes).', 'mfa.step2' => 'Add an account in the app using this key (or open the link on your phone):', 'mfa.open_app' => 'Open in authenticator app', 'mfa.step3' => 'Enter the 6-digit code the app shows to confirm.',
     'mfa.code' => 'Verification code', 'mfa.code_hint' => 'The 6-digit code from your app, or one of your recovery codes.', 'mfa.enable' => 'Turn on', 'mfa.disable' => 'Turn off', 'mfa.confirm_disable' => 'Turn off two-step verification?', 'mfa.enabled' => 'Two-step verification is on. Save your recovery codes now.', 'mfa.disabled' => 'Two-step verification is off.',

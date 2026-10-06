@@ -249,6 +249,9 @@ final class ControlController extends Controller
             return $tid;
         });
         $this->audit('control.tested', 'control', $id, ['test_id' => $tid, 'type' => $type, 'result' => $result, 'actions_created' => count($created)]);
+        if ($result === 'ineffective' && (int)$c['is_key'] === 1) {
+            \App\Support\RcsaLauncher::trigger((int)$c['department_id'], 'key_control_failed', (int)$u['id']);
+        }
         $this->redirect(url('controls/' . $id), $created ? 'ctl.tested_actions' : 'ctl.tested', 'success', ['n' => count($created)]);
     }
 

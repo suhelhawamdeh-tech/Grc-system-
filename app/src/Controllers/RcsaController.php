@@ -162,13 +162,7 @@ final class RcsaController extends Controller
         if (!$v->ok()) {
             $this->invalid($v->errors(), url('rcsa/launch'));
         }
-        $now = date('Y-m-d H:i:s');
-        $id = Db::tx(function () use ($t, $d, $b, $per, $as, $v, $u, $now) {
-            $id = Db::insert('rcsa_assessments', ['template_id' => $t, 'period_id' => $per, 'department_id' => $d, 'branch_id' => $b, 'assessor_user_id' => $as, 'due_date' => $v->str('due_date'), 'status' => 'draft', 'created_by' => $u['id'], 'created_at' => $now, 'updated_at' => $now]);
-            Db::update('rcsa_assessments', ['code' => sprintf('RCSA-%04d', $id)], 'id = ?', [$id]);
-            Db::exec('INSERT INTO rcsa_answers (assessment_id, question_id) SELECT ?, q.id FROM rcsa_questions q WHERE q.template_id = ?', [$id, $t]);
-            return $id;
-        });
+        $id = \App\Support\RcsaLauncher::launch($t, $d, $b, $per, $as, $v->str('due_date'), (int)$u['id']);
         $this->audit('rcsa.launched', 'rcsa', $id, ['department' => $d, 'assessor' => $as]);
         $this->redirect(url('rcsa/' . $id), 'rcsa.launched');
     }
@@ -296,5 +290,49 @@ final class RcsaController extends Controller
         Db::update('rcsa_assessments', ['status' => $decision === 'approve' ? 'approved' : 'returned', 'reviewer_user_id' => $u['id'], 'reviewed_at' => date('Y-m-d H:i:s'), 'review_comment' => $comment ?: null, 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$id]);
         $this->audit('rcsa.' . ($decision === 'approve' ? 'approved' : 'returned'), 'rcsa', $id);
         $this->redirect(url('rcsa/' . $id), $decision === 'approve' ? 'rcsa.approved_msg' : 'rcsa.returned_msg');
+    }
+
+    // ---- recurring schedules
+    public function schedules(): string
+    {
+        $rows = Db::all('SELECT s.*, t.title AS template_title, d.name_en AS dept_en, d.name_ar AS dept_ar, u.full_name AS assessor_name FROM rcsa_schedules s JOIN rcsa_templates t ON t.id = s.template_id JOIN departments d ON d.id = s.department_id JOIN users u ON u.id = s.assessor_user_id ORDER BY s.next_run, s.id');
+        return $this->view('rcsa/schedules', ['title' => t('rcsa.schedules'), 'rows' => $rows, 'templates' => Db::all('SELECT * FROM rcsa_templates WHERE is_active = 1 ORDER BY title'), 'departments' => Ref::departments(true), 'users' => Ref::users(true)]);
+    }
+
+    public function scheduleStore(): never
+    {
+        $u = $this->user();
+        $v = new Validator($_POST);
+        $v->date('next_run', 'rcsa.next_run')->in('frequency', 'rcsa.frequency', ['quarterly', 'semiannual', 'annual'])->intRange('lead_days', 'rcsa.lead_days', 1, 180);
+        $t = Request::int('template_id');
+        $d = Request::int('department_id');
+        $as = Request::int('assessor_user_id');
+        if ($t === null || !Db::val('SELECT 1 FROM rcsa_templates WHERE id = ? AND is_active = 1', [$t])) {
+            $v->fail('template_id', 'validation.invalid_choice', ['field' => t('rcsa.template')]);
+        }
+        if ($d === null || !isset(Ref::departments(true)[$d])) {
+            $v->fail('department_id', 'validation.invalid_choice', ['field' => t('risk.department')]);
+        }
+        if ($as === null || !isset(Ref::users(true)[$as])) {
+            $v->fail('assessor_user_id', 'validation.invalid_choice', ['field' => t('rcsa.assessor')]);
+        }
+        if ($v->str('next_run') !== '' && $v->str('next_run') < date('Y-m-d')) {
+            $v->fail('next_run', 'rcsa.err_next_run_past');
+        }
+        if (!$v->ok()) {
+            $this->invalid($v->errors(), url('rcsa/schedules'));
+        }
+        $id = Db::insert('rcsa_schedules', ['template_id' => $t, 'department_id' => $d, 'assessor_user_id' => $as, 'frequency' => $v->str('frequency'), 'lead_days' => (int)$v->str('lead_days'), 'next_run' => $v->str('next_run'), 'created_by' => $u['id'], 'created_at' => date('Y-m-d H:i:s')]);
+        $this->audit('rcsa.schedule_created', 'rcsa_schedule', $id, ['department' => $d, 'frequency' => $v->str('frequency')]);
+        $this->redirect(url('rcsa/schedules'), 'rcsa.schedule_saved');
+    }
+
+    public function scheduleToggle(int $id): never
+    {
+        $s = Db::one('SELECT * FROM rcsa_schedules WHERE id = ?', [$id]);
+        $s || $this->notFound();
+        Db::update('rcsa_schedules', ['is_active' => $s['is_active'] ? 0 : 1], 'id = ?', [$id]);
+        $this->audit('rcsa.schedule_toggled', 'rcsa_schedule', $id, ['active' => $s['is_active'] ? 0 : 1]);
+        $this->redirect(url('rcsa/schedules'), 'admin.saved');
     }
 }

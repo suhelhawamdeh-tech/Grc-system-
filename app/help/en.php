@@ -39,7 +39,7 @@ return [
             'tips' => ['Always read the current approved version, not a saved copy.']],
         'rcsa' => ['title' => 'Risk and control self-assessment (RCSA)', 'roles' => $all, 'link' => '/rcsa', 'summary' => 'Periodic questionnaires where each unit assesses its own risks and controls.',
             'steps' => ['If you are an assessor, open your assigned assessment, answer every question and add comments.', 'Press Save to continue later, or Submit when finished. After submission you cannot edit it.', 'A reviewer approves it or returns it with comments; returned assessments reappear in My tasks.'],
-            'tips' => ['You cannot review your own assessment.']],
+            'tips' => ['You cannot review your own assessment.', 'Managers can schedule assessments to launch automatically each quarter, half-year or year from RCSA schedules; a major incident or a failed key control also launches one.']],
         'reports' => ['title' => 'Reports and export', 'roles' => ['admin', 'risk_manager', 'compliance_officer', 'dept_manager', 'branch_liaison', 'exec_viewer', 'auditor'], 'link' => '/reports', 'summary' => 'Printable reports and CSV downloads.',
             'steps' => ['Choose a report, set the filters and open the print view.', 'Use your browser’s Print and choose Save as PDF to share it.', 'CSV files open in Excel; Arabic text is encoded correctly.'],
             'tips' => ['Exports contain only what you are allowed to see.']],

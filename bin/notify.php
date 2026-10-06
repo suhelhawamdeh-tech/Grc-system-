@@ -26,6 +26,11 @@ if (!Config::load()) {
 date_default_timezone_set((string)Config::get('app.timezone', 'Africa/Tripoli'));
 Db::init((array)Config::get('db'));
 I18n::init('ar');
+$sched = \App\Support\Scheduler::run();
+echo "rcsa_launched={$sched['rcsa_launched']}\n";
+if ($sched['rcsa_launched'] > 0) {
+    Audit::log('scheduler.run', 'system', null, $sched, null, 'cron');
+}
 if (!Mailer::configured()) {
     fwrite(STDERR, "Mail is not configured (add a 'mail' section to the config file).\n");
     exit(3);

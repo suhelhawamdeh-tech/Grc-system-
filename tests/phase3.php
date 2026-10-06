@@ -667,3 +667,44 @@ check('an expired token is refused', str_contains((new Client($B))->get("/passwo
 check('password reset is audited and never logs tokens or passwords', (int)$pdo->query("SELECT COUNT(DISTINCT action) FROM audit_log WHERE action IN ('password.reset_requested','password.reset_completed')")->fetchColumn() === 2 && (int)$pdo->query("SELECT COUNT(*) FROM audit_log WHERE detail LIKE '%$tok%' OR detail LIKE '%Brand-New-Pass%'")->fetchColumn() === 0);
 file_put_contents($cfgFile, $cfgBak); sleep(3); proc_terminate($smtp2);
 $pdo->exec("UPDATE users SET password_hash = (SELECT h FROM (SELECT password_hash AS h FROM users WHERE username='demo.risk') x) WHERE username='demo.auditor'");
+
+section('RCSA schedules, cron launch and event triggers');
+$tpl = (int)$pdo->query('SELECT id FROM rcsa_templates WHERE is_active=1 ORDER BY id LIMIT 1')->fetchColumn();
+if (!$tpl) { $pdo->exec("INSERT INTO rcsa_templates (title, is_active, created_by, created_at, updated_at) VALUES ('Sched template', 1, 1, NOW(), NOW())"); $tpl = (int)$pdo->lastInsertId(); $pdo->exec("INSERT INTO rcsa_questions (template_id, sort_order, question_en, question_ar) VALUES ($tpl, 1, 'Q1 en', 'س1')"); }
+$sF = fn(array $o = []) => $o + ['template_id' => $tpl, 'department_id' => $deptRet, 'assessor_user_id' => $uidN('demo.dept.retail'), 'frequency' => 'quarterly', 'lead_days' => '30', 'next_run' => date('Y-m-d', strtotime('+3 days'))];
+$sc = fn() => (int)$pdo->query('SELECT COUNT(*) FROM rcsa_schedules')->fetchColumn(); $n = $sc();
+check('schedules page: risk manager 200, retail manager 403, exec 403', $c['risk']->get('/rcsa/schedules')['code'] === 200 && $c['retail']->get('/rcsa/schedules')['code'] === 403 && $c['exec']->get('/rcsa/schedules')['code'] === 403);
+$c['risk']->post('/rcsa/schedules', $sF(['next_run' => '2001-01-01']), '/rcsa/schedules'); check('past start date rejected', $sc() === $n);
+$c['risk']->post('/rcsa/schedules', $sF(['frequency' => 'weekly']), '/rcsa/schedules'); check('invalid frequency rejected', $sc() === $n);
+$c['risk']->post('/rcsa/schedules', $sF(['lead_days' => '0']), '/rcsa/schedules'); check('lead days below 1 rejected', $sc() === $n);
+$c['risk']->post('/rcsa/schedules', $sF(['template_id' => 99999]), '/rcsa/schedules'); check('unknown template rejected', $sc() === $n);
+$c['risk']->post('/rcsa/schedules', $sF(['assessor_user_id' => 99999]), '/rcsa/schedules'); check('unknown assessor rejected', $sc() === $n);
+$c['retail']->post('/rcsa/schedules', $sF(), '/rcsa'); check('retail manager cannot create a schedule (403)', $sc() === $n);
+$c['risk']->post('/rcsa/schedules', $sF(), '/rcsa/schedules'); $sid = (int)$pdo->query('SELECT MAX(id) FROM rcsa_schedules')->fetchColumn(); check('schedule created', $sc() === $n + 1);
+$ra0 = (int)$pdo->query('SELECT COUNT(*) FROM rcsa_assessments')->fetchColumn();
+$cronCmd = 'GRC_CONFIG_FILE=' . escapeshellarg($cfgFile) . ' php ' . escapeshellarg("$work/root/bin/notify.php") . ' 2>&1';
+exec($cronCmd, $oc, $rcc); check('cron before the due date launches nothing', (int)$pdo->query('SELECT COUNT(*) FROM rcsa_assessments')->fetchColumn() === $ra0 && str_contains(implode(' ', $oc), 'rcsa_launched=0'));
+$pdo->exec("UPDATE rcsa_schedules SET next_run = DATE_SUB(CURDATE(), INTERVAL 1 DAY) WHERE id=$sid");
+exec($cronCmd, $oc2, $rcc2);
+$ra = $pdo->query("SELECT * FROM rcsa_assessments WHERE origin='scheduled' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+check('cron launches the due schedule once: scheduled assessment with answers, due date = today + lead days', str_contains(implode(' ', $oc2), 'rcsa_launched=1') && $ra && (int)$ra['department_id'] === $deptRet && $ra['due_date'] === date('Y-m-d', strtotime('+30 days')) && (int)$pdo->query('SELECT COUNT(*) FROM rcsa_answers WHERE assessment_id=' . (int)$ra['id'])->fetchColumn() === (int)$pdo->query("SELECT COUNT(*) FROM rcsa_questions WHERE template_id=$tpl")->fetchColumn() && preg_match('/^RCSA-\d{4}$/', (string)$ra['code']));
+check('the schedule advances by one quarter and records the last run', $pdo->query("SELECT next_run FROM rcsa_schedules WHERE id=$sid")->fetchColumn() > date('Y-m-d') && $pdo->query("SELECT last_run_on FROM rcsa_schedules WHERE id=$sid")->fetchColumn() === date('Y-m-d'));
+exec($cronCmd, $oc3); check('running the cron again the same day does not duplicate', (int)$pdo->query("SELECT COUNT(*) FROM rcsa_assessments WHERE origin='scheduled'")->fetchColumn() === 1);
+check('the assessor sees the new assessment in My tasks', str_contains($c['retail']->get('/my')['body'], '/rcsa/' . (int)$ra['id']));
+$pdo->exec("UPDATE rcsa_schedules SET next_run = DATE_SUB(CURDATE(), INTERVAL 8 MONTH) WHERE id=$sid"); exec($cronCmd, $oc4);
+check('a long-overdue schedule launches once and jumps to a future date (no catch-up flood)', (int)$pdo->query("SELECT COUNT(*) FROM rcsa_assessments WHERE origin='scheduled'")->fetchColumn() === 2 && $pdo->query("SELECT next_run FROM rcsa_schedules WHERE id=$sid")->fetchColumn() > date('Y-m-d'));
+$c['risk']->post("/rcsa/schedules/$sid/toggle", [], '/rcsa/schedules'); $pdo->exec("UPDATE rcsa_schedules SET next_run = DATE_SUB(CURDATE(), INTERVAL 1 DAY) WHERE id=$sid"); exec($cronCmd, $oc5);
+check('a paused schedule is skipped', (int)$pdo->query("SELECT COUNT(*) FROM rcsa_assessments WHERE origin='scheduled'")->fetchColumn() === 2 && (int)$pdo->query("SELECT is_active FROM rcsa_schedules WHERE id=$sid")->fetchColumn() === 0);
+$c['risk']->post("/rcsa/schedules/$sid/toggle", [], '/rcsa/schedules'); check('and resumes', (int)$pdo->query("SELECT is_active FROM rcsa_schedules WHERE id=$sid")->fetchColumn() === 1);
+$pdo->exec("UPDATE rcsa_schedules SET next_run = DATE_ADD(CURDATE(), INTERVAL 60 DAY) WHERE id=$sid");
+// triggers: key control failure in the scheduled department
+$trig0 = (int)$pdo->query("SELECT COUNT(*) FROM rcsa_assessments WHERE origin='triggered'")->fetchColumn();
+$pdo->exec("INSERT INTO controls (name, department_id, owner_user_id, is_key, test_frequency, created_by, created_at, updated_at) VALUES ('Key retail control', $deptRet, " . $uidN('demo.dept.retail') . ", 1, 'annual', 1, NOW(), NOW())"); $kc2 = (int)$pdo->lastInsertId();
+$c['compliance']->post("/controls/$kc2/tests", ['test_type' => 'design', 'test_date' => date('Y-m-d'), 'result' => 'ineffective', 'conclusion' => 'Design flaw'], "/controls/$kc2");
+check('failing a key control in a scheduled department triggers an extra assessment (reason recorded, due in 14 days)', (int)$pdo->query("SELECT COUNT(*) FROM rcsa_assessments WHERE origin='triggered' AND trigger_reason='key_control_failed'")->fetchColumn() === $trig0 + 1 && $pdo->query("SELECT due_date FROM rcsa_assessments WHERE origin='triggered' ORDER BY id DESC LIMIT 1")->fetchColumn() === date('Y-m-d', strtotime('+14 days')));
+$pdo->exec("UPDATE controls SET last_result=NULL WHERE id=$kc2"); $c['compliance']->post("/controls/$kc2/tests", ['test_type' => 'design', 'test_date' => date('Y-m-d'), 'result' => 'ineffective', 'conclusion' => 'Still flawed'], "/controls/$kc2");
+check('a second trigger within 30 days is suppressed', (int)$pdo->query("SELECT COUNT(*) FROM rcsa_assessments WHERE origin='triggered'")->fetchColumn() === $trig0 + 1);
+$pdo->exec("INSERT INTO controls (name, department_id, owner_user_id, is_key, test_frequency, created_by, created_at, updated_at) VALUES ('Key IT control', $deptIt, " . $uidN('demo.dept.it') . ", 1, 'annual', 1, NOW(), NOW())"); $kc3 = (int)$pdo->lastInsertId();
+$c['compliance']->post("/controls/$kc3/tests", ['test_type' => 'design', 'test_date' => date('Y-m-d'), 'result' => 'ineffective', 'conclusion' => 'Flawed'], "/controls/$kc3");
+check('no schedule for the department means no trigger', (int)$pdo->query("SELECT COUNT(*) FROM rcsa_assessments WHERE origin='triggered'")->fetchColumn() === $trig0 + 1);
+check('RCSA schedule actions are audited', (int)$pdo->query("SELECT COUNT(DISTINCT action) FROM audit_log WHERE action IN ('rcsa.schedule_created','rcsa.schedule_toggled','rcsa.scheduled_launch','rcsa.triggered')")->fetchColumn() === 4);

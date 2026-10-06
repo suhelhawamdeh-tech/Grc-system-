@@ -326,6 +326,9 @@ final class IncidentController extends Controller
             }
             $this->audit('incident.reassessment_triggered', 'incident', $id, ['risks' => $links, 'reason' => $escalated ? 'escalation' : 'recurrence']);
         }
+        if (($escalated || $recurrence >= 2)) {
+            \App\Support\RcsaLauncher::trigger((int)$data['department_id'], $escalated ? 'incident_escalation' : 'incident_recurrence', (int)$this->user()['id']);
+        }
     }
 
     public function archive(int $id): never

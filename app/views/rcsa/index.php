@@ -1,5 +1,5 @@
 <div class="page-head"><div><h1><?= e(t('rcsa.title')) ?></h1><p class="sub"><?= e(t('rcsa.subtitle')) ?></p></div>
-<div class="actions"><?php if (can('rcsa.manage')): ?><a class="btn gold" href="<?= e(url('rcsa/launch')) ?>"><?= e(t('rcsa.launch')) ?></a><a class="btn secondary" href="<?= e(url('rcsa/templates/new')) ?>"><?= e(t('rcsa.template_new')) ?></a><?php endif; ?></div></div>
+<div class="actions"><?php if (can('rcsa.manage')): ?><a class="btn gold" href="<?= e(url('rcsa/launch')) ?>"><?= e(t('rcsa.launch')) ?></a><a class="btn secondary" href="<?= e(url('rcsa/templates/new')) ?>"><?= e(t('rcsa.template_new')) ?></a><a class="btn secondary" href="<?= e(url('rcsa/schedules')) ?>"><?= e(t('rcsa.schedules')) ?></a><?php endif; ?></div></div>
 <form method="get" action="<?= e(url('rcsa')) ?>" class="card filters">
 <?= ff('select', 'status', 'rcsa.status', $f['status'], ['options' => opts(['draft', 'submitted', 'approved', 'returned'], fn($x) => t('enum.status.' . $x), null) ?: [], 'blank_label' => 'common.all']) ?>
 <?= ff('select', 'department', 'risk.department', $f['department'], ['options' => opts($departments, fn($d) => lname($d)), 'blank_label' => 'common.all']) ?>

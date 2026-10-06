@@ -160,6 +160,9 @@ $router->post('/policies/{id}/versions/{vid}/attachments', 'PolicyController@upl
 
 $router->get('/rcsa', 'RcsaController@index', 'rcsa.view');
 $router->get('/rcsa/launch', 'RcsaController@launchForm', 'rcsa.manage');
+$router->get('/rcsa/schedules', 'RcsaController@schedules', 'rcsa.manage');
+$router->post('/rcsa/schedules', 'RcsaController@scheduleStore', 'rcsa.manage');
+$router->post('/rcsa/schedules/{id}/toggle', 'RcsaController@scheduleToggle', 'rcsa.manage');
 $router->post('/rcsa/launch', 'RcsaController@launch', 'rcsa.manage');
 $router->get('/rcsa/templates/new', 'RcsaController@templateForm', 'rcsa.manage');
 $router->post('/rcsa/templates', 'RcsaController@templateStore', 'rcsa.manage');
