@@ -42,3 +42,6 @@ Legend: **[x] done and covered by automated tests**, [~] partial, [ ] not done. 
 - [ ] Users with multiple departments/branches
 - [ ] Web fonts bundled for Arabic (currently relies on system fonts)
 - [ ] Verification on real Bluehost, Apache, PHP 8.1–8.3, MySQL 5.7/8, screen readers, formal WCAG audit, penetration test
+
+## Vendor-comparison backlog
+A gap analysis against six vendor proposals and international/regional practice is in `docs/GAP_ANALYSIS_AND_BACKLOG_AR.md` (Arabic) and `docs/LIB_GRC_Gap_Backlog.xlsx`. It supersedes the list above with 43 prioritised items (GRC-001 … GRC-043).
