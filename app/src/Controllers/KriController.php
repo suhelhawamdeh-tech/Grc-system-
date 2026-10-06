@@ -187,19 +187,10 @@ final class KriController extends Controller
         if (!$v->ok()) {
             $this->invalid($v->errors(), url('kris/' . $id) . '#reading');
         }
-        $prev = Db::val('SELECT value FROM kri_readings WHERE kri_id = ? ORDER BY reading_date DESC, id DESC LIMIT 1', [$id]);
-        if ($val !== null && Kri::isOutlier($val, $prev === null || $prev === false ? null : Money::fromDb($prev)) && $v->str('comment') === '') {
-            $this->invalid(['comment' => t('kri.err_outlier')], url('kris/' . $id) . '#reading');
+        if ($val !== null && ($q = \App\Support\KriReadings::quality($k, $val, $v->str('comment'))) !== null) {
+            $this->invalid(['comment' => t($q)], url('kris/' . $id) . '#reading');
         }
-        $crit = $k['critical_threshold'] === null ? null : Money::fromDb($k['critical_threshold']);
-        $status = Kri::status($val, Money::fromDb($k['amber_threshold']), Money::fromDb($k['red_threshold']), $k['direction'], $crit);
-        $rid = Db::insert('kri_readings', ['kri_id' => $id, 'period_id' => $period, 'reading_date' => $v->str('reading_date'), 'value' => Money::toDb($val), 'status' => $status, 'comment' => $v->str('comment') ?: null, 'entered_by' => $u['id'], 'created_at' => date('Y-m-d H:i:s')]);
-        $this->audit('kri.reading_added', 'kri', $id, ['reading_id' => $rid, 'value' => Money::toDb($val), 'status' => $status]);
-        if (in_array($status, ['red', 'critical'], true)) {
-            $now = date('Y-m-d H:i:s');
-            $bid = Db::insert('kri_breaches', ['kri_id' => $id, 'reading_id' => $rid, 'level' => $status, 'status' => 'open', 'escalated_at' => $status === 'critical' ? $now : null, 'created_at' => $now, 'updated_at' => $now]);
-            $this->audit('kri.breach_opened', 'kri', $id, ['breach_id' => $bid, 'level' => $status]);
-        }
+        $status = \App\Support\KriReadings::record($k, (int)$val, $v->str('reading_date'), $v->str('comment'), (int)$u['id'], $period)['status'];
         $this->redirect(url('kris/' . $id), $status === 'green' ? 'kri.reading_saved' : 'kri.reading_saved_alert');
     }
 

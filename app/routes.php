@@ -40,6 +40,11 @@ $router->post('/notes', 'NoteController@store');
 $router->post('/notes/{id}/done', 'NoteController@done');
 $router->post('/notes/{id}/delete', 'NoteController@delete');
 
+$router->get('/import', 'ImportController@index');
+$router->get('/import/template', 'ImportController@template');
+$router->post('/import/preview', 'ImportController@preview');
+$router->post('/import/commit', 'ImportController@commit');
+
 // Dashboard
 $router->get('/', 'DashboardController@index', 'dashboard.view');
 
