@@ -39,7 +39,7 @@ $incLink = static fn(array $extra = []) => url('incidents', array_merge(['from' 
 <?= $tile('rcsa_overdue', 'dash.rcsa_overdue', url('rcsa', ['overdue' => 1])) ?><?= $tile('pol_overdue', 'dash.pol_overdue', url('policies', ['review_overdue' => 1])) ?>
 <?= $tile('bia_unapproved', 'dash.bia_unapproved', url('bia', ['status' => 'draft'])) ?><?= $tile('bia_gaps', 'dash.bia_gaps', url('bia', ['gap' => 1])) ?><?= $tile('appr_pending', 'dash.appr_pending', url('approvals')) ?>
 <?= $tile('sha_open', 'dash.sha_open', url('sharia/events', ['open' => 1])) ?><?= $tile('sha_purify', 'dash.sha_purify', url('sharia/events', ['purification' => 1])) ?>
-<?= $tile('unproven', 'dash.unproven', url('risks', ['unproven' => 1])) ?><?= $tile('ctl_weak', 'dash.ctl_weak', url('controls', ['state' => 'ineffective'])) ?><?= $tile('ctl_overdue', 'dash.ctl_overdue', url('controls', ['state' => 'overdue'])) ?>
+<?= $tile('kri_breaches', 'dash.kri_breaches', url('kris', ['alert' => 1])) ?><?= $tile('unproven', 'dash.unproven', url('risks', ['unproven' => 1])) ?><?= $tile('ctl_weak', 'dash.ctl_weak', url('controls', ['state' => 'ineffective'])) ?><?= $tile('ctl_overdue', 'dash.ctl_overdue', url('controls', ['state' => 'overdue'])) ?>
 </div><?php endif; ?>
 
 <div class="grid cols-2">

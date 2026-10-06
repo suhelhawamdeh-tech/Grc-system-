@@ -1,6 +1,11 @@
 <?php
 // نصوص مكتبة الضوابط واختبارها (العربية). يجب أن تتطابق المفاتيح مع en_ctl.php.
 return [
+    'enum.status.critical' => 'حرج', 'enum.kds.manual' => 'إدخال يدوي', 'enum.kds.import' => 'استيراد ملف', 'enum.kds.api' => 'تغذية آلية (API)',
+    'kri.critical' => 'حد الحرج', 'kri.critical_hint' => 'مستوى رابع اختياري بعد الأحمر. اتركه فارغاً إن لم يُستخدم.', 'kri.err_critical' => 'يجب أن يقع حد الحرج بعد الحد الأحمر في اتجاه الخطر.', 'kri.data_source' => 'مصدر البيانات', 'kri.data_source_hint' => 'من أين يأتي الرقم. الاستيراد والتغذية الآلية مخططان؛ حالياً تُدخل القراءات يدوياً.',
+    'kri.err_outlier' => 'تختلف هذه القيمة عن القراءة السابقة بأكثر من 200%. أضف تعليقاً يوضح السبب (فحص جودة البيانات).', 'kri.breaches' => 'تجاوزات الحدود', 'kri.breaches_hint' => 'القراءة الحمراء أو الحرجة تفتح تجاوزاً. سجّل المبرر وخطة العمل ثم أغلقه عند المعالجة. التجاوزات الحرجة تُرفع تلقائياً.',
+    'kri.breach_open' => 'مفتوح', 'kri.breach_resolved' => 'معالج', 'kri.escalated' => 'مرفوع', 'kri.justification' => 'المبرر', 'kri.action_plan' => 'خطة العمل', 'kri.resolve_breach' => 'أغلق هذا التجاوز', 'kri.resolution_note' => 'ملاحظة المعالجة', 'kri.err_breach_closed' => 'هذا التجاوز مغلق بالفعل.',
+    'my.kri_breaches' => 'تجاوزات مؤشرات تحتاج مبرراً', 'dash.kri_breaches' => 'تجاوزات مؤشرات مفتوحة',
     'enum.rsrc.insurance' => 'تأمين', 'enum.rsrc.customer' => 'عميل', 'enum.rsrc.employee' => 'موظف', 'enum.rsrc.supplier' => 'مورد', 'enum.rsrc.other' => 'أخرى',
     'incident.basel_type' => 'نوع الحدث (بازل)', 'incident.business_line' => 'خط الأعمال', 'incident.product' => 'المنتج', 'incident.system_name' => 'النظام', 'incident.recovery_source' => 'مصدر الاسترداد', 'incident.recovery_source_hint' => 'إلزامي عند وجود مبلغ مسترد.', 'incident.non_financial' => 'الأثر غير المالي',
     'incident.err_recovery_source' => 'اختر مصدر المبلغ المسترد.', 'incident.err_closed_needs_actions' => 'سجّل الإجراءات التصحيحية قبل إغلاق الحادث.', 'incident.err_closed_needs_basel' => 'اختر نوع الحدث (بازل) قبل إغلاق الحادث.',

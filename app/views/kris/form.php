@@ -13,6 +13,8 @@
 <div></div>
 <?= ff('text', 'amber_threshold', 'kri.amber', $k['amber_threshold'] ?? '', ['required' => true, 'extra' => ' inputmode="decimal"', 'hint' => t('kri.amber_hint')]) ?>
 <?= ff('text', 'red_threshold', 'kri.red', $k['red_threshold'] ?? '', ['required' => true, 'extra' => ' inputmode="decimal"', 'hint' => t('kri.red_hint')]) ?>
+<?= ff('text', 'critical_threshold', 'kri.critical', isset($k['critical_threshold']) ? \App\Core\Money::plain($k['critical_threshold']) : '', ['extra' => ' inputmode="decimal"', 'hint' => t('kri.critical_hint')]) ?>
+<?= ff('select', 'data_source', 'kri.data_source', $k['data_source'] ?? 'manual', ['blank' => false, 'options' => ['manual' => t('enum.kds.manual'), 'import' => t('enum.kds.import'), 'api' => t('enum.kds.api')], 'hint' => t('kri.data_source_hint')]) ?>
 </div>
 <?php if ($existing): ?><div class="field"><label class="check"><input type="checkbox" name="is_active" value="1"<?= checked(old('is_active', $k['is_active'] ?? 1)) ?>> <?= e(t('common.active')) ?></label></div><?php endif; ?>
 <p class="muted"><?= e(t('kri.demo_note')) ?></p>

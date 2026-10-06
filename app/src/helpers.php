@@ -291,7 +291,7 @@ function status_badge(string $status): string
     $cls = match ($status) {
         'green', 'compliant', 'approved', 'completed', 'implemented', 'resolved', 'effective' => 'ok',
         'amber', 'in_progress', 'submitted', 'escalated', 'partially_effective', 'draft', 'returned' => 'warn',
-        'red', 'non_compliant', 'open', 'ineffective' => 'danger',
+        'red', 'critical', 'non_compliant', 'open', 'ineffective' => 'danger',
         default => '',
     };
     return '<span class="badge ' . $cls . '">' . e(t('enum.status.' . $status)) . '</span>';

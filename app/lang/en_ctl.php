@@ -1,6 +1,11 @@
 <?php
 // Control library and testing strings (English). Keep keys identical to ar_ctl.php.
 return [
+    'enum.status.critical' => 'Critical', 'enum.kds.manual' => 'Entered manually', 'enum.kds.import' => 'File import', 'enum.kds.api' => 'Automatic feed (API)',
+    'kri.critical' => 'Critical threshold', 'kri.critical_hint' => 'Optional fourth level beyond red. Leave empty if not used.', 'kri.err_critical' => 'The critical threshold must lie beyond the red threshold in the direction of risk.', 'kri.data_source' => 'Data source', 'kri.data_source_hint' => 'Where the figure comes from. Imports and feeds are planned; today readings are entered by hand.',
+    'kri.err_outlier' => 'This value differs from the previous reading by more than 200%. Add a comment explaining why (data-quality check).', 'kri.breaches' => 'Threshold breaches', 'kri.breaches_hint' => 'A red or critical reading opens a breach. Record the justification and the action plan, then close it when resolved. Critical breaches are escalated automatically.',
+    'kri.breach_open' => 'Open', 'kri.breach_resolved' => 'Resolved', 'kri.escalated' => 'Escalated', 'kri.justification' => 'Justification', 'kri.action_plan' => 'Action plan', 'kri.resolve_breach' => 'Close this breach', 'kri.resolution_note' => 'Resolution note', 'kri.err_breach_closed' => 'This breach is already closed.',
+    'my.kri_breaches' => 'KRI breaches to justify', 'dash.kri_breaches' => 'Open KRI breaches',
     'enum.rsrc.insurance' => 'Insurance', 'enum.rsrc.customer' => 'Customer', 'enum.rsrc.employee' => 'Employee', 'enum.rsrc.supplier' => 'Supplier', 'enum.rsrc.other' => 'Other',
     'incident.basel_type' => 'Basel event type', 'incident.business_line' => 'Business line', 'incident.product' => 'Product', 'incident.system_name' => 'System', 'incident.recovery_source' => 'Recovery source', 'incident.recovery_source_hint' => 'Required when an amount was recovered.', 'incident.non_financial' => 'Non-financial impact',
     'incident.err_recovery_source' => 'Select where the recovered amount came from.', 'incident.err_closed_needs_actions' => 'Record the corrective actions before closing the incident.', 'incident.err_closed_needs_basel' => 'Select the Basel event type before closing the incident.',

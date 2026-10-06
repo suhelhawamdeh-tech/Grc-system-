@@ -41,12 +41,12 @@ final class KriController extends Controller
             $where[] = 'k.department_id = ?';
             $p[] = $f['department'];
         }
-        if (in_array($f['status'], ['green', 'amber', 'red'], true)) {
+        if (in_array($f['status'], ['green', 'amber', 'red', 'critical'], true)) {
             $where[] = 'lr.status = ?';
             $p[] = $f['status'];
         }
         if ($f['alert'] === '1') {
-            $where[] = "lr.status IN ('amber','red')";
+            $where[] = "lr.status IN ('amber','red','critical')";
         }
         if ($f['missing'] === '1') {
             $where[] = "(lr.id IS NULL OR lr.reading_date < IF(k.frequency = 'quarterly', DATE_FORMAT(CURDATE(), CONCAT('%Y-', LPAD(FLOOR((MONTH(CURDATE()) - 1) / 3) * 3 + 1, 2, '0'), '-01')), DATE_FORMAT(CURDATE(), '%Y-%m-01')))";
@@ -54,7 +54,7 @@ final class KriController extends Controller
         $w = implode(' AND ', $where);
         $total = (int)Db::val('SELECT COUNT(*) FROM kris k ' . self::LATEST . ' WHERE ' . $w, $p);
         $page = min($this->page(), max(1, (int)ceil($total / self::PER_PAGE)));
-        $rows = Db::all('SELECT k.*, d.name_en AS dept_en, d.name_ar AS dept_ar, o.full_name AS owner_name, lr.value AS last_value, lr.status AS last_status, lr.reading_date AS last_date FROM kris k JOIN departments d ON d.id = k.department_id JOIN users o ON o.id = k.owner_user_id ' . self::LATEST . ' WHERE ' . $w . " ORDER BY FIELD(lr.status,'red','amber','green'), k.code LIMIT ? OFFSET ?", array_merge($p, [self::PER_PAGE, ($page - 1) * self::PER_PAGE]));
+        $rows = Db::all('SELECT k.*, d.name_en AS dept_en, d.name_ar AS dept_ar, o.full_name AS owner_name, lr.value AS last_value, lr.status AS last_status, lr.reading_date AS last_date FROM kris k JOIN departments d ON d.id = k.department_id JOIN users o ON o.id = k.owner_user_id ' . self::LATEST . ' WHERE ' . $w . " ORDER BY FIELD(lr.status,'critical','red','amber','green'), k.code LIMIT ? OFFSET ?", array_merge($p, [self::PER_PAGE, ($page - 1) * self::PER_PAGE]));
         return $this->view('kris/index', ['title' => t('kri.title_plural'), 'rows' => $rows, 'f' => $f, 'total' => $total, 'page' => $page, 'per' => self::PER_PAGE, 'departments' => Ref::departments(true)]);
     }
 
@@ -62,7 +62,7 @@ final class KriController extends Controller
     {
         $k = $this->load($id);
         $readings = Db::all('SELECT r.*, u.full_name, p.name_en AS p_en, p.name_ar AS p_ar FROM kri_readings r JOIN users u ON u.id = r.entered_by LEFT JOIN reporting_periods p ON p.id = r.period_id WHERE r.kri_id = ? ORDER BY r.reading_date DESC, r.id DESC LIMIT 60', [$id]);
-        return $this->view('kris/show', ['title' => $k['code'] . ' — ' . $k['name'], 'k' => $k, 'readings' => $readings, 'periods' => Ref::periods(true), 'linked' => $k['risk_id'] ? Db::one('SELECT id, risk_code, title FROM risks WHERE id = ?', [$k['risk_id']]) : null]);
+        return $this->view('kris/show', ['title' => $k['code'] . ' — ' . $k['name'], 'k' => $k, 'readings' => $readings, 'breaches' => Db::all('SELECT b.*, r.reading_date, r.value FROM kri_breaches b JOIN kri_readings r ON r.id = b.reading_id WHERE b.kri_id = ? ORDER BY b.id DESC LIMIT 30', [$id]), 'periods' => Ref::periods(true), 'linked' => $k['risk_id'] ? Db::one('SELECT id, risk_code, title FROM risks WHERE id = ?', [$k['risk_id']]) : null]);
     }
 
     public function create(): string
@@ -126,18 +126,26 @@ final class KriController extends Controller
         if ($amber !== null && $red !== null && !Kri::thresholdsValid($amber, $red, $v->str('direction'))) {
             $v->fail('red_threshold', 'kri.err_thresholds');
         }
+        $critRaw = $v->str('critical_threshold');
+        $crit = $critRaw === '' ? null : Money::parse($critRaw, Money::decimals());
+        if ($critRaw !== '' && $crit === null) {
+            $v->fail('critical_threshold', 'validation.amount', ['field' => t('kri.critical')]);
+        } elseif ($crit !== null && $red !== null && !Kri::criticalValid($red, $crit, $v->str('direction'))) {
+            $v->fail('critical_threshold', 'kri.err_critical');
+        }
+        $v->in('data_source', 'kri.data_source', ['manual', 'import', 'api'], false);
         $back = $ex ? url('kris/' . $ex['id'] . '/edit') : url('kris/new');
         if (!$v->ok()) {
             $this->invalid($v->errors(), $back);
         }
         $data = ['name' => $v->str('name'), 'description' => $v->str('description') ?: null, 'category_id' => $cat, 'department_id' => $dept, 'owner_user_id' => $owner, 'risk_id' => $risk,
-            'unit' => $v->str('unit'), 'direction' => $v->str('direction'), 'amber_threshold' => Money::toDb($amber), 'red_threshold' => Money::toDb($red), 'frequency' => $v->str('frequency'),
+            'unit' => $v->str('unit'), 'direction' => $v->str('direction'), 'amber_threshold' => Money::toDb($amber), 'red_threshold' => Money::toDb($red), 'critical_threshold' => $crit === null ? null : Money::toDb($crit), 'data_source' => $v->str('data_source') ?: 'manual', 'frequency' => $v->str('frequency'),
             'is_active' => $ex ? (!empty($_POST['is_active']) ? 1 : 0) : 1, 'updated_at' => date('Y-m-d H:i:s')];
         if ($ex) {
-            $ch = $this->diff($ex, $data, ['name', 'department_id', 'owner_user_id', 'direction', 'amber_threshold', 'red_threshold', 'frequency', 'is_active']);
+            $ch = $this->diff($ex, $data, ['name', 'department_id', 'owner_user_id', 'direction', 'amber_threshold', 'red_threshold', 'critical_threshold', 'frequency', 'is_active']);
             Db::update('kris', $data, 'id = ?', [$ex['id']]);
             // Re-evaluate the status of existing readings against the new thresholds so history stays consistent.
-            $this->recompute((int)$ex['id'], $amber, $red, $data['direction']);
+            $this->recompute((int)$ex['id'], $amber, $red, $data['direction'], $crit);
             $this->audit('kri.updated', 'kri', (int)$ex['id'], ['changes' => $ch]);
             $id = (int)$ex['id'];
         } else {
@@ -149,10 +157,10 @@ final class KriController extends Controller
         $this->redirect(url('kris/' . $id), 'admin.saved');
     }
 
-    private function recompute(int $kriId, int $amber, int $red, string $dir): void
+    private function recompute(int $kriId, int $amber, int $red, string $dir, ?int $crit = null): void
     {
         foreach (Db::all('SELECT id, value FROM kri_readings WHERE kri_id = ?', [$kriId]) as $r) {
-            Db::update('kri_readings', ['status' => Kri::status(Money::fromDb($r['value']), $amber, $red, $dir)], 'id = ?', [$r['id']]);
+            Db::update('kri_readings', ['status' => Kri::status(Money::fromDb($r['value']), $amber, $red, $dir, $crit)], 'id = ?', [$r['id']]);
         }
     }
 
@@ -179,9 +187,43 @@ final class KriController extends Controller
         if (!$v->ok()) {
             $this->invalid($v->errors(), url('kris/' . $id) . '#reading');
         }
-        $status = Kri::status($val, Money::fromDb($k['amber_threshold']), Money::fromDb($k['red_threshold']), $k['direction']);
+        $prev = Db::val('SELECT value FROM kri_readings WHERE kri_id = ? ORDER BY reading_date DESC, id DESC LIMIT 1', [$id]);
+        if ($val !== null && Kri::isOutlier($val, $prev === null || $prev === false ? null : Money::fromDb($prev)) && $v->str('comment') === '') {
+            $this->invalid(['comment' => t('kri.err_outlier')], url('kris/' . $id) . '#reading');
+        }
+        $crit = $k['critical_threshold'] === null ? null : Money::fromDb($k['critical_threshold']);
+        $status = Kri::status($val, Money::fromDb($k['amber_threshold']), Money::fromDb($k['red_threshold']), $k['direction'], $crit);
         $rid = Db::insert('kri_readings', ['kri_id' => $id, 'period_id' => $period, 'reading_date' => $v->str('reading_date'), 'value' => Money::toDb($val), 'status' => $status, 'comment' => $v->str('comment') ?: null, 'entered_by' => $u['id'], 'created_at' => date('Y-m-d H:i:s')]);
         $this->audit('kri.reading_added', 'kri', $id, ['reading_id' => $rid, 'value' => Money::toDb($val), 'status' => $status]);
+        if (in_array($status, ['red', 'critical'], true)) {
+            $now = date('Y-m-d H:i:s');
+            $bid = Db::insert('kri_breaches', ['kri_id' => $id, 'reading_id' => $rid, 'level' => $status, 'status' => 'open', 'escalated_at' => $status === 'critical' ? $now : null, 'created_at' => $now, 'updated_at' => $now]);
+            $this->audit('kri.breach_opened', 'kri', $id, ['breach_id' => $bid, 'level' => $status]);
+        }
         $this->redirect(url('kris/' . $id), $status === 'green' ? 'kri.reading_saved' : 'kri.reading_saved_alert');
+    }
+
+    /** Record the justification and action plan of a breach, and optionally close it. */
+    public function updateBreach(int $id, int $bid): never
+    {
+        $u = $this->user();
+        $this->load($id);
+        $b = Db::one('SELECT * FROM kri_breaches WHERE id = ? AND kri_id = ?', [$bid, $id]);
+        $b || $this->notFound();
+        if ($b['status'] === 'resolved') {
+            $this->redirect(url('kris/' . $id) . '#breaches', 'kri.err_breach_closed', 'error');
+        }
+        $v = new Validator($_POST);
+        $v->required('justification', 'kri.justification')->max('justification', 'kri.justification', 3000)->required('action_plan', 'kri.action_plan')->max('action_plan', 'kri.action_plan', 3000)->max('resolution_note', 'kri.resolution_note', 3000);
+        $resolve = isset($_POST['resolve']);
+        if ($resolve && $v->str('resolution_note') === '') {
+            $v->fail('resolution_note', 'validation.required', ['field' => t('kri.resolution_note')]);
+        }
+        if (!$v->ok()) {
+            $this->invalid($v->errors(), url('kris/' . $id) . '#breaches');
+        }
+        Db::update('kri_breaches', ['justification' => $v->str('justification'), 'action_plan' => $v->str('action_plan'), 'status' => $resolve ? 'resolved' : 'open', 'resolved_on' => $resolve ? date('Y-m-d') : null, 'resolution_note' => $resolve ? $v->str('resolution_note') : null, 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$bid]);
+        $this->audit($resolve ? 'kri.breach_resolved' : 'kri.breach_updated', 'kri', $id, ['breach_id' => $bid]);
+        $this->redirect(url('kris/' . $id) . '#breaches', 'admin.saved');
     }
 }

@@ -108,6 +108,7 @@ $router->get('/kris/{id}', 'KriController@show', 'kri.view');
 $router->get('/kris/{id}/edit', 'KriController@edit', 'kri.manage');
 $router->post('/kris/{id}', 'KriController@update', 'kri.manage');
 $router->post('/kris/{id}/readings', 'KriController@addReading', 'kri.report');
+$router->post('/kris/{id}/breaches/{bid}', 'KriController@updateBreach', 'kri.report');
 
 $router->get('/appetite', 'AppetiteController@index', 'appetite.view');
 $router->get('/appetite/new', 'AppetiteController@create', 'appetite.manage');

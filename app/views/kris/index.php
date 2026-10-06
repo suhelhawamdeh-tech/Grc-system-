@@ -2,7 +2,7 @@
   <div class="actions"><?php if (can('kri.manage')): ?><a class="btn gold" href="<?= e(url('kris/new')) ?>"><?= e(t('kri.new')) ?></a><?php endif; ?></div></div>
 <form method="get" action="<?= e(url('kris')) ?>" class="card filters">
   <?= ff('select', 'department', 'kri.department', $f['department'], ['options' => opts($departments, fn($d) => lname($d)), 'blank_label' => 'common.all']) ?>
-  <?= ff('select', 'status', 'kri.last_status', $f['status'], ['options' => ['green' => t('enum.status.green'), 'amber' => t('enum.status.amber'), 'red' => t('enum.status.red')], 'blank_label' => 'common.all']) ?>
+  <?= ff('select', 'status', 'kri.last_status', $f['status'], ['options' => ['green' => t('enum.status.green'), 'amber' => t('enum.status.amber'), 'red' => t('enum.status.red'), 'critical' => t('enum.status.critical')], 'blank_label' => 'common.all']) ?>
   <div class="field"><label class="check"><input type="checkbox" name="alert" value="1"<?= checked($f['alert']) ?>> <?= e(t('kri.alerts_only')) ?></label></div>
   <div class="field"><label class="check"><input type="checkbox" name="missing" value="1"<?= checked($f['missing']) ?>> <?= e(t('kri.missing_only')) ?></label></div>
   <div class="field actions"><button class="btn" type="submit"><?= e(t('common.filter')) ?></button><a class="btn secondary" href="<?= e(url('kris')) ?>"><?= e(t('common.reset')) ?></a></div>

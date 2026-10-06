@@ -46,7 +46,7 @@ final class ReportController extends Controller
         $d['overdue'] = Db::all("SELECT a.title, a.deadline, o.full_name, r.risk_code FROM risk_actions a JOIN risks r ON r.id = a.risk_id JOIN users o ON o.id = a.owner_user_id WHERE a.status IN ('not_started','in_progress') AND a.deadline < CURDATE() AND r.archived_at IS NULL AND $rw ORDER BY a.deadline LIMIT 10", $rp);
         if (Perm::roleHas($role, 'kri.view')) {
             [$kw, $kp] = Scope::sqlDept($u, 'k');
-            $d['kris'] = Db::all("SELECT k.code, k.name, lr.value, lr.status, k.unit FROM kris k JOIN kri_readings lr ON lr.id = (SELECT x.id FROM kri_readings x WHERE x.kri_id = k.id ORDER BY x.reading_date DESC, x.id DESC LIMIT 1) WHERE k.is_active = 1 AND lr.status IN ('amber','red') AND $kw ORDER BY FIELD(lr.status,'red','amber'), k.code LIMIT 15", $kp);
+            $d['kris'] = Db::all("SELECT k.code, k.name, lr.value, lr.status, k.unit FROM kris k JOIN kri_readings lr ON lr.id = (SELECT x.id FROM kri_readings x WHERE x.kri_id = k.id ORDER BY x.reading_date DESC, x.id DESC LIMIT 1) WHERE k.is_active = 1 AND lr.status IN ('amber','red','critical') AND $kw ORDER BY FIELD(lr.status,'critical','red','amber'), k.code LIMIT 15", $kp);
         }
         if (Perm::roleHas($role, 'appetite.view')) {
             $d['breaches'] = Db::all("SELECT b.*, s.title FROM appetite_breaches b JOIN appetite_statements s ON s.id = b.statement_id WHERE b.status IN ('open','escalated') ORDER BY b.id DESC LIMIT 10");
