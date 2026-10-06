@@ -229,3 +229,18 @@ $router->post('/circulars/{id}', 'CircularController@update', 'circular.manage')
 $router->post('/circulars/{id}/distribute', 'CircularController@distribute', 'circular.manage');
 $router->post('/circulars/{id}/acknowledge', 'CircularController@acknowledge', 'circular.ack');
 $router->post('/circulars/{id}/attachments', 'CircularController@upload', 'circular.manage');
+
+// ---- Release 3: board and committee governance
+$router->get('/governance', 'GovernanceController@index', 'governance.view');
+$router->get('/governance/new', 'GovernanceController@bodyNew', 'governance.manage');
+$router->post('/governance', 'GovernanceController@bodyStore', 'governance.manage');
+$router->get('/governance/report', 'GovernanceController@report', 'governance.view');
+$router->get('/governance/meetings/{id}', 'GovernanceController@meetingShow', 'governance.view');
+$router->post('/governance/meetings/{id}/hold', 'GovernanceController@meetingHold', 'governance.manage');
+$router->post('/governance/meetings/{id}/cancel', 'GovernanceController@meetingCancel', 'governance.manage');
+$router->get('/governance/{id}', 'GovernanceController@bodyShow', 'governance.view');
+$router->get('/governance/{id}/edit', 'GovernanceController@bodyEdit', 'governance.manage');
+$router->post('/governance/{id}', 'GovernanceController@bodyUpdate', 'governance.manage');
+$router->post('/governance/{id}/members', 'GovernanceController@addMember', 'governance.manage');
+$router->post('/governance/{id}/members/{uid}/remove', 'GovernanceController@removeMember', 'governance.manage');
+$router->post('/governance/{id}/meetings', 'GovernanceController@meetingStore', 'governance.manage');

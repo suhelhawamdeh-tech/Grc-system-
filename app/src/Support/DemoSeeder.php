@@ -204,6 +204,25 @@ final class DemoSeeder
                 Db::insert('circular_distribution', ['circular_id' => $cid, 'department_id' => $dep[$dp], 'status' => $st === 'closed' ? 'acknowledged' : 'pending', 'acknowledged_by' => $st === 'closed' ? $users['demo.dept.it'] : null, 'acknowledged_at' => $st === 'closed' ? $now : null, 'action_taken' => $st === 'closed' ? 'Test plan updated (synthetic).' : null]);
             }
         }
+        // Governance bodies, members and meetings (synthetic)
+        foreach ([['Board Risk Committee', 'board_risk', 4, 60, ['demo.exec' => 'chair', 'demo.risk' => 'secretary', 'demo.compliance' => 'member', 'demo.auditor' => 'member']], ['Sharia Supervisory Board', 'sharia_board', 4, 66, ['demo.sharia' => 'chair', 'demo.compliance' => 'secretary']]] as [$nm, $ty, $min, $quo, $mem]) {
+            $gid = Db::insert('governance_bodies', ['name' => $nm, 'body_type' => $ty, 'purpose' => 'Synthetic body for demonstration.', 'formed_on' => date('Y-m-d', strtotime('-2 years')), 'min_meetings_per_year' => $min, 'quorum_percent' => $quo, 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('governance_bodies', 'GOV', $gid, 4);
+            foreach ($mem as $un => $role) {
+                if (isset($users[$un])) {
+                    Db::insert('governance_members', ['body_id' => $gid, 'user_id' => $users[$un], 'member_role' => $role, 'joined_on' => date('Y-m-d', strtotime('-1 year'))]);
+                }
+            }
+            $ids = array_values(array_filter(array_map(fn($un) => $users[$un] ?? null, array_keys($mem))));
+            foreach ([-120, -60] as $k => $days) {
+                $present = array_slice($ids, 0, max(1, count($ids) - $k));
+                $mid = Db::insert('governance_meetings', ['body_id' => $gid, 'meeting_date' => date('Y-m-d', strtotime($days . ' days')), 'status' => 'held', 'agenda' => 'Synthetic agenda.', 'minutes' => 'Synthetic minutes for demonstration.', 'members_count' => count($ids), 'present_count' => count($present), 'quorum_met' => count($present) * 100 >= count($ids) * $quo ? 1 : 0, 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+                foreach ($ids as $uid) {
+                    Db::insert('governance_attendance', ['meeting_id' => $mid, 'user_id' => $uid, 'present' => in_array($uid, $present, true) ? 1 : 0]);
+                }
+            }
+            Db::insert('governance_meetings', ['body_id' => $gid, 'meeting_date' => date('Y-m-d', strtotime('+21 days')), 'status' => 'planned', 'agenda' => 'Synthetic agenda.', 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+        }
         // KRIs with a few months of readings
         foreach ([
             ['Failed privileged logins per month', 'IT', 'demo.dept.it', 'count', 'higher_worse', 8, 15, [4, 6, 9, 12]],

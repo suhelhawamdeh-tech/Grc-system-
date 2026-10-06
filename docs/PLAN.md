@@ -51,3 +51,8 @@ A gap analysis against six vendor proposals and international/regional practice 
 Done and tested: GRC-001 control library, GRC-002 control testing, GRC-005 e-mail and escalation (cron), GRC-006 My tasks, GRC-015 BIA, GRC-020 Sharia compliance, GRC-007 Excel export + board pack (printable; no native PDF engine).
 Partial: GRC-004 maker-checker (generic log, wired to BIA only; not yet policies, risk acceptance or incident closure), GRC-003 (controls panel warns on weak or untested controls; no automatic residual suggestion).
 Not started: GRC-008 to GRC-014, GRC-016 to GRC-019, GRC-021 to GRC-038 (see GAP_ANALYSIS_AND_BACKLOG_AR.md), GRC-039 production architecture and GRC-040 penetration test (organisational decisions).
+
+## Release 1.2 progress
+Done and tested: GRC-003 (flag for unproven control reliance), GRC-004 extended to policy versions, GRC-008 (critical level, breaches, data-quality gate), GRC-009, GRC-010 (escalation threshold, closure gate, recurrence), GRC-018 circulars, GRC-022 boards and committees.
+Still open inside those items: composite KRIs, KRI file import and API feeds (GRC-008); GL reconciliation of losses (GRC-009); approvals for incident closure and risk acceptance (GRC-004, GRC-011); strategic objectives and balanced scorecards (GRC-022 scope).
+Next in the backlog: GRC-011, GRC-012, GRC-013, GRC-014, GRC-016, GRC-019, GRC-023 to GRC-027, then R3/R4 items.
