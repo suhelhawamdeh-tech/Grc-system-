@@ -28,10 +28,16 @@ $sel_linked = array_map('intval', (array)old('risk_ids', $linked));
     <?= $sel('category_id', 'incident.category', $lists['categories'], $v('category_id'), true) ?>
     <?= $sel('department_id', 'incident.department', $lists['departments'], $v('department_id'), true) ?>
     <?= $sel('branch_id', 'incident.branch', $lists['branches'], $v('branch_id'), false) ?>
+    <?= $sel('basel_event_type_id', 'incident.basel_type', $basel, $v('basel_event_type_id'), false) ?>
+    <?= $sel('business_line_id', 'incident.business_line', $lines, $v('business_line_id'), false) ?>
+    <?= $inp('product', 'incident.product', $v('product')) ?>
+    <?= $inp('system_name', 'incident.system_name', $v('system_name')) ?>
   </div></fieldset>
   <fieldset><legend><?= e(t('incident.section_loss')) ?> (<?= e($cur) ?>)</legend><div class="form-grid">
     <?= $inp('gross_loss', 'incident.gross_loss', $v('gross_loss', '0'), 'text', true) ?>
     <?= $inp('recoveries', 'incident.recoveries', $v('recoveries', '0'), 'text', true, t('incident.recoveries_hint')) ?>
+    <div class="field<?= $err('recovery_source') ?>"><label for="recovery_source"><?= e(t('incident.recovery_source')) ?></label><select id="recovery_source" name="recovery_source"><option value=""><?= e(t('common.select')) ?></option><?php foreach (['insurance', 'customer', 'employee', 'supplier', 'other'] as $rs): ?><option value="<?= $rs ?>"<?= sel($v('recovery_source'), $rs) ?>><?= e(t('enum.rsrc.' . $rs)) ?></option><?php endforeach; ?></select><p class="hint"><?= e(t('incident.recovery_source_hint')) ?></p><?= field_error('recovery_source') ?></div>
+    <?= $area('non_financial_impact', 'incident.non_financial', $v('non_financial_impact')) ?>
     <div class="field"><span class="lbl"><?= e(t('incident.net_loss')) ?></span><p class="hint"><?= e(t('incident.net_formula')) ?></p></div>
   </div></fieldset>
   <fieldset><legend><?= e(t('incident.section_analysis')) ?></legend><div class="form-grid">

@@ -12,7 +12,7 @@ use App\Support\Upload;
 
 final class SettingsController extends Controller
 {
-    private const KEYS = ['org_name_en', 'org_name_ar', 'currency_code', 'currency_decimals', 'currency_symbol_en', 'currency_symbol_ar', 'default_lang', 'review_warning_days'];
+    private const KEYS = ['org_name_en', 'org_name_ar', 'currency_code', 'currency_decimals', 'currency_symbol_en', 'currency_symbol_ar', 'default_lang', 'review_warning_days', 'incident_escalation_threshold'];
 
     public function index(): string
     {
@@ -28,6 +28,10 @@ final class SettingsController extends Controller
             ->intRange('review_warning_days', 'settings.review_warning_days', 0, 365);
         if (!preg_match('/^[A-Z]{3}$/', strtoupper($v->str('currency_code')))) {
             $v->fail('currency_code', 'settings.err_currency');
+        }
+        $th = $v->str('incident_escalation_threshold');
+        if ($th !== '' && \App\Core\Money::parse($th, \App\Core\Money::decimals()) === null) {
+            $v->fail('incident_escalation_threshold', 'validation.amount', ['field' => t('settings.incident_threshold')]);
         }
         if (!$v->ok()) {
             $this->invalid($v->errors(), url('admin/settings'));

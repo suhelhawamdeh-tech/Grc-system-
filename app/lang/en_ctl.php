@@ -1,6 +1,12 @@
 <?php
 // Control library and testing strings (English). Keep keys identical to ar_ctl.php.
 return [
+    'enum.rsrc.insurance' => 'Insurance', 'enum.rsrc.customer' => 'Customer', 'enum.rsrc.employee' => 'Employee', 'enum.rsrc.supplier' => 'Supplier', 'enum.rsrc.other' => 'Other',
+    'incident.basel_type' => 'Basel event type', 'incident.business_line' => 'Business line', 'incident.product' => 'Product', 'incident.system_name' => 'System', 'incident.recovery_source' => 'Recovery source', 'incident.recovery_source_hint' => 'Required when an amount was recovered.', 'incident.non_financial' => 'Non-financial impact',
+    'incident.err_recovery_source' => 'Select where the recovered amount came from.', 'incident.err_closed_needs_actions' => 'Record the corrective actions before closing the incident.', 'incident.err_closed_needs_basel' => 'Select the Basel event type before closing the incident.',
+    'incident.escalated_note' => 'This incident exceeded the escalation threshold (:at). Linked risks were sent for reassessment.', 'incident.recurrence' => 'Recurring pattern', 'incident.recurrence_note' => ':n similar incidents (same category and department) in the 12 months before this one. Linked risks were sent for reassessment.',
+    'incident.patterns' => 'Recurring incident patterns', 'incident.patterns_hint' => 'Category and department pairs with 3 or more incidents in the last 12 months', 'incident.no_patterns' => 'No recurring pattern found.', 'incident.last_occurrence' => 'Latest occurrence',
+    'settings.incident_threshold' => 'Incident escalation threshold (net loss)', 'settings.incident_threshold_hint' => 'Incidents at or above this net loss are escalated and trigger a reassessment of the linked risks. Leave empty to switch off.', 'history.reassessment_triggered' => 'Reassessment triggered by an incident',
     'ctl.overclaim' => 'The residual rating is :n points below the inherent rating, but the linked controls are not proven effective. Test the controls or reconsider the residual rating.', 'dash.unproven' => 'Risks relying on unproven controls',
     'nav.controls' => 'Control library', 'common.archived' => 'Archived',
     'enum.ctype.preventive' => 'Preventive', 'enum.ctype.detective' => 'Detective', 'enum.ctype.corrective' => 'Corrective',

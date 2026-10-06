@@ -394,3 +394,41 @@ check('flag disappears once an effective tested control is linked', !str_contain
 $pdo->exec("UPDATE controls SET last_result='ineffective' WHERE id=$ctlE");
 check('flag returns when the linked control fails', str_contains($c['risk']->get('/risks?unproven=1')['body'], "/risks/$rkU\"") && str_contains($c['risk']->get('/')['body'], 'risks?unproven=1'));
 $pdo->exec("DELETE FROM risk_controls WHERE control_id=$ctlE"); $pdo->exec("DELETE FROM controls WHERE id=$ctlE");
+
+section('Incidents: Basel taxonomy, recovery source, closure gate, escalation, recurrence');
+check('Basel types and business lines seeded (7 and 8)', (int)$pdo->query('SELECT COUNT(*) FROM basel_event_types')->fetchColumn() === 7 && (int)$pdo->query('SELECT COUNT(*) FROM business_lines')->fetchColumn() === 8);
+$bt = (int)$pdo->query("SELECT id FROM basel_event_types WHERE code='EF'")->fetchColumn(); $bl = (int)$pdo->query("SELECT id FROM business_lines WHERE code='RB'")->fetchColumn();
+$catI = (int)$pdo->query("SELECT id FROM risk_categories WHERE is_active=1 ORDER BY id LIMIT 1")->fetchColumn();
+$ic = fn() => (int)$pdo->query('SELECT COUNT(*) FROM incidents')->fetchColumn();
+$xF = fn(array $o = []) => $o + ['event_type' => 'incident', 'title' => 'Card skimming', 'description' => 'd', 'occurrence_date' => date('Y-m-d', strtotime('-4 days')), 'discovery_date' => date('Y-m-d', strtotime('-3 days')), 'category_id' => $catI, 'department_id' => $deptRet, 'gross_loss' => '5000', 'recoveries' => '1000', 'recovery_source' => 'insurance', 'status' => 'open', 'basel_event_type_id' => $bt, 'business_line_id' => $bl, 'product' => 'Debit card', 'system_name' => 'ATM switch', 'non_financial_impact' => 'Customer complaints'];
+$n = $ic();
+$c['risk']->post('/incidents', $xF(['recovery_source' => '']), '/incidents/new'); check('recovery without a source rejected', $ic() === $n);
+$c['risk']->post('/incidents', $xF(['recovery_source' => 'mars']), '/incidents/new'); check('invalid recovery source rejected', $ic() === $n);
+$c['risk']->post('/incidents', $xF(['basel_event_type_id' => 9999]), '/incidents/new'); check('invalid Basel type rejected', $ic() === $n);
+$c['risk']->post('/incidents', $xF(['business_line_id' => 9999]), '/incidents/new'); check('invalid business line rejected', $ic() === $n);
+$c['risk']->post('/incidents', $xF(['status' => 'closed', 'root_cause' => 'rc', 'corrective_actions' => '']), '/incidents/new'); check('closing without corrective actions rejected', $ic() === $n);
+$c['risk']->post('/incidents', $xF(['status' => 'closed', 'root_cause' => 'rc', 'corrective_actions' => 'fix', 'basel_event_type_id' => '']), '/incidents/new'); check('closing without a Basel type rejected', $ic() === $n);
+$c['risk']->post('/incidents', $xF(['recoveries' => '0', 'recovery_source' => 'customer']), '/incidents/new'); $lastI = (int)$pdo->query('SELECT MAX(id) FROM incidents')->fetchColumn(); check('recovery source ignored when nothing was recovered', $pdo->query("SELECT recovery_source FROM incidents WHERE id=$lastI")->fetchColumn() === null);
+$c['risk']->post('/incidents', $xF(), '/incidents/new'); $inc1 = (int)$pdo->query('SELECT MAX(id) FROM incidents')->fetchColumn();
+check('incident stores Basel type, line, product, system, source and non-financial impact', (int)$pdo->query("SELECT basel_event_type_id FROM incidents WHERE id=$inc1")->fetchColumn() === $bt && $pdo->query("SELECT recovery_source FROM incidents WHERE id=$inc1")->fetchColumn() === 'insurance' && $pdo->query("SELECT system_name FROM incidents WHERE id=$inc1")->fetchColumn() === 'ATM switch' && str_contains($c['risk']->get("/incidents/$inc1")['body'], 'ATM switch') && str_contains($c['risk']->get("/incidents/$inc1/edit")['body'], 'name="basel_event_type_id"'));
+// escalation threshold
+$admin->post('/admin/settings', ['org_name_en' => 'Demo Bank (synthetic data)', 'org_name_ar' => 'مصرف تجريبي (بيانات تجريبية)', 'currency_code' => 'LYD', 'currency_decimals' => '3', 'currency_symbol_en' => 'LYD', 'currency_symbol_ar' => 'د.ل', 'default_lang' => 'ar', 'review_warning_days' => '30', 'incident_escalation_threshold' => 'abc'], '/admin/settings');
+check('non-numeric escalation threshold rejected', (string)$pdo->query("SELECT setting_value FROM settings WHERE setting_key='incident_escalation_threshold'")->fetchColumn() === '');
+$cur = $pdo->query("SELECT setting_key, setting_value FROM settings")->fetchAll(PDO::FETCH_KEY_PAIR);
+$admin->post('/admin/settings', ['org_name_en' => $cur['org_name_en'], 'org_name_ar' => $cur['org_name_ar'], 'currency_code' => $cur['currency_code'], 'currency_decimals' => $cur['currency_decimals'], 'currency_symbol_en' => $cur['currency_symbol_en'], 'currency_symbol_ar' => $cur['currency_symbol_ar'], 'default_lang' => $cur['default_lang'], 'review_warning_days' => $cur['review_warning_days'], 'incident_escalation_threshold' => '3000'], '/admin/settings');
+check('escalation threshold saved', $pdo->query("SELECT setting_value FROM settings WHERE setting_key='incident_escalation_threshold'")->fetchColumn() === '3000');
+$rkI = (int)$pdo->query("SELECT id FROM risks WHERE archived_at IS NULL AND status='active' AND department_id=$deptRet LIMIT 1")->fetchColumn(); $pdo->exec("UPDATE risks SET review_date = DATE_ADD(CURDATE(), INTERVAL 200 DAY) WHERE id=$rkI");
+$c['risk']->post('/incidents', $xF(['title' => 'Big loss', 'gross_loss' => '9000', 'recoveries' => '0', 'risk_ids' => [$rkI]]), '/incidents/new'); $inc2 = (int)$pdo->query('SELECT MAX(id) FROM incidents')->fetchColumn();
+check('incident at or above the threshold is escalated', $pdo->query("SELECT escalated_at FROM incidents WHERE id=$inc2")->fetchColumn() !== null && str_contains($c['risk']->get("/incidents/$inc2")['body'], 'msg error'));
+check('escalation pulls the linked risk review date to today and records history', $pdo->query("SELECT review_date FROM risks WHERE id=$rkI")->fetchColumn() === date('Y-m-d') && (int)$pdo->query("SELECT COUNT(*) FROM risk_history WHERE risk_id=$rkI AND event='reassessment_triggered'")->fetchColumn() === 1);
+$c['risk']->post('/incidents', $xF(['title' => 'Small loss', 'gross_loss' => '100', 'recoveries' => '0']), '/incidents/new'); $inc3 = (int)$pdo->query('SELECT MAX(id) FROM incidents')->fetchColumn();
+check('incident below the threshold is not escalated', $pdo->query("SELECT escalated_at FROM incidents WHERE id=$inc3")->fetchColumn() === null);
+check('escalation is audited', (int)$pdo->query("SELECT COUNT(*) FROM audit_log WHERE action='incident.escalated' AND entity_id=$inc2")->fetchColumn() === 1);
+// recurrence
+$rkI = (int)$pdo->query("SELECT id FROM risks WHERE archived_at IS NULL AND status='active' AND department_id=$deptIt LIMIT 1")->fetchColumn(); $pdo->exec("UPDATE risks SET review_date = DATE_ADD(CURDATE(), INTERVAL 200 DAY) WHERE id=$rkI");
+foreach ([40, 30, 20] as $k) { $c['it']->post('/incidents', $xF(['title' => "Repeat $k", 'department_id' => $deptIt, 'branch_id' => '', 'occurrence_date' => date('Y-m-d', strtotime("-$k days")), 'discovery_date' => date('Y-m-d', strtotime("-$k days")), 'gross_loss' => '10', 'recoveries' => '0', 'risk_ids' => [$rkI]]), '/incidents/new'); }
+$incRep = (int)$pdo->query('SELECT MAX(id) FROM incidents')->fetchColumn();
+check('third similar incident shows the recurrence box with the earlier ones', substr_count($c['it']->get("/incidents/$incRep")['body'], 'task-list') >= 1 && str_contains($c['it']->get("/incidents/$incRep")['body'], 'Repeat 40'));
+check('recurrence triggers reassessment of linked risks (history event added)', (int)$pdo->query("SELECT COUNT(*) FROM risk_history WHERE event='reassessment_triggered' AND changes LIKE '%recurrence%'")->fetchColumn() >= 1);
+check('patterns page lists the IT/category pair with 3+ incidents', str_contains($c['risk']->get('/incidents/patterns')['body'], 'class="num">3<') || (int)preg_match('/class="num">[3-9]</', $c['risk']->get('/incidents/patterns')['body']) === 1);
+check('patterns page is scoped (branch liaison sees nothing from IT)', !str_contains($c['tripoli']->get('/incidents/patterns')['body'], 'Information Technology'));

@@ -1,6 +1,12 @@
 <?php
 // نصوص مكتبة الضوابط واختبارها (العربية). يجب أن تتطابق المفاتيح مع en_ctl.php.
 return [
+    'enum.rsrc.insurance' => 'تأمين', 'enum.rsrc.customer' => 'عميل', 'enum.rsrc.employee' => 'موظف', 'enum.rsrc.supplier' => 'مورد', 'enum.rsrc.other' => 'أخرى',
+    'incident.basel_type' => 'نوع الحدث (بازل)', 'incident.business_line' => 'خط الأعمال', 'incident.product' => 'المنتج', 'incident.system_name' => 'النظام', 'incident.recovery_source' => 'مصدر الاسترداد', 'incident.recovery_source_hint' => 'إلزامي عند وجود مبلغ مسترد.', 'incident.non_financial' => 'الأثر غير المالي',
+    'incident.err_recovery_source' => 'اختر مصدر المبلغ المسترد.', 'incident.err_closed_needs_actions' => 'سجّل الإجراءات التصحيحية قبل إغلاق الحادث.', 'incident.err_closed_needs_basel' => 'اختر نوع الحدث (بازل) قبل إغلاق الحادث.',
+    'incident.escalated_note' => 'تجاوز هذا الحادث حد التصعيد (:at). أُرسلت المخاطر المرتبطة لإعادة التقييم.', 'incident.recurrence' => 'نمط متكرر', 'incident.recurrence_note' => ':n حوادث مشابهة (نفس الفئة والإدارة) في الأشهر الاثني عشر قبل هذا الحادث. أُرسلت المخاطر المرتبطة لإعادة التقييم.',
+    'incident.patterns' => 'أنماط الحوادث المتكررة', 'incident.patterns_hint' => 'أزواج الفئة والإدارة التي بها 3 حوادث أو أكثر في آخر 12 شهراً', 'incident.no_patterns' => 'لا نمط متكرر.', 'incident.last_occurrence' => 'آخر وقوع',
+    'settings.incident_threshold' => 'حد تصعيد الحوادث (صافي الخسارة)', 'settings.incident_threshold_hint' => 'الحوادث التي يبلغ صافي خسارتها هذا الحد أو أكثر تُصعَّد وتُطلق إعادة تقييم المخاطر المرتبطة. اتركه فارغاً للإيقاف.', 'history.reassessment_triggered' => 'إعادة تقييم أطلقها حادث',
     'ctl.overclaim' => 'التقييم المتبقي أقل من الأصلي بمقدار :n نقاط، لكن الضوابط المرتبطة غير مثبتة الفعالية. اختبر الضوابط أو أعد النظر في التقييم المتبقي.', 'dash.unproven' => 'مخاطر تعتمد على ضوابط غير مثبتة',
     'nav.controls' => 'مكتبة الضوابط', 'common.archived' => 'مؤرشف',
     'enum.ctype.preventive' => 'وقائي', 'enum.ctype.detective' => 'كشفي', 'enum.ctype.corrective' => 'تصحيحي',

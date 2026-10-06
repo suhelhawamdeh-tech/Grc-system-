@@ -155,7 +155,7 @@ foreach ($it as $f) {
     preg_match_all("/enum_label\('([a-z_]+)', '([a-z_]+)'\)/", $src, $m3); foreach ($m3[1] as $i => $g) $used[] = "enum.$g." . $m3[2][$i];
 }
 $missing = array_values(array_diff(array_unique($used), array_keys($en)));
-$missing = array_values(array_filter($missing, fn($k) => !preg_match('/^(app\.|bia\.gap_$|report\.board_pack$|audit\.view$|scales\.(levels_updated|bands_updated|approved)$|dash\.heat_caption_$|settings\.manage$|(appetite|kri|rcsa)\.(manage|view|report|respond|created|updated|breach_detected|breach_recorded|breach_updated|reading_added|template_created|template_updated)$)/', $k)));
+$missing = array_values(array_filter($missing, fn($k) => !preg_match('/^(app\.|incident\.(escalated|reassessment_triggered)$|bia\.gap_$|report\.board_pack$|audit\.view$|scales\.(levels_updated|bands_updated|approved)$|dash\.heat_caption_$|settings\.manage$|(appetite|kri|rcsa)\.(manage|view|report|respond|created|updated|breach_detected|breach_recorded|breach_updated|reading_added|template_created|template_updated)$)/', $k)));
 check('i18n: all referenced keys exist', $missing === [], implode(',', $missing));
 $css = file_get_contents($root . '/public/assets/css/app.css');
 check('RTL: stylesheet uses logical properties only', !preg_match('/(margin|padding)-(left|right)\s*:|text-align\s*:\s*(left|right)|\b(left|right)\s*:\s*-?\d/', $css));
@@ -404,7 +404,7 @@ check('no hard delete route exists', $admin->post("/risks/$rid/delete", [], '/ri
 
 // =========================================================================
 section('Incidents: loss calculation and validation');
-$iF = fn(array $o = []) => $o + ['event_type' => 'incident', 'title' => 'Test incident', 'description' => 'd', 'occurrence_date' => date('Y-m-d', strtotime('-5 days')), 'discovery_date' => date('Y-m-d', strtotime('-3 days')), 'category_id' => $cats, 'department_id' => $retail, 'branch_id' => $trp, 'gross_loss' => '1,000.500', 'recoveries' => '250.250', 'status' => 'open', 'root_cause' => 'rc'];
+$iF = fn(array $o = []) => $o + ['event_type' => 'incident', 'title' => 'Test incident', 'description' => 'd', 'occurrence_date' => date('Y-m-d', strtotime('-5 days')), 'discovery_date' => date('Y-m-d', strtotime('-3 days')), 'category_id' => $cats, 'department_id' => $retail, 'branch_id' => $trp, 'gross_loss' => '1,000.500', 'recoveries' => '250.250', 'recovery_source' => 'insurance', 'status' => 'open', 'root_cause' => 'rc'];
 $n0 = (int)$pdo->query('SELECT COUNT(*) FROM incidents')->fetchColumn();
 $r = $admin->post('/incidents', $iF(['risk_ids' => [$rid]]), '/incidents/new'); preg_match('#/incidents/(\d+)$#', (string)$r['loc'], $m); $iid = (int)($m[1] ?? 0);
 $row = $pdo->query("SELECT * FROM incidents WHERE id=$iid")->fetch();

@@ -21,6 +21,9 @@
   <dt><?= e(t('incident.gross_loss')) ?></dt><dd class="mono"><?= e(money($i['gross_loss'])) ?></dd>
   <dt><?= e(t('incident.recoveries')) ?></dt><dd class="mono"><?= e(money($i['recoveries'])) ?></dd>
   <dt><?= e(t('incident.net_loss')) ?></dt><dd class="mono"><strong><?= e(money($i['net_loss'])) ?></strong></dd>
+  <dt><?= e(t('incident.basel_type')) ?></dt><dd><?= e(lname(['name_en' => $meta['bt_en'], 'name_ar' => $meta['bt_ar']]) ?: '—') ?></dd><dt><?= e(t('incident.business_line')) ?></dt><dd><?= e(lname(['name_en' => $meta['bl_en'], 'name_ar' => $meta['bl_ar']]) ?: '—') ?></dd>
+  <dt><?= e(t('incident.product')) ?> / <?= e(t('incident.system_name')) ?></dt><dd><?= e(($i['product'] ?? '—') . ' / ' . ($i['system_name'] ?? '—')) ?></dd>
+  <dt><?= e(t('incident.recovery_source')) ?></dt><dd><?= $i['recovery_source'] ? e(t('enum.rsrc.' . $i['recovery_source'])) : '—' ?></dd><dt><?= e(t('incident.non_financial')) ?></dt><dd class="pre"><?= e($i['non_financial_impact'] ?? '—') ?></dd>
   <dt><?= e(t('incident.root_cause')) ?></dt><dd class="pre"><?= e($i['root_cause'] ?? '—') ?></dd>
   <dt><?= e(t('incident.corrective_actions')) ?></dt><dd class="pre"><?= e($i['corrective_actions'] ?? '—') ?></dd></dl></section>
 </div>
@@ -34,3 +37,6 @@
     <div class="field"><label for="file"><?= e(t('upload.choose')) ?></label><input type="file" id="file" name="file" required accept=".pdf,.png,.jpg,.jpeg,.txt,.docx,.xlsx"><p class="hint"><?= e(t('upload.rules', ['max' => '5 MB', 'types' => 'pdf, png, jpg, txt, docx, xlsx'])) ?></p></div>
     <button class="btn secondary" type="submit"><?= e(t('upload.submit')) ?></button></form><?php endif; ?></section>
 </div>
+<?php if ($i['escalated_at']): ?><div class="msg error" role="alert"><?= e(t('incident.escalated_note', ['at' => fdatetime($i['escalated_at'])])) ?></div><?php endif; ?>
+<?php if (count($similar) >= 2): ?><section class="card"><h2><?= icon('alert') ?> <?= e(t('incident.recurrence')) ?></h2><p><?= e(t('incident.recurrence_note', ['n' => count($similar)])) ?></p>
+<ul class="task-list"><?php foreach ($similar as $x): ?><li><a href="<?= e(url('incidents/' . $x['id'])) ?>"><?= e($x['incident_code'] . ' — ' . $x['title']) ?></a><span class="badge"><?= e(fdate($x['occurrence_date'])) ?></span></li><?php endforeach; ?></ul></section><?php endif; ?>

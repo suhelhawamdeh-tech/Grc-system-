@@ -7,18 +7,20 @@ use App\Core\Auth;
 use App\Core\Db;
 use App\Core\Money;
 use App\Core\Perm;
+use App\Core\Settings;
 use App\Core\Request;
 use App\Core\Scope;
 use App\Core\Validator;
 use App\Support\Csv;
 use App\Support\IncidentFilter;
+use App\Support\IncidentPatterns;
 use App\Support\Ref;
 
 final class IncidentController extends Controller
 {
     private const PER_PAGE = 25;
     private const TRACKED = ['event_type', 'title', 'description', 'occurrence_date', 'discovery_date', 'department_id', 'branch_id', 'category_id',
-        'gross_loss', 'recoveries', 'net_loss', 'root_cause', 'corrective_actions', 'status'];
+        'gross_loss', 'recoveries', 'net_loss', 'root_cause', 'corrective_actions', 'status', 'basel_event_type_id', 'business_line_id', 'product', 'system_name', 'recovery_source', 'non_financial_impact'];
 
     private function lists(array $u): array
     {
@@ -70,7 +72,18 @@ final class IncidentController extends Controller
         [$w, $p] = Scope::sql($u, 'r');
         $risks = Db::all('SELECT r.id, r.risk_code, r.title FROM risks r JOIN incident_risks ir ON ir.risk_id = r.id WHERE ir.incident_id = ? AND ' . $w, array_merge([$id], $p));
         $atts = Db::all('SELECT a.*, u.full_name FROM attachments a JOIN users u ON u.id = a.uploaded_by WHERE a.entity_type = ? AND a.entity_id = ? AND a.deleted_at IS NULL ORDER BY a.id DESC', ['incident', $id]);
-        return $this->view('incidents/show', ['title' => $i['incident_code'] . ' — ' . $i['title'], 'i' => $i, 'risks' => $risks, 'attachments' => $atts]);
+        $similar = $i['event_type'] === 'incident' ? IncidentPatterns::similar($u, $id, (int)$i['category_id'], (int)$i['department_id'], (string)$i['occurrence_date']) : [];
+        $meta = Db::one('SELECT (SELECT name_en FROM basel_event_types WHERE id = ?) AS bt_en, (SELECT name_ar FROM basel_event_types WHERE id = ?) AS bt_ar, (SELECT name_en FROM business_lines WHERE id = ?) AS bl_en, (SELECT name_ar FROM business_lines WHERE id = ?) AS bl_ar', [$i['basel_event_type_id'], $i['basel_event_type_id'], $i['business_line_id'], $i['business_line_id']]);
+        return $this->view('incidents/show', ['title' => $i['incident_code'] . ' — ' . $i['title'], 'i' => $i, 'risks' => $risks, 'attachments' => $atts, 'similar' => $similar, 'meta' => $meta]);
+    }
+
+    /** Categories and departments with repeated incidents in the last 12 months. */
+    public function patterns(): string
+    {
+        $u = $this->user();
+        [$w, $p] = Scope::sql($u, 'i');
+        $rows = Db::all("SELECT c.name_en AS c_en, c.name_ar AS c_ar, d.name_en AS d_en, d.name_ar AS d_ar, i.category_id, i.department_id, COUNT(*) AS n, COALESCE(SUM(i.net_loss),0) AS net, MAX(i.occurrence_date) AS last_date FROM incidents i JOIN risk_categories c ON c.id = i.category_id JOIN departments d ON d.id = i.department_id WHERE i.archived_at IS NULL AND i.event_type = 'incident' AND i.occurrence_date >= DATE_SUB(CURDATE(), INTERVAL 365 DAY) AND $w GROUP BY i.category_id, i.department_id, c.name_en, c.name_ar, d.name_en, d.name_ar HAVING COUNT(*) >= 3 ORDER BY n DESC, net DESC LIMIT 50", $p);
+        return $this->view('incidents/patterns', ['title' => t('incident.patterns'), 'rows' => $rows]);
     }
 
     public function create(): string
@@ -103,7 +116,7 @@ final class IncidentController extends Controller
         $u = $this->user();
         return $this->view('incidents/form', [
             'title' => $existing ? t('incident.edit') : t('incident.new'), 'i' => $d, 'existing' => $existing, 'lists' => $this->lists($u),
-            'risks' => $this->linkableRisks($u), 'linked' => array_map('intval', $linked),
+            'risks' => $this->linkableRisks($u), 'linked' => array_map('intval', $linked), 'basel' => Db::all('SELECT * FROM basel_event_types ORDER BY id'), 'lines' => Db::all('SELECT * FROM business_lines ORDER BY id'),
         ]);
     }
 
@@ -124,6 +137,7 @@ final class IncidentController extends Controller
             return $id;
         });
         $this->audit('incident.created', 'incident', $id, ['type' => $data['event_type'], 'gross' => $data['gross_loss'], 'recoveries' => $data['recoveries'], 'net' => $data['net_loss']]);
+        $this->afterSave($id, $data, $links);
         $this->redirect(url('incidents/' . $id), 'incident.created');
     }
 
@@ -150,6 +164,7 @@ final class IncidentController extends Controller
             }
         });
         $this->audit('incident.updated', 'incident', $id, ['changes' => $changes]);
+        $this->afterSave($id, $data + ['escalated_at' => $old['escalated_at']], $links);
         $this->redirect(url('incidents/' . $id), 'incident.updated');
     }
 
@@ -225,6 +240,29 @@ final class IncidentController extends Controller
         if ($v->str('status') === 'closed' && $v->str('root_cause') === '') {
             $v->fail('root_cause', 'incident.err_closed_needs_root_cause');
         }
+        $basel = Request::int('basel_event_type_id');
+        $bline = Request::int('business_line_id');
+        if ($basel !== null && !Db::val('SELECT 1 FROM basel_event_types WHERE id = ?', [$basel])) {
+            $v->fail('basel_event_type_id', 'validation.invalid_choice', ['field' => t('incident.basel_type')]);
+        }
+        if ($bline !== null && !Db::val('SELECT 1 FROM business_lines WHERE id = ?', [$bline])) {
+            $v->fail('business_line_id', 'validation.invalid_choice', ['field' => t('incident.business_line')]);
+        }
+        $v->max('product', 'incident.product', 100)->max('system_name', 'incident.system_name', 100)->max('non_financial_impact', 'incident.non_financial', 2000);
+        $src = $v->str('recovery_source');
+        if ($src !== '' && !in_array($src, ['insurance', 'customer', 'employee', 'supplier', 'other'], true)) {
+            $v->fail('recovery_source', 'validation.invalid_choice', ['field' => t('incident.recovery_source')]);
+        } elseif ($rec !== null && $rec > 0 && $src === '') {
+            $v->fail('recovery_source', 'incident.err_recovery_source');
+        }
+        if ($v->str('status') === 'closed') {
+            if ($v->str('corrective_actions') === '') {
+                $v->fail('corrective_actions', 'incident.err_closed_needs_actions');
+            }
+            if ($basel === null) {
+                $v->fail('basel_event_type_id', 'incident.err_closed_needs_basel');
+            }
+        }
 
         // Linked risks must be ones the user can see.
         $links = [];
@@ -248,8 +286,31 @@ final class IncidentController extends Controller
             'occurrence_date' => $occ, 'discovery_date' => $disc, 'department_id' => $dept, 'branch_id' => $branch, 'category_id' => $cat,
             'gross_loss' => Money::toDb($gross ?? 0), 'recoveries' => Money::toDb($rec ?? 0), 'net_loss' => Money::toDb($net),
             'root_cause' => $nz($v->str('root_cause')), 'corrective_actions' => $nz($v->str('corrective_actions')), 'status' => $v->str('status'),
+            'basel_event_type_id' => $basel, 'business_line_id' => $bline, 'product' => $nz($v->str('product')), 'system_name' => $nz($v->str('system_name')),
+            'recovery_source' => $src !== '' && ($rec ?? 0) > 0 ? $src : null, 'non_financial_impact' => $nz($v->str('non_financial_impact')),
         ];
         return [$data, $links, $v->errors()];
+    }
+
+    /** Escalation by loss threshold, recurrence detection and the resulting risk reassessment trigger. */
+    private function afterSave(int $id, array $data, array $links): void
+    {
+        $now = date('Y-m-d H:i:s');
+        $th = Money::parse((string)(Settings::get('incident_escalation_threshold', '') ?? ''), Money::decimals());
+        $escalated = false;
+        if ($th !== null && $th > 0 && empty($data['escalated_at']) && Money::fromDb($data['net_loss']) >= $th) {
+            Db::update('incidents', ['escalated_at' => $now], 'id = ?', [$id]);
+            $this->audit('incident.escalated', 'incident', $id, ['net_loss' => $data['net_loss'], 'threshold' => Money::toDb($th)]);
+            $escalated = true;
+        }
+        $recurrence = $data['event_type'] === 'incident' ? IncidentPatterns::similarCount($id, (int)$data['category_id'], (int)$data['department_id'], (string)$data['occurrence_date']) : 0;
+        if (($escalated || $recurrence >= 2) && $links) {
+            foreach ($links as $rid) {
+                Db::exec('UPDATE risks SET review_date = ? WHERE id = ? AND (review_date IS NULL OR review_date > ?)', [date('Y-m-d'), $rid, date('Y-m-d')]);
+                Db::insert('risk_history', ['risk_id' => $rid, 'user_id' => $this->user()['id'], 'event' => 'reassessment_triggered', 'changes' => json_encode(['incident_id' => $id, 'reason' => $escalated ? 'escalation' : 'recurrence'], JSON_UNESCAPED_UNICODE), 'created_at' => $now]);
+            }
+            $this->audit('incident.reassessment_triggered', 'incident', $id, ['risks' => $links, 'reason' => $escalated ? 'escalation' : 'recurrence']);
+        }
     }
 
     public function archive(int $id): never
