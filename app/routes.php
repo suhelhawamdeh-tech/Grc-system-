@@ -218,3 +218,14 @@ $router->post('/bia/{id}/submit', 'BiaController@submit', 'bia.manage');
 $router->post('/bia/{id}/archive', 'BiaController@archive', 'bia.manage');
 $router->get('/approvals', 'ApprovalController@index', 'approval.decide');
 $router->post('/approvals/{id}/decide', 'ApprovalController@decide', 'approval.decide');
+
+// ---- Release 3: regulatory circulars
+$router->get('/circulars', 'CircularController@index', 'circular.view');
+$router->get('/circulars/new', 'CircularController@create', 'circular.manage');
+$router->post('/circulars', 'CircularController@store', 'circular.manage');
+$router->get('/circulars/{id}', 'CircularController@show', 'circular.view');
+$router->get('/circulars/{id}/edit', 'CircularController@edit', 'circular.manage');
+$router->post('/circulars/{id}', 'CircularController@update', 'circular.manage');
+$router->post('/circulars/{id}/distribute', 'CircularController@distribute', 'circular.manage');
+$router->post('/circulars/{id}/acknowledge', 'CircularController@acknowledge', 'circular.ack');
+$router->post('/circulars/{id}/attachments', 'CircularController@upload', 'circular.manage');

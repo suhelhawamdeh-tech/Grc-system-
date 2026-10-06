@@ -195,6 +195,15 @@ final class DemoSeeder
                 Db::exec('INSERT INTO bia_process_systems (process_id, system_id) VALUES (?, ?)', [$pid, $sysIds[$k]]);
             }
         }
+        // Regulatory circulars (synthetic)
+        foreach ([['Instruction on customer due diligence updates', 'distributed', 'Update CDD files for high-risk customers within the period.', '+20 days', ['RET', 'CMP']], ['Circular on business continuity testing', 'closed', null, null, ['IT']]] as $i => [$ti, $st, $act, $due, $dps]) {
+            $cid = Db::insert('regulatory_circulars', ['title' => $ti, 'issuer' => 'Regulator (synthetic)', 'reference_no' => 'REG/' . date('Y') . '/' . ($i + 1), 'issued_on' => date('Y-m-d', strtotime('-30 days')), 'received_on' => date('Y-m-d', strtotime('-25 days')), 'summary' => 'Synthetic circular for demonstration.', 'required_action' => $act, 'due_date' => $due ? date('Y-m-d', strtotime($due)) : null,
+                'status' => $st, 'closed_at' => $st === 'closed' ? $now : null, 'created_by' => $users['demo.compliance'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('regulatory_circulars', 'CIR', $cid, 4);
+            foreach ($dps as $dp) {
+                Db::insert('circular_distribution', ['circular_id' => $cid, 'department_id' => $dep[$dp], 'status' => $st === 'closed' ? 'acknowledged' : 'pending', 'acknowledged_by' => $st === 'closed' ? $users['demo.dept.it'] : null, 'acknowledged_at' => $st === 'closed' ? $now : null, 'action_taken' => $st === 'closed' ? 'Test plan updated (synthetic).' : null]);
+            }
+        }
         // KRIs with a few months of readings
         foreach ([
             ['Failed privileged logins per month', 'IT', 'demo.dept.it', 'count', 'higher_worse', 8, 15, [4, 6, 9, 12]],

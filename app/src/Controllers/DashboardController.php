@@ -98,6 +98,10 @@ final class DashboardController extends Controller
             $p['ctl_overdue'] = (int)Db::val("SELECT COUNT(*) FROM controls c WHERE c.archived_at IS NULL AND c.next_test_due < ? AND $w", array_merge([$today], $pp));
             $p['ctl_weak'] = (int)Db::val("SELECT COUNT(*) FROM controls c WHERE c.archived_at IS NULL AND c.last_result IN ('ineffective','partially_effective') AND $w", $pp);
         }
+        if (Perm::roleHas($u['role'], 'circular.view')) {
+            $dw = Perm::scopeType($u['role']) === 'department' ? ' AND d.department_id = ' . (int)($u['department_id'] ?? 0) : '';
+            $p['cir_pending'] = (int)Db::val("SELECT COUNT(*) FROM circular_distribution d JOIN regulatory_circulars c ON c.id = d.circular_id WHERE c.status = 'distributed' AND d.status = 'pending'" . $dw);
+        }
         if (Perm::roleHas($u['role'], 'bia.view')) {
             [$w, $pp] = Scope::sqlDept($u, 'p');
             $p['bia_unapproved'] = (int)Db::val("SELECT COUNT(*) FROM bia_processes p WHERE p.archived_at IS NULL AND p.criticality IN ('critical','high') AND p.status <> 'approved' AND $w", $pp);

@@ -51,6 +51,17 @@ final class AttachmentController extends Controller
             case 'control_test':
                 $row = Db::one('SELECT c.department_id FROM control_tests t JOIN controls c ON c.id = t.control_id WHERE t.id = ?', [$id]);
                 return $row && Scope::allowsDept($user, $row) && ($forEdit ? $can('control.test') : $can('control.view'));
+            case 'circular':
+                if ($forEdit) {
+                    return $can('circular.manage') && Db::val('SELECT 1 FROM regulatory_circulars WHERE id = ?', [$id]);
+                }
+                if (!$can('circular.view')) {
+                    return false;
+                }
+                if (Perm::scopeType($role) === 'department') {
+                    return (bool)Db::val("SELECT 1 FROM circular_distribution d JOIN regulatory_circulars c ON c.id = d.circular_id WHERE c.id = ? AND c.status <> 'draft' AND d.department_id = ?", [$id, (int)($user['department_id'] ?? 0)]);
+                }
+                return (bool)Db::val(Perm::roleHas($role, 'circular.manage') ? 'SELECT 1 FROM regulatory_circulars WHERE id = ?' : "SELECT 1 FROM regulatory_circulars WHERE id = ? AND status <> 'draft'", [$id]);
             case 'sharia_ruling':
                 return Db::val('SELECT 1 FROM sharia_rulings WHERE id = ?', [$id]) && ($forEdit ? $can('sharia.manage') : $can('sharia.view'));
             case 'sharia_event':
@@ -104,6 +115,7 @@ final class AttachmentController extends Controller
             'risk' => 'risks/' . $a['entity_id'],
             'incident' => 'incidents/' . $a['entity_id'],
             'obligation' => 'compliance/' . $a['entity_id'],
+            'circular' => 'circulars/' . $a['entity_id'],
             'sharia_ruling' => 'sharia/rulings/' . $a['entity_id'],
             'sharia_event' => 'sharia/events/' . $a['entity_id'],
             'control_test' => 'controls/' . (int)Db::val('SELECT control_id FROM control_tests WHERE id = ?', [$a['entity_id']]),

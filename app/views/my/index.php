@@ -9,6 +9,8 @@ $cfg = [
   'control_tests' => ['icon' => 'flask', 'label' => 'my.control_tests', 'link' => fn($r) => url('controls/' . $r['id']) . '#test'],
   'sharia_events' => ['icon' => 'moon', 'label' => 'my.sharia_events', 'link' => fn($r) => url('sharia/events/' . $r['id'])],
   'sharia_reviews' => ['icon' => 'moon', 'label' => 'my.sharia_reviews', 'link' => fn($r) => url('sharia/reviews/' . $r['id'])],
+  'circulars' => ['icon' => 'file', 'label' => 'my.circulars', 'link' => fn($r) => url('circulars/' . $r['id']) . '#ack'],
+  'circulars_overdue' => ['icon' => 'file', 'label' => 'my.circulars_overdue', 'link' => fn($r) => url('circulars/' . $r['id'])],
   'kri_breaches' => ['icon' => 'pulse', 'label' => 'my.kri_breaches', 'link' => fn($r) => url('kris/' . $r['kri_id']) . '#breaches'],
   'approvals' => ['icon' => 'check', 'label' => 'my.approvals', 'link' => fn($r) => url('approvals')],
   'bia_review' => ['icon' => 'layers', 'label' => 'my.bia_review', 'link' => fn($r) => url('bia/' . $r['id'])],
