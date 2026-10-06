@@ -47,7 +47,7 @@ final class ImportController extends Controller
             $this->notFound();
         }
         $sample = ['risks' => [['Cash handling errors at branches', 'Differences found during counts', 'OP', 'RET', 'demo.risk', 3, 4, 2, 3, 'Dual control introduced', 'mitigate', '', 'Daily cash count', date('Y-m-d')]],
-            'kri_readings' => [['KRI-0001', date('Y-m-d'), '4.5', 'Monthly figure']], 'obligations' => [['Submit quarterly liquidity report', 'Central bank instruction', 'FIN', 'demo.compliance', 'quarterly', date('Y-m-d', strtotime('+30 days')), '']]][$t];
+            'kri_readings' => [['KRI-0001', date('Y-m-d'), '4.5', 'Monthly figure']], 'gl_entries' => [[date('Y-m', strtotime('-1 month')), '6101', '1250.500', 'Operational losses booked']], 'obligations' => [['Submit quarterly liquidity report', 'Central bank instruction', 'FIN', 'demo.compliance', 'quarterly', date('Y-m-d', strtotime('+30 days')), '']]][$t];
         Csv::download('template-' . $t . '.csv', Importer::TARGETS[$t], $sample);
     }
 

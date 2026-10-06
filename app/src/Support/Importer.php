@@ -16,8 +16,9 @@ final class Importer
         'risks' => ['title', 'description', 'category_code', 'department_code', 'owner_username', 'inh_likelihood', 'inh_impact', 'res_likelihood', 'res_impact', 'res_rationale', 'treatment_decision', 'treatment_notes', 'controls_description', 'identified_date'],
         'kri_readings' => ['kri_code', 'reading_date', 'value', 'comment'],
         'obligations' => ['title', 'source', 'department_code', 'owner_username', 'frequency', 'due_date', 'description'],
+        'gl_entries' => ['period', 'account', 'amount', 'description'],
     ];
-    public const PERM = ['risks' => 'risk.create', 'kri_readings' => 'kri.report', 'obligations' => 'compliance.manage'];
+    public const PERM = ['risks' => 'risk.create', 'kri_readings' => 'kri.report', 'obligations' => 'compliance.manage', 'gl_entries' => 'recon.manage'];
 
     /** @return array{rows:array,error:?string} rows are assoc arrays keyed by the template headers */
     public static function parse(string $raw, string $target): array
@@ -37,7 +38,7 @@ final class Importer
         }
         $head = array_map(static fn($h) => strtolower(trim((string)$h)), $head);
         $need = self::TARGETS[$target];
-        $required = ['risks' => ['title', 'description', 'category_code', 'department_code', 'owner_username', 'inh_likelihood', 'inh_impact', 'res_likelihood', 'res_impact'], 'kri_readings' => ['kri_code', 'reading_date', 'value'], 'obligations' => ['title', 'source', 'department_code', 'owner_username', 'frequency', 'due_date']][$target];
+        $required = ['risks' => ['title', 'description', 'category_code', 'department_code', 'owner_username', 'inh_likelihood', 'inh_impact', 'res_likelihood', 'res_impact'], 'kri_readings' => ['kri_code', 'reading_date', 'value'], 'obligations' => ['title', 'source', 'department_code', 'owner_username', 'frequency', 'due_date'], 'gl_entries' => ['period', 'account', 'amount']][$target];
         if (array_diff($required, $head)) {
             return ['rows' => [], 'error' => 'import.err_headers'];
         }
@@ -160,6 +161,23 @@ final class Importer
                     }
                     $n += ['kri' => $k, 'value' => (int)$val, 'date' => $r['reading_date'], 'comment' => $r['comment']];
                 }
+            } elseif ($target === 'gl_entries') {
+                $d = \DateTimeImmutable::createFromFormat('!Y-m', $r['period']);
+                if (!$d || $d->format('Y-m') !== $r['period'] || (int)$d->format('Y') < 1990 || $r['period'] > date('Y-m')) {
+                    $e[] = t('import.e_period');
+                } elseif (Db::val('SELECT 1 FROM gl_entries WHERE period = ?', [$r['period']])) {
+                    $e[] = t('import.e_period_loaded', ['v' => $r['period']]);
+                }
+                if ($r['account'] === '' || mb_strlen($r['account']) > 40) {
+                    $e[] = t('import.e_account');
+                }
+                $am = Money::parse($r['amount'], Money::decimals());
+                if ($r['amount'] === '' || $am === null) {
+                    $e[] = t('validation.amount', ['field' => 'amount']);
+                }
+                if (!$e) {
+                    $n += ['period' => $r['period'], 'account' => $r['account'], 'amount' => (int)$am, 'description' => $r['description'] ?: null];
+                }
             } else {
                 if ($r['title'] === '' || mb_strlen($r['title']) > 250 || $r['source'] === '' || mb_strlen($r['source']) > 250) {
                     $e[] = t('import.e_title');
@@ -205,6 +223,8 @@ final class Importer
                     }
                 } elseif ($target === 'kri_readings') {
                     KriReadings::record($r['kri'], $r['value'], $r['date'], $r['comment'], (int)$user['id']);
+                } elseif ($target === 'gl_entries') {
+                    Db::insert('gl_entries', ['period' => $r['period'], 'account' => $r['account'], 'description' => $r['description'], 'amount' => Money::toDb($r['amount']), 'imported_by' => $user['id'], 'imported_at' => $now]);
                 } else {
                     $id = Db::insert('compliance_obligations', ['title' => $r['title'], 'source' => $r['source'], 'description' => $r['description'], 'department_id' => $r['department_id'], 'owner_user_id' => $r['owner_user_id'], 'frequency' => $r['frequency'], 'due_date' => $r['due_date'], 'status' => 'not_started', 'created_by' => $user['id'], 'created_at' => $now, 'updated_at' => $now]);
                     Db::update('compliance_obligations', ['code' => sprintf('OBL-%04d', $id)], 'id = ?', [$id]);

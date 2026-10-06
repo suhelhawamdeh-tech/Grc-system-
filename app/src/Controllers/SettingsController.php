@@ -12,7 +12,7 @@ use App\Support\Upload;
 
 final class SettingsController extends Controller
 {
-    private const KEYS = ['org_name_en', 'org_name_ar', 'currency_code', 'currency_decimals', 'currency_symbol_en', 'currency_symbol_ar', 'default_lang', 'review_warning_days', 'incident_escalation_threshold', 'accept_level2_min', 'mfa_required'];
+    private const KEYS = ['org_name_en', 'org_name_ar', 'currency_code', 'currency_decimals', 'currency_symbol_en', 'currency_symbol_ar', 'default_lang', 'review_warning_days', 'incident_escalation_threshold', 'accept_level2_min', 'mfa_required', 'recon_tolerance'];
 
     public function index(): string
     {
@@ -35,6 +35,9 @@ final class SettingsController extends Controller
         $th = $v->str('incident_escalation_threshold');
         if ($th !== '' && \App\Core\Money::parse($th, \App\Core\Money::decimals()) === null) {
             $v->fail('incident_escalation_threshold', 'validation.amount', ['field' => t('settings.incident_threshold')]);
+        }
+        if ($v->str('recon_tolerance') !== '' && \App\Core\Money::parse($v->str('recon_tolerance'), \App\Core\Money::decimals()) === null) {
+            $v->fail('recon_tolerance', 'validation.amount', ['field' => t('settings.recon_tolerance')]);
         }
         if (!$v->ok()) {
             $this->invalid($v->errors(), url('admin/settings'));

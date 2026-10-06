@@ -69,6 +69,8 @@ $router->get('/actions', 'ActionController@index', 'risk.view');
 $router->get('/incidents', 'IncidentController@index', 'incident.view');
 $router->get('/incidents/new', 'IncidentController@create', 'incident.create');
 $router->post('/incidents', 'IncidentController@store', 'incident.create');
+$router->get('/incidents/reconciliation', 'ReconController@index', 'recon.view');
+$router->post('/incidents/reconciliation/delete', 'ReconController@deletePeriod', 'recon.manage');
 $router->get('/incidents/patterns', 'IncidentController@patterns', 'incident.view');
 $router->get('/incidents/export', 'IncidentController@export', 'export.run');
 $router->get('/incidents/print', 'IncidentController@printList', 'export.run');
