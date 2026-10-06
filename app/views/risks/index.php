@@ -5,6 +5,7 @@
     <?php if (can('risk.create')): ?><a class="btn gold" href="<?= e(url('risks/new')) ?>"><?= e(t('risk.new')) ?></a><?php endif; ?>
     <?php if (can('export.run')): ?>
       <a class="btn secondary" href="<?= e(url('risks/export') . qs(['page' => null, 'sep' => null])) ?>">CSV</a>
+      <a class="btn secondary" href="<?= e(url('risks/export') . qs(['page' => null, 'sep' => null, 'format' => 'xlsx'])) ?>">Excel</a>
       <a class="btn secondary" href="<?= e(url('risks/export') . qs(['page' => null, 'sep' => ';'])) ?>" title="<?= e(t('common.csv_semicolon_hint')) ?>">CSV (;)</a>
       <a class="btn secondary" href="<?= e(url('risks/print') . qs(['page' => null, 'sep' => null])) ?>" target="_blank" rel="noopener"><?= e(t('common.print')) ?></a>
     <?php endif; ?>

@@ -79,3 +79,22 @@ cPanel → **SSL/TLS Status** → run **AutoSSL** for `grc.example.com` (Bluehos
 * Confirm *System status → Config file outside web root* is OK.
 * Use unique passwords, deactivate leavers, review the audit log.
 * Keep PHP updated via MultiPHP Manager.
+
+
+## 13. E-mail notifications and the daily cron job (release 1.1)
+1. Add a `mail` section to the config file (outside the web root; never commit it):
+```php
+'mail' => ['host' => 'mail.example.com', 'port' => 587, 'secure' => 'tls', // tls | ssl | none
+           'user' => 'grc@example.com', 'pass' => '...', 'from' => 'grc@example.com', 'from_name' => 'GRC platform',
+           'escalation_days' => 7],
+```
+and, inside `'app'`, `'base_url' => 'https://grc.example.com'` so digests contain a link.
+2. In **Administration → System** press *Send test* to verify delivery.
+3. In cPanel → **Cron Jobs** add a daily job, for example `0 7 * * * /usr/local/bin/php /home/ACCOUNT/grc/bin/notify.php` (use your real PHP path). One digest per user per day is sent; items overdue for more than `escalation_days` go to the risk managers.
+4. Users can switch their reminders off in **My account**. Message bodies are never stored; `email_log` keeps recipient, subject and status only.
+5. Apply the new migrations (004–008): **Administration → System → Apply migrations**, or re-import is not needed on an existing database.
+
+## 14. Production readiness notes (open items, not done by the application)
+- Shared hosting has no high availability or disaster recovery. For production use at a bank, decide on a bank-controlled server, automated off-site backups and a tested restore (backlog GRC-039).
+- Commission an independent penetration test before holding real data (GRC-040).
+- SSO/LDAP, REST API and core-banking integration are not implemented (GRC-031 to GRC-033).

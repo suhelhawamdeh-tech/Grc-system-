@@ -4,6 +4,7 @@
     <?php if (can('incident.create')): ?><a class="btn gold" href="<?= e(url('incidents/new')) ?>"><?= e(t('incident.new')) ?></a><?php endif; ?>
     <?php if (can('export.run')): ?>
       <a class="btn secondary" href="<?= e(url('incidents/export') . qs(['page' => null, 'sep' => null])) ?>">CSV</a>
+      <a class="btn secondary" href="<?= e(url('incidents/export') . qs(['page' => null, 'sep' => null, 'format' => 'xlsx'])) ?>">Excel</a>
       <a class="btn secondary" href="<?= e(url('incidents/export') . qs(['page' => null, 'sep' => ';'])) ?>">CSV (;)</a>
       <a class="btn secondary" href="<?= e(url('incidents/print') . qs(['page' => null, 'sep' => null])) ?>" target="_blank" rel="noopener"><?= e(t('common.print')) ?></a>
     <?php endif; ?>

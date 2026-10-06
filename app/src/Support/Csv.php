@@ -46,6 +46,15 @@ final class Csv
         while (ob_get_level() > 0) {
             ob_end_clean();
         }
+        if (($_GET['format'] ?? '') === 'xlsx' && Xlsx::available()) {
+            $bin = Xlsx::build($header, $rows, 'Export', is_rtl());
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename="' . preg_replace('/[^A-Za-z0-9._-]/', '_', preg_replace('/\.csv$/', '', $filename)) . '.xlsx"');
+            header('Content-Length: ' . strlen($bin));
+            header('X-Content-Type-Options: nosniff');
+            echo $bin;
+            exit;
+        }
         $delim = $delim === ';' ? ';' : ',';
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . preg_replace('/[^A-Za-z0-9._-]/', '_', $filename) . '"');

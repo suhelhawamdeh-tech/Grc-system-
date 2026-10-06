@@ -1,6 +1,6 @@
 <div class="page-head"><div><h1><?= e(t('comp.title_plural')) ?></h1><p class="sub"><?= e(t('comp.subtitle')) ?> · <?= e(t('common.total_n', ['n' => $total])) ?></p></div>
 <div class="actions"><?php if (can('compliance.manage')): ?><a class="btn gold" href="<?= e(url('compliance/new')) ?>"><?= e(t('comp.new')) ?></a><?php endif; ?>
-<?php if (can('export.run')): ?><a class="btn secondary" href="<?= e(url('compliance/export') . qs(['page' => null])) ?>">CSV</a><a class="btn secondary" href="<?= e(url('compliance/export') . qs(['page' => null, 'sep' => ';'])) ?>">CSV (;)</a><?php endif; ?></div></div>
+<?php if (can('export.run')): ?><a class="btn secondary" href="<?= e(url('compliance/export') . qs(['page' => null])) ?>">CSV</a><a class="btn secondary" href="<?= e(url('compliance/export') . qs(['page' => null, 'format' => 'xlsx'])) ?>">Excel</a><a class="btn secondary" href="<?= e(url('compliance/export') . qs(['page' => null, 'sep' => ';'])) ?>">CSV (;)</a><?php endif; ?></div></div>
 <div class="msg info"><?= e(t('comp.disclaimer')) ?></div>
 <form method="get" action="<?= e(url('compliance')) ?>" class="card filters" role="search">
 <?= ff('text', 'q', 'common.search', $f['q']) ?>

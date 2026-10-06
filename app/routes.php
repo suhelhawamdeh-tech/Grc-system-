@@ -66,6 +66,7 @@ $router->post('/incidents/{id}/attachments', 'IncidentController@upload', 'incid
 
 // Reports
 $router->get('/reports', 'ReportController@index', 'export.run');
+$router->get('/reports/board', 'ReportController@board', 'export.run');
 
 // Administration
 $router->get('/admin/users', 'UserController@index', 'users.manage');

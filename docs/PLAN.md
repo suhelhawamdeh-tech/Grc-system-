@@ -45,3 +45,9 @@ Legend: **[x] done and covered by automated tests**, [~] partial, [ ] not done. 
 
 ## Vendor-comparison backlog
 A gap analysis against six vendor proposals and international/regional practice is in `docs/GAP_ANALYSIS_AND_BACKLOG_AR.md` (Arabic) and `docs/LIB_GRC_Gap_Backlog.xlsx`. It supersedes the list above with 43 prioritised items (GRC-001 … GRC-043).
+
+
+## Release 1.1 progress against the vendor-comparison backlog
+Done and tested: GRC-001 control library, GRC-002 control testing, GRC-005 e-mail and escalation (cron), GRC-006 My tasks, GRC-015 BIA, GRC-020 Sharia compliance, GRC-007 Excel export + board pack (printable; no native PDF engine).
+Partial: GRC-004 maker-checker (generic log, wired to BIA only; not yet policies, risk acceptance or incident closure), GRC-003 (controls panel warns on weak or untested controls; no automatic residual suggestion).
+Not started: GRC-008 to GRC-014, GRC-016 to GRC-019, GRC-021 to GRC-038 (see GAP_ANALYSIS_AND_BACKLOG_AR.md), GRC-039 production architecture and GRC-040 penetration test (organisational decisions).

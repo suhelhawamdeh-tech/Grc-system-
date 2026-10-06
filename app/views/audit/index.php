@@ -1,5 +1,5 @@
 <div class="page-head"><div><h1><?= e(t('nav.audit')) ?></h1><p class="sub"><?= e(t('common.total_n', ['n' => $total])) ?></p></div>
-  <div class="actions"><a class="btn secondary" href="<?= e(url('audit/export') . qs(['page' => null])) ?>">CSV</a><a class="btn secondary" href="<?= e(url('audit/export') . qs(['page' => null, 'sep' => ';'])) ?>">CSV (;)</a></div></div>
+  <div class="actions"><a class="btn secondary" href="<?= e(url('audit/export') . qs(['page' => null])) ?>">CSV</a><a class="btn secondary" href="<?= e(url('audit/export') . qs(['page' => null, 'format' => 'xlsx'])) ?>">Excel</a><a class="btn secondary" href="<?= e(url('audit/export') . qs(['page' => null, 'sep' => ';'])) ?>">CSV (;)</a></div></div>
 <form method="get" action="<?= e(url('audit')) ?>" class="card filters">
   <div class="field"><label for="action"><?= e(t('audit.action')) ?></label><input type="text" id="action" name="action" value="<?= e($f['action']) ?>" placeholder="risk."></div>
   <div class="field"><label for="user"><?= e(t('audit.user')) ?></label><input type="text" id="user" name="user" value="<?= e($f['user']) ?>"></div>

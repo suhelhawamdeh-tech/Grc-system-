@@ -1,7 +1,7 @@
 # Test report (session 1)
 
 **Command:** `php tests/run.php` — dependency-free runner; copies the app to a temp dir, wipes two scratch databases, installs on a clean DB, starts PHP's built-in server and drives it over HTTP with a cookie-aware client.
-**Result: 609 checks passed, 0 failed.**
+**Result: 925 checks passed, 0 failed** (609 in the first release plus 316 for release 1.1: usability, controls, Sharia, BIA/approvals, e-mail with a fake SMTP sink, Excel export and board pack). Not verified here: Bluehost, Apache, PHP 8.1–8.3, real SMTP providers, Microsoft Excel opening of the generated .xlsx (structure and XML validity are tested, but the file was not opened in Excel), screen readers.
 
 **Environment actually used:** Linux container, PHP 8.4.19 (CLI, built-in server), MariaDB 10.11.14, curl. Chromium (Playwright) was used only to take screenshots of Arabic/English/mobile pages for a visual check.
 

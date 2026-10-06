@@ -339,3 +339,27 @@ $pdo->exec("DELETE FROM email_log WHERE kind IN ('digest','escalation')"); exec(
 check('unreachable SMTP: CLI exits non-zero and failures are logged', $rc5 === 1 && (int)$pdo->query("SELECT COUNT(*) FROM email_log WHERE status='failed' AND error LIKE 'Cannot connect%'")->fetchColumn() > 0);
 file_put_contents($cfgFile, $cfg0); exec($ncmd(), $o6, $rc6); check('notify without mail config exits with code 3', $rc6 === 3);
 proc_terminate($smtp);
+
+section('Excel export and board pack');
+$xl = $c['risk']->get('/risks/export?format=xlsx');
+$xtmp = tempnam(sys_get_temp_dir(), 'x'); file_put_contents($xtmp, $xl['body']); $zz = new ZipArchive();
+$zopen = $zz->open($xtmp) === true;
+$sheet = $zopen ? (string)$zz->getFromName('xl/worksheets/sheet1.xml') : '';
+check('risk register Excel export is a valid OOXML package with the right content type', $xl['code'] === 200 && str_contains($xl['head'], 'spreadsheetml.sheet') && str_contains($xl['head'], '.xlsx') && $zopen && $zz->getFromName('xl/workbook.xml') !== false && $zz->getFromName('[Content_Types].xml') !== false);
+check('Excel sheet is well-formed XML, has a header row, frozen pane and a row per exported risk', $zopen && @simplexml_load_string($sheet) !== false && str_contains($sheet, 'state="frozen"') && substr_count($sheet, '<row ') === (int)$pdo->query('SELECT COUNT(*) FROM risks WHERE archived_at IS NULL')->fetchColumn() + 1);
+check('Excel keeps Arabic text and sheet is right-to-left in Arabic UI', $zopen && str_contains($sheet, 'rightToLeft="1"') && preg_match('/[\x{0600}-\x{06FF}]/u', $sheet) === 1);
+check('Excel export honours scope: Tripoli liaison sees only branch rows', (function () use ($c, $pdo) { $r = $c['tripoli']->get('/risks/export?format=xlsx'); $t = tempnam(sys_get_temp_dir(), 'x'); file_put_contents($t, $r['body']); $z = new ZipArchive(); $z->open($t); $n = substr_count((string)$z->getFromName('xl/worksheets/sheet1.xml'), '<row ') - 1; $exp = (int)$pdo->query("SELECT COUNT(*) FROM risks r JOIN branches b ON b.id = r.branch_id WHERE r.archived_at IS NULL AND b.code = 'TRP'")->fetchColumn(); return $n === $exp; })());
+$pdo->exec("UPDATE risks SET title = CONCAT('=HYPERLINK(\"http://evil\")', title) WHERE id = " . (int)$pdo->query('SELECT MIN(id) FROM risks')->fetchColumn());
+$xl2 = $c['risk']->get('/risks/export?format=xlsx'); file_put_contents($xtmp, $xl2['body']); $zz->open($xtmp); $sh2 = (string)$zz->getFromName('xl/worksheets/sheet1.xml');
+check('formula-looking text is stored as an inline string, never as a formula cell', str_contains($sh2, 'HYPERLINK') && !str_contains($sh2, '<f>'));
+check('other exports support Excel (incidents, compliance, audit)', $c['risk']->get('/incidents/export?format=xlsx')['code'] === 200 && str_contains($c['risk']->get('/incidents/export?format=xlsx')['head'], 'spreadsheetml') && str_contains($c['exec']->get('/compliance/export?format=xlsx')['head'], 'spreadsheetml') && str_contains($c['auditor']->get('/audit/export?format=xlsx')['head'], 'spreadsheetml'));
+check('CSV export is unchanged without format', str_contains($c['risk']->get('/risks/export')['head'], 'text/csv'));
+check('Excel button present on lists and reports page', str_contains($c['risk']->get('/risks')['body'], 'format=xlsx') && str_contains($c['risk']->get('/reports')['body'], 'value="xlsx"'));
+$bp = $c['risk']->get('/reports/board');
+check('board pack renders for risk manager with all sections', $bp['code'] === 200 && substr_count($bp['body'], 'class="board-sec"') >= 8 && str_contains($bp['body'], 'class="print-page"'));
+$bt = $c['retail']->get('/reports/board'); check('board pack for department manager omits sections without permission', $bt['code'] === 200 && !str_contains($bt['body'], 'appetite') && substr_count($bt['body'], 'class="board-sec"') >= 3);
+$bl = $c['tripoli']->get('/reports/board'); check('branch liaison board pack contains only branch-scoped sections', $bl['code'] === 200 && substr_count($bl['body'], 'class="board-sec"') === 3);
+check('board pack date inputs are validated (bad dates fall back)', $c['risk']->get('/reports/board?from=zzz&to=2999-99-99')['code'] === 200);
+check('board pack requires login', str_contains((string)(new Client($B))->get('/reports/board')['loc'], '/login'));
+check('board pack generation is audited', (int)$pdo->query("SELECT COUNT(*) FROM audit_log WHERE action='report.board_pack'")->fetchColumn() >= 3);
+@unlink($xtmp);
