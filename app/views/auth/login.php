@@ -12,4 +12,5 @@
       <input type="password" id="password" name="password" autocomplete="current-password" required></div>
     <button class="btn" type="submit"><?= e(t('auth.login')) ?></button>
   </form>
+  <?php if (\App\Controllers\AuthController::resetAvailable()): ?><p style="margin-top:12px"><a href="<?= e(url('password/forgot')) ?>"><?= e(t('reset.link')) ?></a></p><?php endif; ?>
 </div>

@@ -47,6 +47,9 @@ final class Router
                 if ((int)$user['must_change_password'] === 1 && !in_array($path, ['/account', '/account/password', '/account/language', '/logout', '/lang'], true)) {
                     Response::redirect(url('account'));
                 }
+                if (Settings::get('mfa_required') === '1' && (int)($user['totp_enabled'] ?? 0) !== 1 && !in_array($path, ['/account', '/account/mfa', '/account/mfa/enable', '/account/language', '/account/password', '/logout', '/lang', '/help', '/help/panel'], true)) {
+                    Response::redirect(url('account/mfa'));
+                }
             }
             if ($method === 'POST' && !Csrf::valid()) {
                 throw new HttpException(419);

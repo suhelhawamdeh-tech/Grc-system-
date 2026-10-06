@@ -12,7 +12,7 @@ use App\Support\Upload;
 
 final class SettingsController extends Controller
 {
-    private const KEYS = ['org_name_en', 'org_name_ar', 'currency_code', 'currency_decimals', 'currency_symbol_en', 'currency_symbol_ar', 'default_lang', 'review_warning_days', 'incident_escalation_threshold', 'accept_level2_min'];
+    private const KEYS = ['org_name_en', 'org_name_ar', 'currency_code', 'currency_decimals', 'currency_symbol_en', 'currency_symbol_ar', 'default_lang', 'review_warning_days', 'incident_escalation_threshold', 'accept_level2_min', 'mfa_required'];
 
     public function index(): string
     {

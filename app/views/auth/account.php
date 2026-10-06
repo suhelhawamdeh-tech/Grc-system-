@@ -30,3 +30,4 @@
 <form method="post" action="<?= e(url('account/notifications')) ?>"><?= csrf_field() ?>
 <div class="field"><label class="check"><input type="checkbox" name="email_on" value="1"<?= checked(\App\Support\Prefs::get((int)$user['id'], 'email_notifications') !== '0') ?>> <?= e(t('account.email_on')) ?></label></div>
 <button class="btn secondary" type="submit"><?= e(t('common.save')) ?></button></form></section>
+<section class="card"><h2><?= e(t('mfa.title')) ?></h2><p><span class="badge <?= !empty($user['totp_enabled']) ? 'ok' : 'warn' ?>"><?= e(t(!empty($user['totp_enabled']) ? 'mfa.on' : 'mfa.setup')) ?></span> <a class="btn secondary small" href="<?= e(url('account/mfa')) ?>"><?= e(t('mfa.title')) ?></a></p></section>

@@ -84,10 +84,72 @@ final class Auth
             Audit::log('login.failed', 'user', $u ? (int)$u['id'] : null, ['username' => $username], null, $username);
             return ['ok' => false];
         }
+        if ((int)($u['totp_enabled'] ?? 0) === 1) {
+            Session::regenerate();
+            Session::set('mfa_uid', (int)$u['id']);
+            Session::set('mfa_at', time());
+            Audit::log('login.mfa_required', 'user', (int)$u['id'], null, (int)$u['id'], $u['username']);
+            return ['ok' => true, 'mfa' => true, 'user' => $u];
+        }
+        return self::complete($u, $password);
+    }
+
+    /** Second factor: a 6-digit authenticator code or a one-time recovery code. */
+    public static function finishMfa(string $code): array
+    {
+        $id = (int)Session::get('mfa_uid', 0);
+        $u = $id ? Db::one('SELECT * FROM users WHERE id = ? AND is_active = 1', [$id]) : null;
+        if (!$u || time() - (int)Session::get('mfa_at', 0) > 300) {
+            Session::forget('mfa_uid');
+            return ['ok' => false, 'expired' => true];
+        }
+        $key = 'mfa:' . $id;
+        $ip = Request::ip();
+        if ($wait = self::throttled($key, $ip)) {
+            return ['ok' => false, 'throttled' => $wait];
+        }
+        $ok = false;
+        $secret = \App\Support\Crypto::decrypt((string)$u['totp_secret_enc']);
+        if ($secret !== null && ($step = \App\Support\Totp::verify($secret, $code, null, 1, (int)$u['totp_last_step'])) !== null) {
+            Db::update('users', ['totp_last_step' => $step], 'id = ?', [$id]);
+            $ok = true;
+        } elseif (self::useRecoveryCode($u, $code)) {
+            $ok = true;
+            Audit::log('login.recovery_code_used', 'user', $id, null, $id, $u['username']);
+        }
+        Db::insert('login_attempts', ['username' => $key, 'ip' => $ip, 'success' => $ok ? 1 : 0, 'attempted_at' => date('Y-m-d H:i:s')]);
+        if (!$ok) {
+            Audit::log('login.mfa_failed', 'user', $id, null, $id, $u['username']);
+            return ['ok' => false];
+        }
+        Session::forget('mfa_uid');
+        Session::forget('mfa_at');
+        return self::complete($u, null);
+    }
+
+    private static function useRecoveryCode(array $u, string $code): bool
+    {
+        $code = strtolower(preg_replace('/[^0-9a-f]/i', '', $code));
+        $list = json_decode((string)$u['totp_recovery'], true);
+        if (strlen($code) !== 8 || !is_array($list)) {
+            return false;
+        }
+        foreach ($list as $i => $h) {
+            if (password_verify($code, $h)) {
+                unset($list[$i]);
+                Db::update('users', ['totp_recovery' => json_encode(array_values($list))], 'id = ?', [$u['id']]);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function complete(array $u, ?string $password): array
+    {
         Session::regenerate();
         Session::set('uid', (int)$u['id']);
         Session::forget('_csrf');
-        if (password_needs_rehash($u['password_hash'], PASSWORD_DEFAULT)) {
+        if ($password !== null && password_needs_rehash($u['password_hash'], PASSWORD_DEFAULT)) {
             Db::update('users', ['password_hash' => password_hash($password, PASSWORD_DEFAULT)], 'id = ?', [$u['id']]);
         }
         Db::update('users', ['last_login_at' => date('Y-m-d H:i:s')], 'id = ?', [$u['id']]);
