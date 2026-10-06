@@ -1,6 +1,7 @@
 <?php
 // نصوص مكتبة الضوابط واختبارها (العربية). يجب أن تتطابق المفاتيح مع en_ctl.php.
 return [
+    'ctl.overclaim' => 'التقييم المتبقي أقل من الأصلي بمقدار :n نقاط، لكن الضوابط المرتبطة غير مثبتة الفعالية. اختبر الضوابط أو أعد النظر في التقييم المتبقي.', 'dash.unproven' => 'مخاطر تعتمد على ضوابط غير مثبتة',
     'nav.controls' => 'مكتبة الضوابط', 'common.archived' => 'مؤرشف',
     'enum.ctype.preventive' => 'وقائي', 'enum.ctype.detective' => 'كشفي', 'enum.ctype.corrective' => 'تصحيحي',
     'enum.cnature.manual' => 'يدوي', 'enum.cnature.automated' => 'آلي', 'enum.cnature.semi_automated' => 'شبه آلي',

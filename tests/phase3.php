@@ -363,3 +363,34 @@ check('board pack date inputs are validated (bad dates fall back)', $c['risk']->
 check('board pack requires login', str_contains((string)(new Client($B))->get('/reports/board')['loc'], '/login'));
 check('board pack generation is audited', (int)$pdo->query("SELECT COUNT(*) FROM audit_log WHERE action='report.board_pack'")->fetchColumn() >= 3);
 @unlink($xtmp);
+
+section('Release 1.1b: policy approval and unproven-control reliance');
+$pc0 = $pdo->query("SELECT id FROM policies LIMIT 1")->fetchColumn(); $polId = (int)$pc0;
+$curV = $pdo->query("SELECT id FROM policy_versions WHERE policy_id=$polId AND is_current=1")->fetchColumn();
+$vF = fn(array $o = []) => $o + ['version_label' => 'APPR-9.1', 'effective_date' => date('Y-m-d'), 'change_summary' => 'Needs approval', 'needs_approval' => '1'];
+$c['compliance']->post("/policies/$polId/versions", $vF(), "/policies/$polId");
+$pv = (int)$pdo->query("SELECT id FROM policy_versions WHERE policy_id=$polId AND version_label='APPR-9.1'")->fetchColumn();
+check('policy version sent for approval is pending and does not replace the current one', $pv > 0 && $pdo->query("SELECT status FROM policy_versions WHERE id=$pv")->fetchColumn() === 'pending' && (int)$pdo->query("SELECT is_current FROM policy_versions WHERE id=$pv")->fetchColumn() === 0 && ($curV === false || (int)$pdo->query("SELECT is_current FROM policy_versions WHERE id=$curV")->fetchColumn() === 1));
+$pa = (int)$pdo->query("SELECT id FROM approvals WHERE entity_type='policy_version' AND entity_id=$pv AND status='pending'")->fetchColumn();
+check('approval inbox lists the policy version with its policy link', $pa > 0 && str_contains($c['risk']->get('/approvals')['body'], "/policies/$polId"));
+$pdo->exec("UPDATE approvals SET requested_by=" . $uidN('demo.risk') . " WHERE id=$pa");
+$c['risk']->post("/approvals/$pa/decide", ['decision' => 'approve'], '/approvals'); check('policy requester cannot approve own version', $pdo->query("SELECT status FROM policy_versions WHERE id=$pv")->fetchColumn() === 'pending');
+$pdo->exec("UPDATE approvals SET requested_by=" . $uidN('demo.compliance') . " WHERE id=$pa");
+$c['risk']->post("/approvals/$pa/decide", ['decision' => 'approve'], '/approvals');
+check('approved: version becomes current, previous superseded, approver recorded', $pdo->query("SELECT status FROM policy_versions WHERE id=$pv")->fetchColumn() === 'approved' && (int)$pdo->query("SELECT is_current FROM policy_versions WHERE id=$pv")->fetchColumn() === 1 && (int)$pdo->query("SELECT COUNT(*) FROM policy_versions WHERE policy_id=$polId AND is_current=1")->fetchColumn() === 1 && $pdo->query("SELECT approved_by FROM policy_versions WHERE id=$pv")->fetchColumn() === 'Demo Risk Manager / مدير المخاطر (تجريبي)');
+$c['compliance']->post("/policies/$polId/versions", $vF(['version_label' => 'APPR-9.2']), "/policies/$polId"); $pv2 = (int)$pdo->query("SELECT id FROM policy_versions WHERE version_label='APPR-9.2'")->fetchColumn(); $pa2 = (int)$pdo->query("SELECT id FROM approvals WHERE entity_type='policy_version' AND entity_id=$pv2")->fetchColumn();
+$c['risk']->post("/approvals/$pa2/decide", ['decision' => 'reject', 'comment' => 'Wording unclear'], '/approvals');
+check('rejected: version marked rejected and the approved one stays current', $pdo->query("SELECT status FROM policy_versions WHERE id=$pv2")->fetchColumn() === 'rejected' && (int)$pdo->query("SELECT is_current FROM policy_versions WHERE id=$pv")->fetchColumn() === 1);
+$c['compliance']->post("/policies/$polId/versions", ['version_label' => 'PLAIN-1', 'effective_date' => date('Y-m-d'), 'approved_by' => 'Board', 'approval_date' => date('Y-m-d')], "/policies/$polId");
+check('classic path still works: already-approved version becomes current immediately', (int)$pdo->query("SELECT is_current FROM policy_versions WHERE version_label='PLAIN-1'")->fetchColumn() === 1 && $pdo->query("SELECT status FROM policy_versions WHERE version_label='PLAIN-1'")->fetchColumn() === 'approved');
+// unproven control reliance
+$rkU = (int)$pdo->query("SELECT id FROM risks WHERE archived_at IS NULL AND status='active' AND inh_score - res_score >= 5 LIMIT 1")->fetchColumn();
+if (!$rkU) { $rkU = (int)$pdo->query("SELECT id FROM risks WHERE archived_at IS NULL AND status='active' LIMIT 1")->fetchColumn(); $pdo->exec("UPDATE risks SET inh_score=20, res_score=6 WHERE id=$rkU"); }
+$pdo->exec("DELETE FROM risk_controls WHERE risk_id=$rkU");
+check('risk with a big claimed reduction and no linked controls is flagged', str_contains($c['risk']->get("/risks/$rkU")['body'], 'msg error') && str_contains($c['risk']->get('/risks?unproven=1')['body'], "/risks/$rkU\""));
+$pdo->exec("INSERT INTO controls (name, department_id, owner_user_id, test_frequency, last_result, last_tested_on, created_by, created_at, updated_at) SELECT 'Proven control', department_id, owner_user_id, 'annual', 'effective', CURDATE(), 1, NOW(), NOW() FROM controls LIMIT 1"); $ctlE = (int)$pdo->lastInsertId();
+$pdo->exec("INSERT INTO risk_controls (risk_id, control_id, created_by, created_at) VALUES ($rkU, $ctlE, 1, NOW())");
+check('flag disappears once an effective tested control is linked', !str_contains($c['risk']->get('/risks?unproven=1')['body'], "/risks/$rkU\""));
+$pdo->exec("UPDATE controls SET last_result='ineffective' WHERE id=$ctlE");
+check('flag returns when the linked control fails', str_contains($c['risk']->get('/risks?unproven=1')['body'], "/risks/$rkU\"") && str_contains($c['risk']->get('/')['body'], 'risks?unproven=1'));
+$pdo->exec("DELETE FROM risk_controls WHERE control_id=$ctlE"); $pdo->exec("DELETE FROM controls WHERE id=$ctlE");

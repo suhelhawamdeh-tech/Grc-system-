@@ -1,6 +1,7 @@
 <?php
 // Control library and testing strings (English). Keep keys identical to ar_ctl.php.
 return [
+    'ctl.overclaim' => 'The residual rating is :n points below the inherent rating, but the linked controls are not proven effective. Test the controls or reconsider the residual rating.', 'dash.unproven' => 'Risks relying on unproven controls',
     'nav.controls' => 'Control library', 'common.archived' => 'Archived',
     'enum.ctype.preventive' => 'Preventive', 'enum.ctype.detective' => 'Detective', 'enum.ctype.corrective' => 'Corrective',
     'enum.cnature.manual' => 'Manual', 'enum.cnature.automated' => 'Automated', 'enum.cnature.semi_automated' => 'Semi-automated',

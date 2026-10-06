@@ -1,6 +1,7 @@
 <?php
 // نصوص تحليل الأثر على الأعمال والموافقات (العربية). يجب أن تتطابق المفاتيح مع en_bia.php.
 return [
+    'pol.needs_approval' => 'أرسل للاعتماد بدلاً من تسجيل إصدار معتمد', 'pol.needs_approval_hint' => 'يبقى الإصدار معلقاً ولا يحل محل الحالي حتى يعتمده شخص آخر (مدير المخاطر أو مسؤول الامتثال) من صفحة الموافقات.', 'pol.pending_approval' => 'بانتظار الاعتماد', 'pol.version_pending' => 'أُرسل الإصدار للاعتماد. يصبح الحالي عند اعتماده.',
     'nav.bia' => 'تحليل الأثر على الأعمال', 'nav.approvals' => 'الموافقات',
     'enum.crit.critical' => 'حرجة', 'enum.crit.high' => 'عالية', 'enum.crit.medium' => 'متوسطة', 'enum.crit.low' => 'منخفضة',
     'enum.bstatus.draft' => 'مسودة', 'enum.bstatus.pending_approval' => 'بانتظار الاعتماد', 'enum.bstatus.approved' => 'معتمدة',

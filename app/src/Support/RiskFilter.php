@@ -18,6 +18,10 @@ final class RiskFilter
         'identified' => 'r.identified_date',
     ];
 
+    /** Residual rating claims a reduction of 5+ score points but no linked control has been tested effective, or a linked control is weak. */
+    public const MIN_CLAIMED_REDUCTION = 5;
+    public const UNPROVEN = "r.status = 'active' AND (r.inh_score - r.res_score) >= 5 AND (NOT EXISTS (SELECT 1 FROM risk_controls rc JOIN controls c ON c.id = rc.control_id WHERE rc.risk_id = r.id AND c.archived_at IS NULL AND c.last_result = 'effective') OR EXISTS (SELECT 1 FROM risk_controls rc JOIN controls c ON c.id = rc.control_id WHERE rc.risk_id = r.id AND c.archived_at IS NULL AND c.last_result IN ('ineffective','partially_effective')))";
+
     public static function fromArray(array $q): array
     {
         $int = static fn($k) => isset($q[$k]) && is_string($q[$k]) && preg_match('/^\d{1,10}$/', $q[$k]) ? (int)$q[$k] : null;
@@ -37,6 +41,7 @@ final class RiskFilter
             'control' => isset($q['control']) && in_array($q['control'], ['not_assessed', 'effective', 'partially_effective', 'ineffective'], true) ? $q['control'] : '',
             'overdue_review' => !empty($q['overdue_review']) ? '1' : '',
             'high' => !empty($q['high']) ? '1' : '',
+            'unproven' => !empty($q['unproven']) ? '1' : '',
             'sort' => isset($q['sort']) && is_string($q['sort']) && isset(self::SORTS[$q['sort']]) ? $q['sort'] : 'code',
             'dir' => ($q['dir'] ?? '') === 'asc' ? 'asc' : 'desc',
         ];
@@ -95,6 +100,9 @@ final class RiskFilter
         if ($f['overdue_review'] === '1') {
             $where[] = 'r.review_date < ? AND r.status = ?';
             array_push($params, date('Y-m-d'), 'active');
+        }
+        if ($f['unproven'] === '1') {
+            $where[] = self::UNPROVEN;
         }
         if ($f['high'] === '1') {
             $where[] = 'r.res_score >= COALESCE((SELECT MIN(min_score) FROM score_bands WHERE is_high = 1), 26)';

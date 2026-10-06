@@ -1,6 +1,7 @@
 <?php
 // Business impact analysis and approvals strings (English). Keep keys identical to ar_bia.php.
 return [
+    'pol.needs_approval' => 'Send for approval instead of recording an approved version', 'pol.needs_approval_hint' => 'The version stays pending and does not replace the current one until another person (risk manager or compliance officer) approves it in Approvals.', 'pol.pending_approval' => 'Awaiting approval', 'pol.version_pending' => 'Version sent for approval. It becomes current when approved.',
     'nav.bia' => 'Business impact analysis', 'nav.approvals' => 'Approvals',
     'enum.crit.critical' => 'Critical', 'enum.crit.high' => 'High', 'enum.crit.medium' => 'Medium', 'enum.crit.low' => 'Low',
     'enum.bstatus.draft' => 'Draft', 'enum.bstatus.pending_approval' => 'Awaiting approval', 'enum.bstatus.approved' => 'Approved',

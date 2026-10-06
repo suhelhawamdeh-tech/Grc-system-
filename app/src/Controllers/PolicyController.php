@@ -137,7 +137,13 @@ final class PolicyController extends Controller
             $this->invalid($v->errors(), url('policies/' . $id) . '#versions');
         }
         $now = date('Y-m-d H:i:s');
-        $vid = Db::tx(function () use ($id, $v, $u, $now, $p) {
+        $viaApproval = isset($_POST['needs_approval']);
+        $vid = Db::tx(function () use ($id, $v, $u, $now, $p, $viaApproval) {
+            if ($viaApproval) {
+                $vid = Db::insert('policy_versions', ['policy_id' => $id, 'version_label' => $v->str('version_label'), 'effective_date' => $v->str('effective_date'), 'approved_by' => null, 'approval_date' => null, 'change_summary' => $v->str('change_summary') ?: null, 'is_current' => 0, 'status' => 'pending', 'created_by' => $u['id'], 'created_at' => $now]);
+                \App\Support\Approvals::request('policy_version', $vid, (int)$u['id']);
+                return $vid;
+            }
             Db::update('policy_versions', ['is_current' => 0], 'policy_id = ?', [$id]);
             $vid = Db::insert('policy_versions', ['policy_id' => $id, 'version_label' => $v->str('version_label'), 'effective_date' => $v->str('effective_date'), 'approved_by' => $v->str('approved_by') ?: null,
                 'approval_date' => $v->str('approval_date') ?: null, 'change_summary' => $v->str('change_summary') ?: null, 'is_current' => 1, 'created_by' => $u['id'], 'created_at' => $now]);
@@ -149,7 +155,7 @@ final class PolicyController extends Controller
             Upload::store($f, 'policy_version', $vid, (int)$u['id']);
         }
         $this->audit('policy.version_added', 'policy', $id, ['version' => $v->str('version_label'), 'file' => $hasFile]);
-        $this->redirect(url('policies/' . $id) . '#versions', 'pol.version_added');
+        $this->redirect(url('policies/' . $id) . '#versions', $viaApproval ? 'pol.version_pending' : 'pol.version_added');
     }
 
     public function upload(int $id, int $vid): never

@@ -798,4 +798,9 @@ CREATE TABLE IF NOT EXISTS email_log (
 
 INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('008_email', NOW());
 
+-- ===== migration 009_policy_approval =====
+ALTER TABLE policy_versions ADD COLUMN status ENUM('approved','pending','rejected') NOT NULL DEFAULT 'approved' AFTER is_current;
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('009_policy_approval', NOW());
+
 SET FOREIGN_KEY_CHECKS = 1;
