@@ -143,6 +143,27 @@ final class DemoSeeder
         $code = static function (string $table, string $prefix, int $id, int $pad) {
             Db::update($table, ['code' => sprintf('%s-%0' . $pad . 'd', $prefix, $id)], 'id = ?', [$id]);
         };
+        // Control library: a few controls linked to demo risks, with test history (synthetic)
+        $ctls = [
+            ['Dual approval for payments above the limit', 'preventive', 'manual', 'FIN', 'demo.risk', 1, 'effective', 40, 0],
+            ['Daily cash reconciliation at branches', 'detective', 'manual', 'RET', 'demo.dept.retail', 1, 'partially_effective', 25, 3],
+            ['Privileged access review', 'detective', 'semi_automated', 'IT', 'demo.dept.it', 1, 'ineffective', 15, 6],
+            ['Automated limit check on large exposures', 'preventive', 'automated', 'COR', 'demo.risk', 0, null, null, null],
+            ['Sharia screening of new products', 'preventive', 'manual', 'CMP', 'demo.compliance', 1, null, null, null],
+        ];
+        $riskList = array_values($riskIds);
+        foreach ($ctls as $i => [$nm, $ty, $na, $dp, $own, $key, $res, $sample, $exc]) {
+            $tested = $res ? date('Y-m-d', strtotime('-' . (30 + $i * 20) . ' days')) : null;
+            $cid = Db::insert('controls', ['name' => $nm, 'description' => 'Synthetic control for demonstration.', 'control_type' => $ty, 'nature' => $na, 'frequency' => 'monthly', 'is_key' => $key, 'department_id' => $dep[$dp] ?? array_values($dep)[0], 'owner_user_id' => $users[$own],
+                'test_frequency' => 'annual', 'next_test_due' => $tested ? date('Y-m-d', strtotime($tested . ' +1 year')) : date('Y-m-d', strtotime('+15 days')), 'last_tested_on' => $tested, 'last_result' => $res, 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('controls', 'CTL', $cid, 4);
+            if ($res) {
+                Db::insert('control_tests', ['control_id' => $cid, 'test_type' => 'operating', 'test_date' => $tested, 'tester_user_id' => $users['demo.compliance'], 'sample_size' => $sample, 'exceptions' => $exc, 'result' => $res, 'conclusion' => $res === 'effective' ? null : 'Synthetic finding for demonstration.', 'created_at' => $now]);
+            }
+            foreach (array_slice($riskList, $i * 2, 2) as $rid) {
+                Db::exec('INSERT IGNORE INTO risk_controls (risk_id, control_id, created_by, created_at) VALUES (?, ?, ?, ?)', [$rid, $cid, $users['demo.risk'], $now]);
+            }
+        }
         // KRIs with a few months of readings
         foreach ([
             ['Failed privileged logins per month', 'IT', 'demo.dept.it', 'count', 'higher_worse', 8, 15, [4, 6, 9, 12]],

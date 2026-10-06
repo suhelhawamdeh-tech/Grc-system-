@@ -48,6 +48,9 @@ final class AttachmentController extends Controller
             case 'obligation':
                 $row = Db::one('SELECT department_id FROM compliance_obligations WHERE id = ?', [$id]);
                 return $row && Scope::allowsDept($user, $row) && ($forEdit ? $can('compliance.manage', 'compliance.update') : $can('compliance.view'));
+            case 'control_test':
+                $row = Db::one('SELECT c.department_id FROM control_tests t JOIN controls c ON c.id = t.control_id WHERE t.id = ?', [$id]);
+                return $row && Scope::allowsDept($user, $row) && ($forEdit ? $can('control.test') : $can('control.view'));
             case 'policy_version':
                 $row = Db::one('SELECT id FROM policy_versions WHERE id = ?', [$id]);
                 return $row && ($forEdit ? $can('policy.manage') : $can('policy.view'));
@@ -96,6 +99,7 @@ final class AttachmentController extends Controller
             'risk' => 'risks/' . $a['entity_id'],
             'incident' => 'incidents/' . $a['entity_id'],
             'obligation' => 'compliance/' . $a['entity_id'],
+            'control_test' => 'controls/' . (int)Db::val('SELECT control_id FROM control_tests WHERE id = ?', [$a['entity_id']]),
             default => 'policies/' . (int)Db::val('SELECT policy_id FROM policy_versions WHERE id = ?', [$a['entity_id']]),
         };
         $this->redirect(url($base) . '#attachments', 'upload.deleted');

@@ -31,6 +31,7 @@ final class Attention
         }
         $s['rcsa'] = Db::all("SELECT a.id, a.code AS title, a.due_date AS due FROM rcsa_assessments a WHERE a.assessor_user_id = ? AND a.status IN ('draft','returned') ORDER BY a.due_date LIMIT 50", [$id]);
         $s['rcsa_review'] = Auth::can('rcsa.manage') ? Db::all("SELECT a.id, a.code AS title, a.due_date AS due FROM rcsa_assessments a WHERE a.status = 'submitted' ORDER BY a.due_date LIMIT 50") : [];
+        $s['control_tests'] = Auth::can('control.test') ? Db::all("SELECT c.id, CONCAT(c.code, ' — ', c.name) AS title, c.next_test_due AS due FROM controls c WHERE c.archived_at IS NULL AND c.owner_user_id <> ? AND c.next_test_due IS NOT NULL AND c.next_test_due <= ? ORDER BY c.is_key DESC, c.next_test_due LIMIT 50", [$id, $horizon]) : [];
         $s['notes'] = Db::all('SELECT n.id, n.body AS title, n.remind_on AS due, n.page_path FROM user_notes n WHERE n.user_id = ? AND n.is_done = 0 AND n.remind_on IS NOT NULL AND n.remind_on <= ? ORDER BY n.remind_on LIMIT 50', [$id, $today]);
         foreach ($s as &$rows) {
             foreach ($rows as &$r) {

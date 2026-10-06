@@ -6,6 +6,7 @@ $cfg = [
   'kris' => ['icon' => 'pulse', 'label' => 'my.kris', 'link' => fn($r) => url('kris/' . $r['id'])],
   'rcsa' => ['icon' => 'clipboard', 'label' => 'my.rcsa', 'link' => fn($r) => url('rcsa/' . $r['id'])],
   'rcsa_review' => ['icon' => 'clipboard', 'label' => 'my.rcsa_review', 'link' => fn($r) => url('rcsa/' . $r['id'])],
+  'control_tests' => ['icon' => 'flask', 'label' => 'my.control_tests', 'link' => fn($r) => url('controls/' . $r['id']) . '#test'],
   'notes' => ['icon' => 'note', 'label' => 'my.notes', 'link' => fn($r) => $r['page_path'] ? base_path() . $r['page_path'] : url('notes')],
 ];
 $total = 0; foreach ($sections as $rows) { $total += count($rows); } ?>

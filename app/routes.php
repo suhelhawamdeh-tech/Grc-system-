@@ -155,3 +155,15 @@ $router->get('/rcsa/{id}', 'RcsaController@show', 'rcsa.view');
 $router->post('/rcsa/{id}/save', 'RcsaController@save', 'rcsa.respond');
 $router->post('/rcsa/{id}/submit', 'RcsaController@submit', 'rcsa.respond');
 $router->post('/rcsa/{id}/review', 'RcsaController@review', 'rcsa.manage');
+
+// ---- Release 3: control library and testing
+$router->get('/controls', 'ControlController@index', 'control.view');
+$router->get('/controls/new', 'ControlController@create', 'control.manage');
+$router->post('/controls', 'ControlController@store', 'control.manage');
+$router->get('/controls/{id}', 'ControlController@show', 'control.view');
+$router->get('/controls/{id}/edit', 'ControlController@edit', 'control.manage');
+$router->post('/controls/{id}', 'ControlController@update', 'control.manage');
+$router->post('/controls/{id}/archive', 'ControlController@archive', 'control.manage');
+$router->post('/controls/{id}/risks', 'ControlController@link', 'control.manage');
+$router->post('/controls/{id}/risks/{rid}/remove', 'ControlController@unlink', 'control.manage');
+$router->post('/controls/{id}/tests', 'ControlController@addTest', 'control.test');

@@ -61,6 +61,14 @@ $disp = static function (string $k, $v): string {
   </dl></section>
 </div>
 
+<?php if (isset($controls) && $controls !== null): $weak = false; $proven = false; foreach ($controls as $ctl) { if (in_array($ctl['last_result'], ['ineffective', 'partially_effective'], true) || ($ctl['next_test_due'] && $ctl['next_test_due'] < $today)) { $weak = true; } if ($ctl['last_result'] === 'effective') { $proven = true; } } ?>
+<section class="card" id="controls"><h2><?= icon('flask') ?> <?= e(t('ctl.risk_panel')) ?></h2>
+  <?php if (!$controls): ?><p class="muted"><?= e(t('ctl.risk_panel_empty')) ?></p><?php else: ?>
+  <?php if ($weak): ?><div class="msg error" role="alert"><?= e(t('ctl.risk_warn')) ?></div><?php elseif (!$proven): ?><div class="msg info"><?= e(t('ctl.risk_unproven')) ?></div><?php endif; ?>
+  <ul class="task-list"><?php foreach ($controls as $ctl): ?><li><a href="<?= e(url('controls/' . $ctl['id'])) ?>"><?= e($ctl['code']) ?> — <?= e($ctl['name']) ?></a>
+    <span class="badge <?= $ctl['last_result'] === 'effective' ? 'ok' : ($ctl['last_result'] === 'ineffective' ? 'danger' : ($ctl['last_result'] ? 'warn' : '')) ?>"><?= e($ctl['last_result'] ? t('enum.rating.' . $ctl['last_result']) : t('ctl.never_tested')) ?></span></li><?php endforeach; ?></ul><?php endif; ?></section>
+<?php endif; ?>
+
 <section class="card" id="actions"><h2><?= e(t('action.title_plural')) ?></h2>
   <?php if (!$actions): ?><p class="muted"><?= e(t('action.none')) ?></p><?php else: ?>
   <div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('action.title')) ?></th><th><?= e(t('action.owner')) ?></th><th><?= e(t('action.deadline')) ?></th><th><?= e(t('action.status')) ?></th><?php if ($canEdit): ?><th></th><?php endif; ?></tr></thead><tbody>

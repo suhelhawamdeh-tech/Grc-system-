@@ -72,12 +72,13 @@ final class RiskController extends Controller
         $attachments = Db::all('SELECT a.*, u.full_name FROM attachments a JOIN users u ON u.id = a.uploaded_by WHERE a.entity_type = ? AND a.entity_id = ? AND a.deleted_at IS NULL ORDER BY a.id DESC', ['risk', $id]);
         [$sw, $sp] = Scope::sql($u, 'i');
         $incidents = Db::all('SELECT i.id, i.incident_code, i.title, i.occurrence_date, i.net_loss, i.event_type FROM incidents i JOIN incident_risks ir ON ir.incident_id = i.id WHERE ir.risk_id = ? AND i.archived_at IS NULL AND ' . $sw . ' ORDER BY i.occurrence_date DESC', array_merge([$id], $sp));
+        $controls = Perm::roleHas($u['role'], 'control.view') ? Db::all('SELECT c.id, c.code, c.name, c.is_key, c.last_result, c.last_tested_on, c.next_test_due FROM risk_controls rc JOIN controls c ON c.id = rc.control_id WHERE rc.risk_id = ? AND c.archived_at IS NULL ORDER BY c.code', [$id]) : null;
         $suggest = null;
         if ($r['est_financial_impact'] !== null) {
             $suggest = Scoring::impactForAmount(Money::fromDb($r['est_financial_impact']));
         }
         return $this->view('risks/show', [
-            'title' => $r['risk_code'] . ' — ' . $r['title'], 'r' => $r, 'actions' => $actions, 'history' => $history, 'attachments' => $attachments,
+            'title' => $r['risk_code'] . ' — ' . $r['title'], 'r' => $r, 'controls' => $controls, 'actions' => $actions, 'history' => $history, 'attachments' => $attachments,
             'incidents' => $incidents, 'suggest' => $suggest, 'users' => Ref::users(true),
         ]);
     }
