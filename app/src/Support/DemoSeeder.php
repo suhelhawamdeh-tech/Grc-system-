@@ -164,6 +164,22 @@ final class DemoSeeder
                 Db::exec('INSERT IGNORE INTO risk_controls (risk_id, control_id, created_by, created_at) VALUES (?, ?, ?, ?)', [$rid, $cid, $users['demo.risk'], $now]);
             }
         }
+        // Sharia compliance: rulings, reviews and events (synthetic)
+        $rulingIds = [];
+        foreach ([['Murabaha financing: ownership before sale', 'resolution', 'Murabaha financing', 'The bank must own and possess the asset before selling it to the customer; promise to purchase is non-binding on the customer until the sale contract.', '-14 months'], ['Late-payment charges', 'fatwa', 'Retail financing', 'Late-payment amounts may not be recognised as bank income; they are directed to charity.', '-9 months'], ['Screening of investment counterparties', 'guideline', 'Treasury', 'Counterparties must be screened against the approved Sharia criteria before placement.', '-3 months']] as $i => [$ti, $ty, $su, $tx, $ago]) {
+            $rid = Db::insert('sharia_rulings', ['title' => $ti, 'ruling_type' => $ty, 'subject' => $su, 'ruling_text' => $tx . ' (synthetic text for demonstration)', 'reference_no' => 'SSB/' . date('Y') . '/' . ($i + 1), 'issued_on' => date('Y-m-d', strtotime($ago)), 'status' => 'active', 'created_by' => $users['demo.compliance'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('sharia_rulings', 'SHR', $rid, 4);
+            $rulingIds[] = $rid;
+        }
+        foreach ([['Review of Murabaha contract templates', 'contract', 'RET', 'planned', '+20 days', null], ['Internal Sharia audit of retail branches', 'internal_audit', 'RET', 'completed', '-40 days', 'Sampled 30 contracts; two documentation gaps noted and corrected (synthetic).']] as [$ti, $ty, $dp, $st, $when, $sum]) {
+            $vid = Db::insert('sharia_reviews', ['title' => $ti, 'review_type' => $ty, 'scope' => 'Synthetic scope for demonstration.', 'department_id' => $dep[$dp], 'reviewer_user_id' => $users['demo.compliance'], 'planned_date' => date('Y-m-d', strtotime($when)), 'completed_on' => $st === 'completed' ? date('Y-m-d', strtotime($when . ' +5 days')) : null, 'status' => $st, 'summary' => $sum, 'created_by' => $users['demo.compliance'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('sharia_reviews', 'SRV', $vid, 4);
+        }
+        foreach ([['Late-payment charge booked as income', 'A branch recorded customer late-payment charges as fee income instead of directing them to charity.', 'high', 'decided', 1, 'Amounts to be transferred to approved charity; branch staff retrained.', 12500, 'pending'], ['Murabaha sale before asset possession', 'Sample contract signed before the vehicle was delivered to the bank.', 'medium', 'under_review', 0, null, 0, 'not_required'], ['Missing Sharia screening record for a placement', 'Treasury placement without a saved screening record.', 'low', 'reported', 0, null, 0, 'not_required']] as $i => [$ti, $ds, $sv, $st, $esc, $dec, $inc, $pur]) {
+            $eid = Db::insert('sharia_events', ['title' => $ti, 'description' => $ds . ' (synthetic)', 'detected_on' => date('Y-m-d', strtotime('-' . (10 + $i * 7) . ' days')), 'department_id' => $dep['RET'], 'ruling_id' => $rulingIds[min($i, 2)], 'severity' => $sv, 'status' => $st, 'escalated_at' => $esc ? $now : null,
+                'decision_text' => $dec, 'decided_on' => $dec ? date('Y-m-d', strtotime('-5 days')) : null, 'impermissible_income' => Money::toDb($inc * 1000), 'purification_status' => $pur, 'reported_by' => $users['demo.dept.retail'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('sharia_events', 'SNC', $eid, 4);
+        }
         // KRIs with a few months of readings
         foreach ([
             ['Failed privileged logins per month', 'IT', 'demo.dept.it', 'count', 'higher_worse', 8, 15, [4, 6, 9, 12]],

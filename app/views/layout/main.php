@@ -58,8 +58,9 @@ $showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'we
   <?php if (can('risk.view')) { echo $nav('/risks', t('nav.risks'), null, 'shield'); echo $nav('/actions', t('nav.actions'), null, 'check'); } ?>
   <?php if (can('incident.view')) echo $nav('/incidents', t('nav.incidents'), null, 'alert'); ?>
   <?php if (can('export.run')) echo $nav('/reports', t('nav.reports'), null, 'file'); ?>
-  <?php if (can('control.view') || can('kri.view') || can('appetite.view') || can('compliance.view') || can('committee.view') || can('policy.view') || can('rcsa.view')): ?>
+  <?php if (can('sharia.view') || can('control.view') || can('kri.view') || can('appetite.view') || can('compliance.view') || can('committee.view') || can('policy.view') || can('rcsa.view')): ?>
     <h3><?= e(t('nav.governance')) ?></h3>
+    <?php if (can('sharia.view')) echo $nav('/sharia', t('nav.sharia'), null, 'moon'); ?>
     <?php if (can('control.view')) echo $nav('/controls', t('nav.controls'), null, 'flask'); ?>
     <?php if (can('kri.view')) echo $nav('/kris', t('nav.kris'), null, 'pulse'); ?>
     <?php if (can('appetite.view')) echo $nav('/appetite', t('nav.appetite'), null, 'target'); ?>

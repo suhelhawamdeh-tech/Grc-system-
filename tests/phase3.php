@@ -134,3 +134,92 @@ $c['risk']->post("/controls/$cid/archive", [], "/controls/$cid"); check('control
 $tcn = $tc(); $c['compliance']->post("/controls/$cid/tests", $tF(), "/controls/$cid", $ev); check('archived control cannot be tested', $tc() === $tcn);
 check('controls are audited', (int)$pdo->query("SELECT COUNT(DISTINCT action) FROM audit_log WHERE action IN ('control.created','control.updated','control.linked','control.unlinked','control.tested','control.archived')")->fetchColumn() === 6);
 check('help topic for controls exists in both languages and page map points to it', isset($helpEn['topics']['controls'], $helpAr['topics']['controls']) && ($helpEn['pages']['/controls'] ?? '') === 'controls');
+
+section('Sharia compliance: authorization matrix');
+$sm = ['/sharia' => ['risk' => 200, 'compliance' => 200, 'retail' => 200, 'tripoli' => 403, 'exec' => 200, 'auditor' => 200],
+    '/sharia/rulings' => ['risk' => 200, 'retail' => 200, 'tripoli' => 403, 'exec' => 200, 'auditor' => 200],
+    '/sharia/rulings/new' => ['risk' => 403, 'compliance' => 200, 'retail' => 403, 'exec' => 403, 'auditor' => 403],
+    '/sharia/reviews' => ['risk' => 200, 'retail' => 200, 'tripoli' => 403, 'exec' => 200],
+    '/sharia/reviews/new' => ['risk' => 403, 'compliance' => 200, 'retail' => 403],
+    '/sharia/events' => ['risk' => 200, 'retail' => 200, 'tripoli' => 403, 'exec' => 200, 'auditor' => 200],
+    '/sharia/events/new' => ['risk' => 200, 'compliance' => 200, 'retail' => 200, 'tripoli' => 403, 'exec' => 403, 'auditor' => 403],
+    '/sharia/report' => ['risk' => 200, 'retail' => 200, 'exec' => 200, 'auditor' => 200, 'tripoli' => 403]];
+foreach ($sm as $p => $exp) foreach ($exp as $role => $code) { $r = $c[$role]->get($p); check("sharia: $role GET $p = $code", $r['code'] === $code, (string)$r['code']); }
+check('anonymous /sharia -> login', str_contains((string)(new Client($B))->get('/sharia')['loc'], '/login'));
+
+section('Sharia compliance: rulings');
+$rF = fn(array $o = []) => $o + ['title' => 'Takaful contribution allocation', 'ruling_type' => 'fatwa', 'subject' => 'Takaful', 'ruling_text' => 'Contributions are donations (tabarru).', 'reference_no' => 'SSB/1', 'issued_on' => '2026-01-15', 'status' => 'active'];
+$rc = fn() => (int)$pdo->query('SELECT COUNT(*) FROM sharia_rulings')->fetchColumn(); $n = $rc();
+$c['compliance']->post('/sharia/rulings', $rF(['title' => '']), '/sharia/rulings/new'); check('ruling without title rejected', $rc() === $n);
+$c['compliance']->post('/sharia/rulings', $rF(['ruling_type' => 'x']), '/sharia/rulings/new'); check('bad ruling type rejected', $rc() === $n);
+$c['compliance']->post('/sharia/rulings', $rF(['issued_on' => '2026-13-40']), '/sharia/rulings/new'); check('bad ruling date rejected', $rc() === $n);
+$c['risk']->post('/sharia/rulings', $rF(), '/sharia/rulings'); check('risk manager cannot create a ruling (403)', $rc() === $n);
+$c['compliance']->post('/sharia/rulings', $rF(), '/sharia/rulings/new'); $shr = (int)$pdo->query('SELECT MAX(id) FROM sharia_rulings')->fetchColumn();
+check('ruling created with SHR-0000 code', $rc() === $n + 1 && preg_match('/^SHR-\d{4}$/', (string)$pdo->query("SELECT code FROM sharia_rulings WHERE id=$shr")->fetchColumn()));
+check('rulings visible to department manager and searchable', str_contains($c['retail']->get("/sharia/rulings/$shr")['body'], 'Takaful') && str_contains($c['retail']->get('/sharia/rulings?q=Takaful')['body'], "/sharia/rulings/$shr\""));
+check('LIKE wildcard in ruling search is literal', !str_contains($c['retail']->get('/sharia/rulings?q=%25')['body'], "/sharia/rulings/$shr\""));
+$c['compliance']->post("/sharia/rulings/$shr", $rF(['status' => 'superseded']), "/sharia/rulings/$shr/edit"); check('ruling status updated and filterable', $pdo->query("SELECT status FROM sharia_rulings WHERE id=$shr")->fetchColumn() === 'superseded' && str_contains($c['risk']->get('/sharia/rulings?status=superseded')['body'], "/sharia/rulings/$shr\""));
+$c['compliance']->post("/sharia/rulings/$shr/attachments", [], "/sharia/rulings/$shr", ['file' => ['ruling.pdf', $pdf, 'application/pdf']]); $ra = (int)$pdo->query("SELECT id FROM attachments WHERE entity_type='sharia_ruling' AND entity_id=$shr")->fetchColumn();
+check('ruling document uploaded and readable by viewers', $ra > 0 && $c['exec']->get("/attachments/$ra")['code'] === 200 && $c['tripoli']->get("/attachments/$ra")['code'] === 404);
+$c['risk']->post("/sharia/rulings/$shr/attachments", [], "/sharia/rulings/$shr", ['file' => ['x.pdf', $pdf, 'application/pdf']]); check('risk manager cannot upload ruling documents', (int)$pdo->query("SELECT COUNT(*) FROM attachments WHERE entity_type='sharia_ruling' AND entity_id=$shr")->fetchColumn() === 1);
+
+section('Sharia compliance: reviews');
+$vF = fn(array $o = []) => $o + ['title' => 'Annual Sharia audit of IT-supported products', 'review_type' => 'internal_audit', 'department_id' => $deptIt, 'reviewer_user_id' => $uidN('demo.compliance'), 'planned_date' => date('Y-m-d', strtotime('+10 days')), 'status' => 'planned', 'scope' => 'Online products'];
+$vc = fn() => (int)$pdo->query('SELECT COUNT(*) FROM sharia_reviews')->fetchColumn(); $n = $vc();
+$c['compliance']->post('/sharia/reviews', $vF(['title' => '']), '/sharia/reviews/new'); check('review without title rejected', $vc() === $n);
+$c['compliance']->post('/sharia/reviews', $vF(['reviewer_user_id' => 99999]), '/sharia/reviews/new'); check('review with bad reviewer rejected', $vc() === $n);
+$c['compliance']->post('/sharia/reviews', $vF(['status' => 'completed']), '/sharia/reviews/new'); check('completed review needs summary and completion date', $vc() === $n);
+$c['compliance']->post('/sharia/reviews', $vF(['status' => 'completed', 'summary' => 'ok', 'completed_on' => '2999-01-01']), '/sharia/reviews/new'); check('future completion date rejected', $vc() === $n);
+$c['compliance']->post('/sharia/reviews', $vF(), '/sharia/reviews/new'); $svr = (int)$pdo->query('SELECT MAX(id) FROM sharia_reviews')->fetchColumn(); check('review created with SRV-0000 code', $vc() === $n + 1 && preg_match('/^SRV-\d{4}$/', (string)$pdo->query("SELECT code FROM sharia_reviews WHERE id=$svr")->fetchColumn()));
+check('assigned reviewer sees the due review in My tasks', str_contains($c['compliance']->get('/my')['body'], "/sharia/reviews/$svr\""));
+$c['compliance']->post("/sharia/reviews/$svr", $vF(['status' => 'completed', 'summary' => 'No exceptions found.', 'completed_on' => date('Y-m-d')]), "/sharia/reviews/$svr/edit"); check('review completed with summary', $pdo->query("SELECT status FROM sharia_reviews WHERE id=$svr")->fetchColumn() === 'completed' && !str_contains($c['compliance']->get('/my')['body'], "/sharia/reviews/$svr\""));
+check('risk manager cannot edit reviews (403)', $c['risk']->post("/sharia/reviews/$svr", $vF(['title' => 'hacked']), '/sharia/reviews')['code'] === 403);
+
+section('Sharia compliance: non-compliance events and purification');
+$eF = fn(array $o = []) => $o + ['title' => 'Late fee recorded as income', 'description' => 'Branch recorded late charges as income', 'detected_on' => date('Y-m-d', strtotime('-2 days')), 'department_id' => $deptRet, 'severity' => 'high', 'ruling_id' => $shr];
+$ec = fn() => (int)$pdo->query('SELECT COUNT(*) FROM sharia_events')->fetchColumn(); $n = $ec();
+$c['retail']->post('/sharia/events', $eF(['title' => '']), '/sharia/events/new'); check('event without title rejected', $ec() === $n);
+$c['retail']->post('/sharia/events', $eF(['severity' => 'catastrophic']), '/sharia/events/new'); check('bad severity rejected', $ec() === $n);
+$c['retail']->post('/sharia/events', $eF(['detected_on' => '2999-01-01']), '/sharia/events/new'); check('future detection date rejected', $ec() === $n);
+$c['retail']->post('/sharia/events', $eF(['department_id' => $deptIt]), '/sharia/events/new'); check('department manager cannot report for another department', $ec() === $n);
+$c['retail']->post('/sharia/events', $eF(['ruling_id' => 999999]), '/sharia/events/new'); check('bad ruling reference rejected', $ec() === $n);
+$c['exec']->post('/sharia/events', $eF(), '/sharia/events'); check('exec viewer cannot report (403)', $ec() === $n);
+$c['retail']->post('/sharia/events', $eF(), '/sharia/events/new'); $sev1 = (int)$pdo->query('SELECT MAX(id) FROM sharia_events')->fetchColumn();
+check('event reported with SNC-0000 code, status reported and high severity auto-escalated', $ec() === $n + 1 && preg_match('/^SNC-\d{4}$/', (string)$pdo->query("SELECT code FROM sharia_events WHERE id=$sev1")->fetchColumn()) && $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'reported' && $pdo->query("SELECT escalated_at FROM sharia_events WHERE id=$sev1")->fetchColumn() !== null);
+$c['retail']->post('/sharia/events', $eF(['title' => 'Minor documentation gap', 'severity' => 'low']), '/sharia/events/new'); $sev2 = (int)$pdo->query('SELECT MAX(id) FROM sharia_events')->fetchColumn();
+check('low severity event is not escalated', $pdo->query("SELECT escalated_at FROM sharia_events WHERE id=$sev2")->fetchColumn() === null);
+check('IT manager gets 404 on retail event; retail sees it; tripoli 403', $c['it']->get("/sharia/events/$sev1")['code'] === 404 && $c['retail']->get("/sharia/events/$sev1")['code'] === 200 && $c['tripoli']->get("/sharia/events/$sev1")['code'] === 403);
+check('IT manager list excludes retail events', !str_contains($c['it']->get('/sharia/events')['body'], "/sharia/events/$sev1\""));
+check('dept manager does not see manage forms', !str_contains($c['retail']->get("/sharia/events/$sev1")['body'], '/decision"'));
+check('compliance officer sees the open event in My tasks', str_contains($c['compliance']->get('/my')['body'], "/sharia/events/$sev1\""));
+check('retail manager cannot decide (403) or edit (403)', $c['retail']->post("/sharia/events/$sev1/decision", ['decision_text' => 'x', 'decided_on' => date('Y-m-d')], "/sharia/events/$sev1")['code'] === 403 && $c['retail']->post("/sharia/events/$sev1", $eF(), "/sharia/events/$sev1")['code'] === 403);
+$dF = fn(array $o = []) => $o + ['decided_on' => date('Y-m-d'), 'decision_text' => 'Income to be purified; staff retrained.', 'impermissible_income' => '12500.250'];
+$c['compliance']->post("/sharia/events/$sev1/decision", $dF(['decision_text' => '']), "/sharia/events/$sev1"); check('decision without text rejected', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'reported');
+$c['compliance']->post("/sharia/events/$sev1/decision", $dF(['impermissible_income' => '-5']), "/sharia/events/$sev1"); check('negative income rejected', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'reported');
+$c['compliance']->post("/sharia/events/$sev1/decision", $dF(['impermissible_income' => 'abc']), "/sharia/events/$sev1"); check('non-numeric income rejected', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'reported');
+$c['compliance']->post("/sharia/events/$sev1/decision", $dF(['decided_on' => date('Y-m-d', strtotime('-30 days'))]), "/sharia/events/$sev1"); check('decision date before detection rejected', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'reported');
+$c['compliance']->post("/sharia/events/$sev1/close", [], "/sharia/events/$sev1"); check('cannot close before a decision', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'reported');
+$c['compliance']->post("/sharia/events/$sev1/review", [], "/sharia/events/$sev1"); check('event moved to under review', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'under_review');
+$c['compliance']->post("/sharia/events/$sev1/decision", $dF(), "/sharia/events/$sev1");
+check('decision recorded with exact income and purification pending', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'decided' && $pdo->query("SELECT impermissible_income FROM sharia_events WHERE id=$sev1")->fetchColumn() === '12500.250' && $pdo->query("SELECT purification_status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'pending');
+$c['compliance']->post("/sharia/events/$sev1/close", [], "/sharia/events/$sev1"); check('cannot close while purification pending', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'decided');
+$c['compliance']->post("/sharia/events/$sev1/decision", $dF(), "/sharia/events/$sev1"); check('decision cannot be recorded twice', (int)$pdo->query("SELECT COUNT(*) FROM audit_log WHERE action='sharia.event_decided' AND entity_id=$sev1")->fetchColumn() === 1);
+$c['compliance']->post("/sharia/events/$sev1/purify", ['purified_on' => date('Y-m-d'), 'beneficiary' => ''], "/sharia/events/$sev1"); check('purification needs a beneficiary', $pdo->query("SELECT purification_status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'pending');
+$c['compliance']->post("/sharia/events/$sev1/purify", ['purified_on' => '2999-01-01', 'beneficiary' => 'Charity'], "/sharia/events/$sev1"); check('future purification date rejected', $pdo->query("SELECT purification_status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'pending');
+check('pending purification shows on list filter and dashboard tile', str_contains($c['compliance']->get('/sharia/events?purification=1')['body'], "/sharia/events/$sev1\"") && str_contains($c['compliance']->get('/')['body'], 'sharia/events?purification=1'));
+$c['compliance']->post("/sharia/events/$sev1/purify", ['purified_on' => date('Y-m-d'), 'beneficiary' => 'Approved Charity Foundation'], "/sharia/events/$sev1"); check('purification recorded', $pdo->query("SELECT purification_status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'purified' && $pdo->query("SELECT beneficiary FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'Approved Charity Foundation');
+$c['compliance']->post("/sharia/events/$sev1/close", [], "/sharia/events/$sev1"); check('event closed after decision and purification', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'closed' && $pdo->query("SELECT closed_at FROM sharia_events WHERE id=$sev1")->fetchColumn() !== null);
+$c['compliance']->post("/sharia/events/$sev1", $eF(['title' => 'edited after close']), "/sharia/events/$sev1"); check('closed event is read-only', $pdo->query("SELECT title FROM sharia_events WHERE id=$sev1")->fetchColumn() === 'Late fee recorded as income');
+// no-income decision path
+$c['compliance']->post("/sharia/events/$sev2/decision", $dF(['impermissible_income' => '']), "/sharia/events/$sev2"); check('decision with no income needs no purification', $pdo->query("SELECT purification_status FROM sharia_events WHERE id=$sev2")->fetchColumn() === 'not_required');
+$c['compliance']->post("/sharia/events/$sev2/close", [], "/sharia/events/$sev2"); check('event without income closes directly after decision', $pdo->query("SELECT status FROM sharia_events WHERE id=$sev2")->fetchColumn() === 'closed');
+// evidence
+$c['retail']->post("/sharia/events/$sev2/attachments", [], "/sharia/events/$sev2", ['file' => ['evidence.pdf', $pdf, 'application/pdf']]); $ea = (int)$pdo->query("SELECT id FROM attachments WHERE entity_type='sharia_event' AND entity_id=$sev2")->fetchColumn();
+check('department manager uploads evidence to own event; IT manager cannot read it (404)', $ea > 0 && $c['exec']->get("/attachments/$ea")['code'] === 200 && $c['it']->get("/attachments/$ea")['code'] === 404);
+// report
+$rep = $c['exec']->get('/sharia/report?year=' . date('Y'));
+check('annual report renders totals from data (income, purified, pending)', $rep['code'] === 200 && str_contains($rep['body'], '12') && preg_match('/12[,.\s]?500/', $rep['body']) === 1);
+check('report year is clamped / invalid year harmless', $c['exec']->get('/sharia/report?year=99999')['code'] === 200 && $c['exec']->get('/sharia/report?year=abc')['code'] === 200);
+check('Sharia actions are audited', (int)$pdo->query("SELECT COUNT(DISTINCT action) FROM audit_log WHERE action IN ('sharia.ruling_created','sharia.ruling_updated','sharia.review_created','sharia.review_updated','sharia.event_reported','sharia.event_review','sharia.event_decided','sharia.event_purified','sharia.event_closed')")->fetchColumn() === 9);
+check('help topic for Sharia exists in both languages', isset($helpEn['topics']['sharia'], $helpAr['topics']['sharia']));
+check('Sharia pages render in English without missing keys', (function () use ($c, $shr, $sev1, $svr) { $a = $c['compliance']; $a->get('/lang?l=en&next=/'); $ok = true; foreach (['/sharia', '/sharia/rulings', "/sharia/rulings/$shr", '/sharia/rulings/new', '/sharia/reviews', "/sharia/reviews/$svr", '/sharia/reviews/new', '/sharia/events', "/sharia/events/$sev1", '/sharia/events/new', '/sharia/report', '/controls', '/my', '/help', '/notes'] as $p) { $b = $a->get($p)['body']; $chrome = preg_replace('#<(header|nav|option|td|dd|li|a|p|h1|h2)\b[^>]*>.*?</\1>#su', '', $b); $text = strip_tags($chrome); if (preg_match('/\b(sha|ctl|my|help|notes)\.[a-z_]+\b/', strip_tags($b))) { fwrite(STDERR, "missing key on $p\n"); $ok = false; } } $a->get('/lang?l=ar&next=/'); return $ok; })());

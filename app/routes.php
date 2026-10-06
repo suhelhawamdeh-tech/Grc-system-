@@ -167,3 +167,31 @@ $router->post('/controls/{id}/archive', 'ControlController@archive', 'control.ma
 $router->post('/controls/{id}/risks', 'ControlController@link', 'control.manage');
 $router->post('/controls/{id}/risks/{rid}/remove', 'ControlController@unlink', 'control.manage');
 $router->post('/controls/{id}/tests', 'ControlController@addTest', 'control.test');
+
+// ---- Release 3: Sharia compliance
+$router->get('/sharia', 'ShariaController@index', 'sharia.view');
+$router->get('/sharia/report', 'ShariaController@report', 'sharia.view');
+$router->get('/sharia/rulings', 'ShariaController@rulings', 'sharia.view');
+$router->get('/sharia/rulings/new', 'ShariaController@rulingNew', 'sharia.manage');
+$router->post('/sharia/rulings', 'ShariaController@rulingStore', 'sharia.manage');
+$router->get('/sharia/rulings/{id}', 'ShariaController@rulingShow', 'sharia.view');
+$router->get('/sharia/rulings/{id}/edit', 'ShariaController@rulingEdit', 'sharia.manage');
+$router->post('/sharia/rulings/{id}', 'ShariaController@rulingUpdate', 'sharia.manage');
+$router->post('/sharia/rulings/{id}/attachments', 'ShariaController@rulingUpload', 'sharia.manage');
+$router->get('/sharia/reviews', 'ShariaController@reviews', 'sharia.view');
+$router->get('/sharia/reviews/new', 'ShariaController@reviewNew', 'sharia.manage');
+$router->post('/sharia/reviews', 'ShariaController@reviewStore', 'sharia.manage');
+$router->get('/sharia/reviews/{id}', 'ShariaController@reviewShow', 'sharia.view');
+$router->get('/sharia/reviews/{id}/edit', 'ShariaController@reviewEdit', 'sharia.manage');
+$router->post('/sharia/reviews/{id}', 'ShariaController@reviewUpdate', 'sharia.manage');
+$router->get('/sharia/events', 'ShariaController@events', 'sharia.view');
+$router->get('/sharia/events/new', 'ShariaController@eventNew', 'sharia.report');
+$router->post('/sharia/events', 'ShariaController@eventStore', 'sharia.report');
+$router->get('/sharia/events/{id}', 'ShariaController@eventShow', 'sharia.view');
+$router->get('/sharia/events/{id}/edit', 'ShariaController@eventEdit', 'sharia.manage');
+$router->post('/sharia/events/{id}', 'ShariaController@eventUpdate', 'sharia.manage');
+$router->post('/sharia/events/{id}/review', 'ShariaController@eventReview', 'sharia.manage');
+$router->post('/sharia/events/{id}/decision', 'ShariaController@eventDecide', 'sharia.manage');
+$router->post('/sharia/events/{id}/purify', 'ShariaController@eventPurify', 'sharia.manage');
+$router->post('/sharia/events/{id}/close', 'ShariaController@eventClose', 'sharia.manage');
+$router->post('/sharia/events/{id}/attachments', 'ShariaController@eventUpload', 'sharia.report');

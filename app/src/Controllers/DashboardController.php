@@ -95,6 +95,11 @@ final class DashboardController extends Controller
             $p['ctl_overdue'] = (int)Db::val("SELECT COUNT(*) FROM controls c WHERE c.archived_at IS NULL AND c.next_test_due < ? AND $w", array_merge([$today], $pp));
             $p['ctl_weak'] = (int)Db::val("SELECT COUNT(*) FROM controls c WHERE c.archived_at IS NULL AND c.last_result IN ('ineffective','partially_effective') AND $w", $pp);
         }
+        if (Perm::roleHas($u['role'], 'sharia.view')) {
+            [$w, $pp] = Scope::sqlDept($u, 'e');
+            $p['sha_open'] = (int)Db::val("SELECT COUNT(*) FROM sharia_events e WHERE e.status <> 'closed' AND $w", $pp);
+            $p['sha_purify'] = (int)Db::val("SELECT COUNT(*) FROM sharia_events e WHERE e.purification_status = 'pending' AND $w", $pp);
+        }
         if (Perm::roleHas($u['role'], 'appetite.view')) {
             $p['breaches'] = (int)Db::val("SELECT COUNT(*) FROM appetite_breaches WHERE status IN ('open','escalated')");
         }

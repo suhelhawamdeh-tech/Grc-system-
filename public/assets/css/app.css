@@ -260,3 +260,12 @@ ol.steps li a { font-weight: 600; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 @media (max-width: 860px) { .topbar .tools { order: 3; } .sidenav a:hover { padding-inline-start: 20px; } }
 @media print { .side-panel, .tools { display: none !important; } }
+
+/* Status stepper (Sharia events and other multi-stage records) */
+.stepper { display: flex; gap: 0; list-style: none; margin: 0 0 16px; padding: 0; counter-reset: st; }
+.stepper li { flex: 1; text-align: center; padding: 10px 6px; font-size: .88rem; background: #e8edf4; color: var(--muted); position: relative; counter-increment: st; font-weight: 600; }
+.stepper li::before { content: counter(st); display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: #c6d0de; color: #fff; align-items: center; justify-content: center; margin-inline-end: 6px; font-size: .75rem; }
+.stepper li:first-child { border-start-start-radius: 8px; border-end-start-radius: 8px; } .stepper li:last-child { border-start-end-radius: 8px; border-end-end-radius: 8px; }
+.stepper li.done { background: #dff2e3; color: var(--ok); } .stepper li.done::before { background: var(--ok); content: "✓"; }
+.stepper li.current { background: var(--navy); color: #fff; } .stepper li.current::before { background: var(--gold); color: var(--navy); }
+@media (max-width: 600px) { .stepper { flex-direction: column; } .stepper li { text-align: start; } }

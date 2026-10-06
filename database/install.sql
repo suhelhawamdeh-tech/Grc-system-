@@ -637,4 +637,74 @@ CREATE TABLE IF NOT EXISTS control_tests (
 
 INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('005_controls', NOW());
 
+-- ===== migration 006_sharia =====
+CREATE TABLE IF NOT EXISTS sharia_rulings (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  title VARCHAR(250) NOT NULL,
+  ruling_type ENUM('fatwa','resolution','guideline') NOT NULL DEFAULT 'resolution',
+  subject VARCHAR(250) NOT NULL,
+  ruling_text TEXT NOT NULL,
+  reference_no VARCHAR(60) NULL,
+  issued_on DATE NOT NULL,
+  status ENUM('active','superseded','withdrawn') NOT NULL DEFAULT 'active',
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_shr_code (code),
+  KEY idx_shr_status (status, issued_on)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sharia_reviews (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  title VARCHAR(250) NOT NULL,
+  review_type ENUM('product','contract','internal_audit','other') NOT NULL DEFAULT 'product',
+  scope TEXT NULL,
+  department_id INT UNSIGNED NULL,
+  reviewer_user_id INT UNSIGNED NOT NULL,
+  planned_date DATE NOT NULL,
+  completed_on DATE NULL,
+  status ENUM('planned','in_progress','completed') NOT NULL DEFAULT 'planned',
+  summary TEXT NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_srv_code (code),
+  KEY idx_srv_status (status, planned_date),
+  CONSTRAINT fk_srv_dept FOREIGN KEY (department_id) REFERENCES departments(id),
+  CONSTRAINT fk_srv_user FOREIGN KEY (reviewer_user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS sharia_events (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  title VARCHAR(250) NOT NULL,
+  description TEXT NOT NULL,
+  detected_on DATE NOT NULL,
+  department_id INT UNSIGNED NOT NULL,
+  ruling_id INT UNSIGNED NULL,
+  severity ENUM('low','medium','high') NOT NULL DEFAULT 'medium',
+  status ENUM('reported','under_review','decided','closed') NOT NULL DEFAULT 'reported',
+  escalated_at DATETIME NULL,
+  decision_text TEXT NULL,
+  decided_on DATE NULL,
+  impermissible_income DECIMAL(18,3) NOT NULL DEFAULT 0,
+  purification_status ENUM('not_required','pending','purified') NOT NULL DEFAULT 'not_required',
+  purified_on DATE NULL,
+  beneficiary VARCHAR(250) NULL,
+  closed_at DATETIME NULL,
+  reported_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_snc_code (code),
+  KEY idx_snc_status (status, severity),
+  KEY idx_snc_dept (department_id),
+  CONSTRAINT fk_snc_dept FOREIGN KEY (department_id) REFERENCES departments(id),
+  CONSTRAINT fk_snc_ruling FOREIGN KEY (ruling_id) REFERENCES sharia_rulings(id),
+  CONSTRAINT fk_snc_user FOREIGN KEY (reported_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('006_sharia', NOW());
+
 SET FOREIGN_KEY_CHECKS = 1;

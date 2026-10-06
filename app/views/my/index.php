@@ -7,6 +7,8 @@ $cfg = [
   'rcsa' => ['icon' => 'clipboard', 'label' => 'my.rcsa', 'link' => fn($r) => url('rcsa/' . $r['id'])],
   'rcsa_review' => ['icon' => 'clipboard', 'label' => 'my.rcsa_review', 'link' => fn($r) => url('rcsa/' . $r['id'])],
   'control_tests' => ['icon' => 'flask', 'label' => 'my.control_tests', 'link' => fn($r) => url('controls/' . $r['id']) . '#test'],
+  'sharia_events' => ['icon' => 'moon', 'label' => 'my.sharia_events', 'link' => fn($r) => url('sharia/events/' . $r['id'])],
+  'sharia_reviews' => ['icon' => 'moon', 'label' => 'my.sharia_reviews', 'link' => fn($r) => url('sharia/reviews/' . $r['id'])],
   'notes' => ['icon' => 'note', 'label' => 'my.notes', 'link' => fn($r) => $r['page_path'] ? base_path() . $r['page_path'] : url('notes')],
 ];
 $total = 0; foreach ($sections as $rows) { $total += count($rows); } ?>
