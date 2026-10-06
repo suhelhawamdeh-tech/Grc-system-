@@ -14,12 +14,12 @@ final class Perm
     public static function matrix(): array
     {
         // Phase 2 module permissions
-        $p2read = ['kri.view', 'appetite.view', 'compliance.view', 'committee.view', 'policy.view', 'rcsa.view', 'control.view', 'sharia.view'];
+        $p2read = ['kri.view', 'appetite.view', 'compliance.view', 'committee.view', 'policy.view', 'rcsa.view', 'control.view', 'sharia.view', 'bia.view'];
         return [
             'admin' => ['*'],
-            'risk_manager' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'scales.manage', 'ownership.transfer', 'kri.report', 'kri.manage', 'appetite.manage', 'committee.manage', 'policy.manage', 'rcsa.manage', 'control.manage', 'control.test', 'sharia.report']),
-            'compliance_officer' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'kri.report', 'compliance.manage', 'committee.manage', 'policy.manage', 'control.manage', 'control.test', 'sharia.report', 'sharia.manage']),
-            'dept_manager' => array_merge(self::WORK, ['risk.archive', 'incident.archive', 'kri.view', 'kri.report', 'compliance.view', 'compliance.update', 'policy.view', 'rcsa.view', 'rcsa.respond', 'control.view', 'sharia.view', 'sharia.report']),
+            'risk_manager' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'scales.manage', 'ownership.transfer', 'kri.report', 'kri.manage', 'appetite.manage', 'committee.manage', 'policy.manage', 'rcsa.manage', 'control.manage', 'control.test', 'sharia.report', 'bia.manage', 'approval.decide']),
+            'compliance_officer' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'kri.report', 'compliance.manage', 'committee.manage', 'policy.manage', 'control.manage', 'control.test', 'sharia.report', 'sharia.manage', 'bia.manage', 'approval.decide']),
+            'dept_manager' => array_merge(self::WORK, ['risk.archive', 'incident.archive', 'kri.view', 'kri.report', 'compliance.view', 'compliance.update', 'policy.view', 'rcsa.view', 'rcsa.respond', 'control.view', 'sharia.view', 'sharia.report', 'bia.view', 'bia.manage']),
             'branch_liaison' => ['risk.view', 'risk.create', 'risk.edit', 'incident.view', 'incident.create', 'incident.edit', 'dashboard.view', 'export.run', 'policy.view', 'rcsa.view', 'rcsa.respond'],
             'exec_viewer' => array_merge(self::READ, $p2read),
             'auditor' => array_merge(self::READ, $p2read, ['audit.view']),

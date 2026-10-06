@@ -1,0 +1,28 @@
+<?php
+// نصوص تحليل الأثر على الأعمال والموافقات (العربية). يجب أن تتطابق المفاتيح مع en_bia.php.
+return [
+    'nav.bia' => 'تحليل الأثر على الأعمال', 'nav.approvals' => 'الموافقات',
+    'enum.crit.critical' => 'حرجة', 'enum.crit.high' => 'عالية', 'enum.crit.medium' => 'متوسطة', 'enum.crit.low' => 'منخفضة',
+    'enum.bstatus.draft' => 'مسودة', 'enum.bstatus.pending_approval' => 'بانتظار الاعتماد', 'enum.bstatus.approved' => 'معتمدة',
+    'enum.astatus.pending' => 'معلّق', 'enum.astatus.approved' => 'معتمد', 'enum.astatus.rejected' => 'مرفوض',
+    'bia.title' => 'تحليل الأثر على الأعمال', 'bia.subtitle' => 'العمليات الحرجة، وماذا يحدث إن توقفت، وكم يجب أن تتعافى بسرعة', 'bia.new' => 'عملية جديدة', 'bia.edit' => 'تعديل العملية', 'bia.id' => 'الرمز',
+    'bia.name' => 'اسم العملية', 'bia.name_hint' => 'عملية عمل، مثل «سحب نقدي للعملاء» أو «تحويل الرواتب».', 'bia.description' => 'الوصف', 'bia.department' => 'الإدارة', 'bia.owner' => 'مالك العملية',
+    'bia.criticality' => 'الحرجية', 'bia.status' => 'الحالة', 'bia.sec_process' => 'العملية', 'bia.sec_impact' => 'الأثر إذا توقفت العملية', 'bia.impact_intro' => 'قيّم كل أثر من 1 (ضئيل) إلى 5 (جسيم). تتبع الحرجية أعلى تقييم.',
+    'bia.impact_financial' => 'الأثر المالي', 'bia.impact_operational' => 'الأثر التشغيلي', 'bia.impact_legal' => 'الأثر القانوني والرقابي', 'bia.impact_reputation' => 'أثر السمعة',
+    'bia.impact_financial_hint' => 'خسائر وغرامات وإيرادات ضائعة.', 'bia.impact_operational_hint' => 'عجز العملاء والموظفين عن العمل.', 'bia.impact_legal_hint' => 'مخالفة القانون أو متطلبات الجهة الرقابية.', 'bia.impact_reputation_hint' => 'فقدان ثقة الجمهور.', 'bia.lvl1' => 'ضئيل', 'bia.lvl3' => 'متوسط', 'bia.lvl5' => 'جسيم',
+    'bia.sec_recovery' => 'أهداف التعافي', 'bia.hours' => 'ساعة', 'bia.mtpd_hours' => 'أقصى توقف يمكن تحمله (MTPD)', 'bia.rto_hours' => 'هدف زمن التعافي (RTO)', 'bia.rpo_hours' => 'هدف نقطة التعافي (RPO)',
+    'bia.mtpd_hint' => 'عدد الساعات التي لا يستطيع المصرف بعدها البقاء دون العملية.', 'bia.rto_hint' => 'الساعات المستهدفة لاستعادة العملية. يجب ألا تزيد عن MTPD.', 'bia.rpo_hint' => 'أقصى ساعات من البيانات يقبل المصرف فقدانها.',
+    'bia.sec_dependencies' => 'ما تعتمد عليه العملية', 'bia.systems' => 'الأنظمة الداعمة', 'bia.no_systems' => 'لا أنظمة مسجّلة بعد.', 'bia.no_systems_linked' => 'لا أنظمة مرتبطة.', 'bia.dependencies' => 'اعتماديات أخرى', 'bia.dependencies_hint' => 'موظفون رئيسيون وموردون ومقار وشركاء.',
+    'bia.processes' => 'العمليات', 'bia.systems_hint' => 'الأنظمة التي تعتمد عليها العمليات وسرعة استعادة كل منها', 'bia.system_new' => 'نظام جديد', 'bia.system_edit' => 'تعديل النظام', 'bia.s_name' => 'اسم النظام', 'bia.s_recovery' => 'زمن الاستعادة (ساعات)', 'bia.s_recovery_short' => 'يتعافى خلال', 'bia.s_loss' => 'فقدان البيانات المحتمل (ساعات)', 'bia.s_loss_short' => 'فقدان بيانات',
+    'bia.s_recovery_hint' => 'الزمن الفعلي لاستعادة النظام بعد عطل (من آخر اختبار تعافٍ).', 'bia.s_loss_hint' => 'ساعات البيانات التي قد تُفقد بعد عطل (فاصل النسخ الاحتياطي أو النسخ المتماثل).',
+    'bia.stat_total' => 'العمليات', 'bia.stat_critical' => 'عمليات حرجة', 'bia.stat_unapproved' => 'حرجة/عالية غير معتمدة', 'bia.stat_gaps' => 'فجوات تعافٍ', 'bia.stat_review' => 'مراجعات متأخرة', 'bia.gap_badge' => 'فجوة',
+    'bia.gaps_title' => 'فجوات التعافي', 'bia.gap_rto' => 'النظام :system يتعافى خلال :have ساعة بينما تحتاج العملية تعافياً خلال :need ساعة.', 'bia.gap_rpo' => 'النظام :system قد يفقد :have ساعة من البيانات بينما تقبل العملية :need ساعة كحد أقصى.',
+    'bia.gaps_hint' => 'لا يمكن إرسال العملية للاعتماد ما دامت أنظمتها لا تستوفي أهداف تعافيها. حسّن النظام أو اتفقوا على أهداف واقعية.', 'bia.no_gaps' => 'لا فجوات تعافٍ. كل نظام داعم يستوفي أهداف عملياته.',
+    'bia.submit' => 'أرسل للاعتماد', 'bia.submitted' => 'تم الإرسال للاعتماد.', 'bia.saved_reset' => 'تم الحفظ. لأن الأهداف تغيّرت عادت العملية إلى «مسودة» وتحتاج اعتماداً من جديد.', 'bia.edit_warning' => 'تعديل تقييمات الأثر أو أهداف التعافي يعيد العملية المعتمدة إلى «مسودة».',
+    'bia.err_hours' => 'أدخل «:field» بالساعات، مثل 4 أو 0.5 (حتى 99999.99).', 'bia.err_rto_mtpd' => 'لا يمكن أن يزيد RTO عن أقصى توقف يمكن تحمله.', 'bia.err_state' => 'هذا الإجراء غير متاح في الحالة الحالية.', 'bia.err_gaps' => 'توجد فجوات تعافٍ: راجع المربع الأحمر في صفحة العملية.',
+    'bia.approved_at' => 'اعتُمدت في', 'bia.next_review' => 'موعد المراجعة القادمة', 'bia.review_overdue' => 'مراجعة متأخرة', 'bia.report' => 'تقرير تحليل الأثر', 'bia.report_hint' => 'التغطية حسب الإدارة وفجوات التعافي المفتوحة', 'bia.by_department' => 'حسب الإدارة',
+    'appr.title' => 'الموافقات', 'appr.subtitle' => 'سجلات تنتظر نظرة ثانية', 'appr.pending' => 'بانتظار قرارك', 'appr.none' => 'لا شيء ينتظر الاعتماد.', 'appr.mine' => 'طلباتك', 'appr.decide' => 'قرار الاعتماد', 'appr.requested_by' => 'طلبه :name', 'appr.requested' => 'تاريخ الطلب',
+    'appr.status' => 'الحالة', 'appr.decided_by' => 'قرره', 'appr.comment' => 'تعليق', 'appr.comment_hint' => 'إلزامي عند الرفض.', 'appr.approve' => 'اعتماد', 'appr.reject' => 'رفض', 'appr.history' => 'سجل الاعتماد', 'appr.waiting' => 'بانتظار معتمِد. لا يمكنك اعتماد طلبك بنفسك.',
+    'appr.approved' => 'تم الاعتماد.', 'appr.rejected' => 'تم الرفض وإعادته إلى مسودة.', 'appr.err_state' => 'سبق البتّ في هذا الطلب.', 'appr.err_self' => 'لا يمكنك اعتماد طلبك بنفسك.', 'appr.err_comment' => 'اكتب تعليقاً يشرح سبب الرفض.',
+    'my.approvals' => 'موافقات بانتظارك', 'my.bia_review' => 'مراجعات تحليل الأثر المستحقة', 'dash.bia_unapproved' => 'عمليات حرجة بلا تحليل أثر معتمد', 'dash.bia_gaps' => 'فجوات تعافٍ في تحليل الأثر', 'dash.appr_pending' => 'موافقات معلّقة',
+];

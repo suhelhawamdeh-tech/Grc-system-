@@ -195,3 +195,21 @@ $router->post('/sharia/events/{id}/decision', 'ShariaController@eventDecide', 's
 $router->post('/sharia/events/{id}/purify', 'ShariaController@eventPurify', 'sharia.manage');
 $router->post('/sharia/events/{id}/close', 'ShariaController@eventClose', 'sharia.manage');
 $router->post('/sharia/events/{id}/attachments', 'ShariaController@eventUpload', 'sharia.report');
+
+// ---- Release 3: business impact analysis and approvals
+$router->get('/bia', 'BiaController@index', 'bia.view');
+$router->get('/bia/new', 'BiaController@create', 'bia.manage');
+$router->post('/bia', 'BiaController@store', 'bia.manage');
+$router->get('/bia/report', 'BiaController@report', 'bia.view');
+$router->get('/bia/systems', 'BiaController@systems', 'bia.view');
+$router->get('/bia/systems/new', 'BiaController@systemNew', 'bia.manage');
+$router->post('/bia/systems', 'BiaController@systemStore', 'bia.manage');
+$router->get('/bia/systems/{id}/edit', 'BiaController@systemEdit', 'bia.manage');
+$router->post('/bia/systems/{id}', 'BiaController@systemUpdate', 'bia.manage');
+$router->get('/bia/{id}', 'BiaController@show', 'bia.view');
+$router->get('/bia/{id}/edit', 'BiaController@edit', 'bia.manage');
+$router->post('/bia/{id}', 'BiaController@update', 'bia.manage');
+$router->post('/bia/{id}/submit', 'BiaController@submit', 'bia.manage');
+$router->post('/bia/{id}/archive', 'BiaController@archive', 'bia.manage');
+$router->get('/approvals', 'ApprovalController@index', 'approval.decide');
+$router->post('/approvals/{id}/decide', 'ApprovalController@decide', 'approval.decide');

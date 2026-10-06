@@ -95,6 +95,14 @@ final class DashboardController extends Controller
             $p['ctl_overdue'] = (int)Db::val("SELECT COUNT(*) FROM controls c WHERE c.archived_at IS NULL AND c.next_test_due < ? AND $w", array_merge([$today], $pp));
             $p['ctl_weak'] = (int)Db::val("SELECT COUNT(*) FROM controls c WHERE c.archived_at IS NULL AND c.last_result IN ('ineffective','partially_effective') AND $w", $pp);
         }
+        if (Perm::roleHas($u['role'], 'bia.view')) {
+            [$w, $pp] = Scope::sqlDept($u, 'p');
+            $p['bia_unapproved'] = (int)Db::val("SELECT COUNT(*) FROM bia_processes p WHERE p.archived_at IS NULL AND p.criticality IN ('critical','high') AND p.status <> 'approved' AND $w", $pp);
+            $p['bia_gaps'] = (int)Db::val("SELECT COUNT(*) FROM bia_processes p WHERE p.archived_at IS NULL AND $w AND EXISTS (SELECT 1 FROM bia_process_systems ps JOIN bia_systems s ON s.id = ps.system_id WHERE ps.process_id = p.id AND s.is_active = 1 AND (s.recovery_hours > p.rto_hours OR s.data_loss_hours > p.rpo_hours))", $pp);
+        }
+        if (Perm::roleHas($u['role'], 'approval.decide')) {
+            $p['appr_pending'] = (int)Db::val("SELECT COUNT(*) FROM approvals WHERE status = 'pending' AND requested_by <> ?", [$u['id']]);
+        }
         if (Perm::roleHas($u['role'], 'sharia.view')) {
             [$w, $pp] = Scope::sqlDept($u, 'e');
             $p['sha_open'] = (int)Db::val("SELECT COUNT(*) FROM sharia_events e WHERE e.status <> 'closed' AND $w", $pp);

@@ -223,3 +223,73 @@ check('report year is clamped / invalid year harmless', $c['exec']->get('/sharia
 check('Sharia actions are audited', (int)$pdo->query("SELECT COUNT(DISTINCT action) FROM audit_log WHERE action IN ('sharia.ruling_created','sharia.ruling_updated','sharia.review_created','sharia.review_updated','sharia.event_reported','sharia.event_review','sharia.event_decided','sharia.event_purified','sharia.event_closed')")->fetchColumn() === 9);
 check('help topic for Sharia exists in both languages', isset($helpEn['topics']['sharia'], $helpAr['topics']['sharia']));
 check('Sharia pages render in English without missing keys', (function () use ($c, $shr, $sev1, $svr) { $a = $c['compliance']; $a->get('/lang?l=en&next=/'); $ok = true; foreach (['/sharia', '/sharia/rulings', "/sharia/rulings/$shr", '/sharia/rulings/new', '/sharia/reviews', "/sharia/reviews/$svr", '/sharia/reviews/new', '/sharia/events', "/sharia/events/$sev1", '/sharia/events/new', '/sharia/report', '/controls', '/my', '/help', '/notes'] as $p) { $b = $a->get($p)['body']; $chrome = preg_replace('#<(header|nav|option|td|dd|li|a|p|h1|h2)\b[^>]*>.*?</\1>#su', '', $b); $text = strip_tags($chrome); if (preg_match('/\b(sha|ctl|my|help|notes)\.[a-z_]+\b/', strip_tags($b))) { fwrite(STDERR, "missing key on $p\n"); $ok = false; } } $a->get('/lang?l=ar&next=/'); return $ok; })());
+
+section('BIA and approvals: authorization matrix');
+$bm = ['/bia' => ['risk' => 200, 'compliance' => 200, 'retail' => 200, 'tripoli' => 403, 'exec' => 200, 'auditor' => 200],
+    '/bia/new' => ['risk' => 200, 'compliance' => 200, 'retail' => 200, 'tripoli' => 403, 'exec' => 403, 'auditor' => 403],
+    '/bia/systems' => ['risk' => 200, 'retail' => 200, 'exec' => 200, 'tripoli' => 403],
+    '/bia/systems/new' => ['risk' => 200, 'retail' => 200, 'exec' => 403, 'auditor' => 403],
+    '/bia/report' => ['risk' => 200, 'retail' => 200, 'exec' => 200, 'tripoli' => 403],
+    '/approvals' => ['risk' => 200, 'compliance' => 200, 'retail' => 403, 'exec' => 403, 'auditor' => 403, 'tripoli' => 403]];
+foreach ($bm as $p => $exp) foreach ($exp as $role => $code) { $r = $c[$role]->get($p); check("bia: $role GET $p = $code", $r['code'] === $code, (string)$r['code']); }
+check('anonymous /bia and /approvals -> login', str_contains((string)(new Client($B))->get('/bia')['loc'], '/login') && str_contains((string)(new Client($B))->get('/approvals')['loc'], '/login'));
+
+section('BIA: unit rules');
+use App\Support\Bia;
+check('hours parser: valid forms', Bia::hours('4') === 400 && Bia::hours('0.5') === 50 && Bia::hours('36.25') === 3625 && Bia::hours('99999.99') === 9999999 && Bia::hours('٤') === 400);
+check('hours parser: rejects negatives, text, too many decimals, too large', Bia::hours('-1') === null && Bia::hours('abc') === null && Bia::hours('1.234') === null && Bia::hours('100000') === null && Bia::hours('') === null && Bia::hours('1e3') === null);
+check('criticality follows the highest impact', Bia::criticality(1, 1, 1, 1) === 'low' && Bia::criticality(3, 1, 1, 1) === 'medium' && Bia::criticality(1, 4, 1, 1) === 'high' && Bia::criticality(1, 1, 1, 5) === 'critical');
+check('hours formatting drops trailing zeros', Bia::fmt('4.00') === '4' && Bia::fmt('0.50') === '0.5' && Bia::fmt('36.25') === '36.25');
+
+section('BIA: systems, processes, gaps and approval workflow');
+$gapCount = fn(int $pid) => (int)$pdo->query("SELECT COALESCE(SUM(s.recovery_hours > p.rto_hours) + SUM(s.data_loss_hours > p.rpo_hours), 0) FROM bia_process_systems ps JOIN bia_systems s ON s.id = ps.system_id JOIN bia_processes p ON p.id = ps.process_id WHERE ps.process_id = $pid AND s.is_active = 1")->fetchColumn();
+$sF = fn(array $o = []) => $o + ['name' => 'Treasury dealing system', 'description' => 'd', 'department_id' => $deptIt, 'owner_user_id' => $uidN('demo.dept.it'), 'recovery_hours' => '6', 'data_loss_hours' => '1'];
+$sc = fn() => (int)$pdo->query('SELECT COUNT(*) FROM bia_systems')->fetchColumn(); $n = $sc();
+$c['risk']->post('/bia/systems', $sF(['name' => '']), '/bia/systems/new'); check('system without name rejected', $sc() === $n);
+$c['risk']->post('/bia/systems', $sF(['recovery_hours' => 'fast']), '/bia/systems/new'); check('system with bad hours rejected', $sc() === $n);
+$c['exec']->post('/bia/systems', $sF(), '/bia/systems'); check('exec viewer cannot create a system (403)', $sc() === $n);
+$c['risk']->post('/bia/systems', $sF(), '/bia/systems/new'); $sys1 = (int)$pdo->query('SELECT MAX(id) FROM bia_systems')->fetchColumn();
+check('system created with SYS-0000 code', $sc() === $n + 1 && preg_match('/^SYS-\d{4}$/', (string)$pdo->query("SELECT code FROM bia_systems WHERE id=$sys1")->fetchColumn()));
+$pF = fn(array $o = []) => $o + ['name' => 'Foreign exchange dealing', 'description' => 'FX desk', 'department_id' => $deptRet, 'owner_user_id' => $uidN('demo.dept.retail'), 'impact_financial' => '5', 'impact_operational' => '3', 'impact_legal' => '3', 'impact_reputation' => '4', 'mtpd_hours' => '8', 'rto_hours' => '4', 'rpo_hours' => '0.5', 'systems' => [$sys1], 'dependencies' => 'Reuters feed'];
+$pc = fn() => (int)$pdo->query('SELECT COUNT(*) FROM bia_processes')->fetchColumn(); $n = $pc();
+$c['retail']->post('/bia', $pF(['name' => '']), '/bia/new'); check('process without name rejected', $pc() === $n);
+$c['retail']->post('/bia', $pF(['impact_financial' => '6']), '/bia/new'); check('impact rating above 5 rejected', $pc() === $n);
+$c['retail']->post('/bia', $pF(['impact_legal' => '0']), '/bia/new'); check('impact rating below 1 rejected', $pc() === $n);
+$c['retail']->post('/bia', $pF(['rto_hours' => '10']), '/bia/new'); check('RTO longer than MTPD rejected', $pc() === $n);
+$c['retail']->post('/bia', $pF(['rpo_hours' => '-2']), '/bia/new'); check('negative RPO rejected', $pc() === $n);
+$c['retail']->post('/bia', $pF(['department_id' => $deptIt]), '/bia/new'); check('department manager cannot create for another department', $pc() === $n);
+$c['retail']->post('/bia', $pF(['systems' => [999999]]), '/bia/new'); check('unknown system rejected', $pc() === $n);
+$c['retail']->post('/bia', $pF(), '/bia/new'); $bp = (int)$pdo->query('SELECT MAX(id) FROM bia_processes')->fetchColumn();
+check('process created: BIA-0000, critical (impact 5), draft, 1 system linked, hours stored', $pc() === $n + 1 && preg_match('/^BIA-\d{4}$/', (string)$pdo->query("SELECT code FROM bia_processes WHERE id=$bp")->fetchColumn()) && $pdo->query("SELECT criticality FROM bia_processes WHERE id=$bp")->fetchColumn() === 'critical' && $pdo->query("SELECT status FROM bia_processes WHERE id=$bp")->fetchColumn() === 'draft' && (int)$pdo->query("SELECT COUNT(*) FROM bia_process_systems WHERE process_id=$bp")->fetchColumn() === 1 && $pdo->query("SELECT rpo_hours FROM bia_processes WHERE id=$bp")->fetchColumn() === '0.50');
+check('IT manager gets 404 on retail process; tripoli 403; retail list excludes none/IT list excludes it', $c['it']->get("/bia/$bp")['code'] === 404 && $c['tripoli']->get("/bia/$bp")['code'] === 403 && !str_contains($c['it']->get('/bia')['body'], "/bia/$bp\"") && str_contains($c['retail']->get('/bia')['body'], "/bia/$bp\""));
+check('gap shown: system recovers in 6h but RTO is 4h, and RPO 1h vs 0.5h', substr_count($c['retail']->get("/bia/$bp")['body'], 'msg error') >= 1 && $gapCount($bp) === 2);
+$c['retail']->post("/bia/$bp/submit", [], "/bia/$bp"); check('submit blocked while recovery gaps exist', $pdo->query("SELECT status FROM bia_processes WHERE id=$bp")->fetchColumn() === 'draft' && (int)$pdo->query("SELECT COUNT(*) FROM approvals WHERE entity_type='bia_process' AND entity_id=$bp")->fetchColumn() === 0);
+check('process with a gap is listed under the gap filter and the report', str_contains($c['retail']->get('/bia?gap=1')['body'], "/bia/$bp\"") && str_contains($c['risk']->get('/bia/report')['body'], "/bia/$bp\""));
+$c['risk']->post('/bia/systems/' . $sys1, $sF(['recovery_hours' => '3', 'data_loss_hours' => '0.25', 'is_active' => '1']), "/bia/systems/$sys1/edit"); check('system improved (recovery 3h, loss 0.25h) removes the gaps while staying active', $gapCount($bp) === 0 && (int)$pdo->query("SELECT is_active FROM bia_systems WHERE id=$sys1")->fetchColumn() === 1);
+$c['exec']->post("/bia/$bp/submit", [], "/bia/$bp"); check('exec viewer cannot submit (403)', $pdo->query("SELECT status FROM bia_processes WHERE id=$bp")->fetchColumn() === 'draft');
+$c['retail']->post("/bia/$bp/submit", [], "/bia/$bp"); $ap = (int)$pdo->query("SELECT MAX(id) FROM approvals WHERE entity_type='bia_process' AND entity_id=$bp")->fetchColumn();
+check('submit creates one pending approval and moves status', $ap > 0 && $pdo->query("SELECT status FROM bia_processes WHERE id=$bp")->fetchColumn() === 'pending_approval' && $pdo->query("SELECT status FROM approvals WHERE id=$ap")->fetchColumn() === 'pending');
+$c['retail']->post("/bia/$bp/submit", [], "/bia/$bp"); check('double submit does not create a second approval', (int)$pdo->query("SELECT COUNT(*) FROM approvals WHERE entity_type='bia_process' AND entity_id=$bp")->fetchColumn() === 1);
+check('retail manager cannot open the approvals inbox or decide (403)', $c['retail']->get('/approvals')['code'] === 403 && $c['retail']->post("/approvals/$ap/decide", ['decision' => 'approve'], "/bia/$bp")['code'] === 403 && $pdo->query("SELECT status FROM approvals WHERE id=$ap")->fetchColumn() === 'pending');
+check('approver sees the request in inbox, My tasks and dashboard tile', str_contains($c['risk']->get('/approvals')['body'], "/approvals/$ap/decide") && str_contains($c['risk']->get('/my')['body'], '/approvals') && str_contains($c['risk']->get('/')['body'], 'href="/approvals"'));
+// maker-checker: a requester who is also an approver cannot approve own request
+$pdo->exec("UPDATE approvals SET requested_by=" . $uidN('demo.risk') . " WHERE id=$ap");
+$c['risk']->post("/approvals/$ap/decide", ['decision' => 'approve'], '/approvals'); check('requester cannot approve their own request', $pdo->query("SELECT status FROM approvals WHERE id=$ap")->fetchColumn() === 'pending');
+$pdo->exec("UPDATE approvals SET requested_by=" . $uidN('demo.dept.retail') . " WHERE id=$ap");
+$c['compliance']->post("/approvals/$ap/decide", ['decision' => 'reject', 'comment' => ''], '/approvals'); check('rejection requires a comment', $pdo->query("SELECT status FROM approvals WHERE id=$ap")->fetchColumn() === 'pending');
+$c['compliance']->post("/approvals/$ap/decide", ['decision' => 'reject', 'comment' => 'RTO looks too optimistic'], '/approvals');
+check('rejected: approval closed with comment, process back to draft', $pdo->query("SELECT status FROM approvals WHERE id=$ap")->fetchColumn() === 'rejected' && $pdo->query("SELECT comment FROM approvals WHERE id=$ap")->fetchColumn() === 'RTO looks too optimistic' && $pdo->query("SELECT status FROM bia_processes WHERE id=$bp")->fetchColumn() === 'draft');
+$c['compliance']->post("/approvals/$ap/decide", ['decision' => 'approve'], '/approvals'); check('a decided request cannot be decided again', $pdo->query("SELECT status FROM approvals WHERE id=$ap")->fetchColumn() === 'rejected');
+$c['retail']->post("/bia/$bp/submit", [], "/bia/$bp"); $ap2 = (int)$pdo->query("SELECT MAX(id) FROM approvals WHERE entity_type='bia_process' AND entity_id=$bp")->fetchColumn(); check('resubmission creates a new approval', $ap2 > $ap);
+$pdo->exec("UPDATE bia_systems SET recovery_hours=9 WHERE id=$sys1");
+$c['compliance']->post("/approvals/$ap2/decide", ['decision' => 'approve'], '/approvals'); check('approval is refused if a gap appeared after submission', $pdo->query("SELECT status FROM approvals WHERE id=$ap2")->fetchColumn() === 'pending');
+$pdo->exec("UPDATE bia_systems SET recovery_hours=3 WHERE id=$sys1");
+$c['compliance']->post("/approvals/$ap2/decide", ['decision' => 'approve', 'comment' => 'OK'], '/approvals');
+check('approved: process approved, review due in one year', $pdo->query("SELECT status FROM bia_processes WHERE id=$bp")->fetchColumn() === 'approved' && $pdo->query("SELECT next_review_due FROM bia_processes WHERE id=$bp")->fetchColumn() === date('Y-m-d', strtotime('+1 year')) && $pdo->query("SELECT decided_by FROM approvals WHERE id=$ap2")->fetchColumn() == $uidN('demo.compliance'));
+check('approval history visible on the process page', str_contains($c['retail']->get("/bia/$bp")['body'], 'RTO looks too optimistic'));
+$c['retail']->post("/bia/$bp", $pF(['description' => 'only a description change']), "/bia/$bp/edit"); check('non-material edit keeps the approval', $pdo->query("SELECT status FROM bia_processes WHERE id=$bp")->fetchColumn() === 'approved');
+$c['retail']->post("/bia/$bp", $pF(['rto_hours' => '5']), "/bia/$bp/edit"); check('changing recovery objectives returns the process to draft', $pdo->query("SELECT status FROM bia_processes WHERE id=$bp")->fetchColumn() === 'draft' && $pdo->query("SELECT approved_at FROM bia_processes WHERE id=$bp")->fetchColumn() === null);
+$c['retail']->post("/bia/$bp/archive", [], "/bia/$bp"); check('process archived and hidden by default', $pdo->query("SELECT archived_at FROM bia_processes WHERE id=$bp")->fetchColumn() !== null && !str_contains($c['retail']->get('/bia')['body'], "/bia/$bp\""));
+check('BIA and approval actions are audited', (int)$pdo->query("SELECT COUNT(DISTINCT action) FROM audit_log WHERE action IN ('bia.created','bia.updated','bia.submitted','bia.archived','bia.system_created','bia.system_updated','approval.approved','approval.rejected')")->fetchColumn() === 8);
+check('help topic for BIA exists in both languages', isset($helpEn['topics']['bia'], $helpAr['topics']['bia']));
+check('BIA pages render in English without missing keys', (function () use ($c, $bp, $sys1) { $a = $c['risk']; $a->get('/lang?l=en&next=/'); $ok = true; foreach (['/bia', "/bia/$bp", '/bia/new', "/bia/$bp/edit", '/bia/systems', '/bia/systems/new', "/bia/systems/$sys1/edit", '/bia/report', '/approvals', '/'] as $p) { if (preg_match('/\b(bia|appr|sha|ctl)\.[a-z_]+\b/', strip_tags($a->get($p)['body']))) { fwrite(STDERR, "missing key on $p\n"); $ok = false; } } $a->get('/lang?l=ar&next=/'); return $ok; })());

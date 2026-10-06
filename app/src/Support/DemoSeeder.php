@@ -180,6 +180,21 @@ final class DemoSeeder
                 'decision_text' => $dec, 'decided_on' => $dec ? date('Y-m-d', strtotime('-5 days')) : null, 'impermissible_income' => Money::toDb($inc * 1000), 'purification_status' => $pur, 'reported_by' => $users['demo.dept.retail'], 'created_at' => $now, 'updated_at' => $now]);
             $code('sharia_events', 'SNC', $eid, 4);
         }
+        // Business impact analysis: systems, processes (one with a recovery gap), approvals (synthetic)
+        $sysIds = [];
+        foreach ([['Core banking system', 'IT', 'demo.dept.it', 8, 0.25], ['ATM and card switch', 'IT', 'demo.dept.it', 4, 0.1], ['Payroll platform', 'OPS', 'demo.risk', 24, 24], ['Online banking', 'IT', 'demo.dept.it', 6, 1]] as $i => [$nm, $dp, $own, $rec, $loss]) {
+            $sid = Db::insert('bia_systems', ['name' => $nm, 'description' => 'Synthetic system for demonstration.', 'department_id' => $dep[$dp], 'owner_user_id' => $users[$own], 'recovery_hours' => $rec, 'data_loss_hours' => $loss, 'is_active' => 1, 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('bia_systems', 'SYS', $sid, 4);
+            $sysIds[$i] = $sid;
+        }
+        foreach ([['Customer cash withdrawal', 'RET', 'demo.dept.retail', [3, 4, 2, 3], 6, 4, 1, 'approved', [1]], ['Interbank payments processing', 'OPS', 'demo.risk', [5, 4, 4, 4], 4, 2, 0.5, 'draft', [0]], ['Payroll transfers', 'OPS', 'demo.risk', [3, 3, 3, 2], 48, 36, 24, 'approved', [2]], ['Internet banking for customers', 'RET', 'demo.dept.retail', [4, 4, 2, 4], 12, 8, 2, 'draft', [3]]] as [$nm, $dp, $own, $im, $mtpd, $rto, $rpo, $st, $sy]) {
+            $pid = Db::insert('bia_processes', ['name' => $nm, 'description' => 'Synthetic process for demonstration.', 'department_id' => $dep[$dp], 'owner_user_id' => $users[$own], 'impact_financial' => $im[0], 'impact_operational' => $im[1], 'impact_legal' => $im[2], 'impact_reputation' => $im[3],
+                'criticality' => \App\Support\Bia::criticality($im[0], $im[1], $im[2], $im[3]), 'mtpd_hours' => $mtpd, 'rto_hours' => $rto, 'rpo_hours' => $rpo, 'status' => $st, 'approved_at' => $st === 'approved' ? $now : null, 'next_review_due' => $st === 'approved' ? date('Y-m-d', strtotime('+1 year')) : null, 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
+            $code('bia_processes', 'BIA', $pid, 4);
+            foreach ($sy as $k) {
+                Db::exec('INSERT INTO bia_process_systems (process_id, system_id) VALUES (?, ?)', [$pid, $sysIds[$k]]);
+            }
+        }
         // KRIs with a few months of readings
         foreach ([
             ['Failed privileged logins per month', 'IT', 'demo.dept.it', 'count', 'higher_worse', 8, 15, [4, 6, 9, 12]],
