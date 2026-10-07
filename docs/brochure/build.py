@@ -415,7 +415,7 @@ figure figcaption{font-size:8.5pt;color:var(--muted);padding:2mm 3mm;background:
 .cover-title{position:absolute;top:40mm;right:16mm;left:16mm}
 .cover-title .over{color:var(--gold2);font-family:'Noto Kufi Arabic';font-size:13pt;margin-bottom:2mm}
 .cover-title h1{font-size:42pt;line-height:1.35;font-weight:700}
-.cover-title h1 span{background:linear-gradient(90deg,#F1D78A,var(--gold),#F7E3A4);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cover-title h1 span{color:#E9C866}
 .cover .lead{font-size:13pt;line-height:1.9;color:#dfe6f2;margin-top:5mm}
 .pills{display:flex;flex-wrap:wrap;gap:2mm;margin-top:6mm;max-width:150mm}
 .pills span{font-size:9pt;border:1px solid rgba(230,198,106,.6);color:#f4e2ae;padding:1mm 3.5mm;border-radius:20px;background:rgba(201,162,39,.08)}
