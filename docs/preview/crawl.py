@@ -16,8 +16,8 @@ from playwright.sync_api import sync_playwright
 BASE = 'http://127.0.0.1:8080'
 PW = 'Demo-Pass-2024x'
 OUT = sys.argv[1]
-USERS = [('r', 'demo.risk'), ('c', 'demo.compliance'), ('e', 'demo.exec'), ('d', 'demo.dept.retail')]
-MAX = 60
+USERS = [('r', 'demo.risk'), ('c', 'demo.compliance'), ('e', 'demo.exec'), ('d', 'demo.dept.retail'), ('a', 'demo.auditor')]
+MAX = 48
 PER_SECTION = 3
 SKIP = re.compile(r'logout|/export|\.xlsx|\.csv|/download|/edit$|/print|/panel|/mfa|/password|/account|/setup|/admin|/import|/notes/\d')
 
@@ -37,7 +37,7 @@ INJECT = '''
 </script>
 '''
 
-ROLES = {'r': 'مدير المخاطر', 'c': 'مسؤول الامتثال', 'e': 'الإدارة التنفيذية', 'd': 'مدير إدارة (التجزئة)'}
+ROLES = {'r': 'مدير المخاطر', 'c': 'مسؤول الامتثال', 'e': 'الإدارة التنفيذية', 'd': 'مدير إدارة (التجزئة)', 'a': 'المدقق الداخلي'}
 
 
 def fname(path):
@@ -67,7 +67,7 @@ def crawl(ctx, prefix):
     assert '/login' not in page.url, 'login failed for ' + prefix
     seen, pages = set(), {}
     detail = collections.Counter()
-    q = collections.deque(['/', '/my', '/help'])
+    q = collections.deque(['/', '/my', '/help', '/ia', '/ia/findings', '/aml', '/aml/customers'])
     while q and len(pages) < MAX:
         u = q.popleft()
         if u in seen:
@@ -82,14 +82,17 @@ def crawl(ctx, prefix):
             n = norm(h)
             if not n or n in seen or n in q:
                 continue
-            sec = n.strip('/').split('/')[0]
+            parts = n.strip('/').split('/')
+            sec = '/'.join(parts[:2]) if parts[0] in ('ia', 'aml') else parts[0]
             if re.search(r'/\d+$', n):
                 if detail[sec] >= PER_SECTION:
                     continue
                 detail[sec] += 1
-                q.append(n)
+                q.appendleft(n) if n.startswith(('/ia', '/aml')) else q.append(n)
+            elif n.startswith(('/ia', '/aml')) or n.count('/') == 1:
+                q.appendleft(n)
             else:
-                q.appendleft(n) if n.count('/') == 1 else q.append(n)
+                q.append(n)
     page.close()
     return pages
 

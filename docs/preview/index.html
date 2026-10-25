@@ -14,7 +14,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .top h1{font-size:clamp(28px,4.4vw,42px);line-height:1.5;margin-top:14px}
 .top h1 span{color:var(--gold-hi)}
 .top p{color:var(--on-navy);max-width:40em;margin:10px 0 0;font-size:17px}
-.roles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-top:-44px}
+.roles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:-44px}
 .role{display:flex;flex-direction:column;gap:6px;background:var(--card);border-radius:14px;padding:20px;border-top:4px solid var(--gold);box-shadow:0 8px 24px rgba(11,37,69,.14);text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
 .role:hover,.role:focus-visible{transform:translateY(-3px);box-shadow:0 14px 30px rgba(11,37,69,.2);outline:none}
 .role:focus-visible{outline:3px solid var(--gold-hi);outline-offset:2px}
@@ -32,12 +32,13 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
 .try span.n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--gold-hi);display:grid;place-items:center;font-family:var(--f-display);font-size:13px}
 .try small{color:var(--muted);font-size:14px}
 .note{margin-top:24px;background:#FFF8E6;border-right:4px solid var(--gold);border-radius:10px;padding:14px 18px;color:var(--ink);font-size:15px}
-@media (max-width:860px){.roles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:1000px){.roles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.roles{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:560px){.wrap{padding-inline:16px}.roles,.try{grid-template-columns:1fr}.roles{margin-top:-32px}}
 </style>
 <main>
   <header class="top"><div class="wrap">
-    <span class="tag">نسخة تصفح تجريبية · بيانات وهمية</span>
+    <span class="tag">نسخة تصفح تجريبية · الإصدار 1.4 · بيانات وهمية</span>
     <h1>جرّب منصة الحوكمة وإدارة المخاطر والامتثال <span>كما يراها كل مستخدم</span></h1>
     <p>اختر دوراً لتتصفح المنصة بعينه. كل مستخدم يرى ما يخصه فقط، وتظهر له مهامه وتنبيهاته ودليله المبسط.</p>
   </div></header>
@@ -48,6 +49,7 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
       <a class="role" href="c/home.html"><span class="oct">2</span><h2>مسؤول الامتثال</h2><p>الالتزامات، التعاميم الرقابية، الامتثال الشرعي، والسياسات.</p><span class="go">ابدأ من لوحة المعلومات ←</span></a>
       <a class="role" href="e/home.html"><span class="oct">3</span><h2>الإدارة التنفيذية</h2><p>نظرة شاملة للاطلاع واتخاذ القرار، مع التقارير والأهداف.</p><span class="go">ابدأ من لوحة المعلومات ←</span></a>
       <a class="role" href="d/my.html"><span class="oct">4</span><h2>مدير إدارة</h2><p>مخاطر إدارته ومهامه وإقرار التعاميم الموجهة إليه.</p><span class="go">ابدأ من «مهامي» ←</span></a>
+      <a class="role" href="a/ia.html"><span class="oct">5</span><h2>المدقق الداخلي</h2><p>خطة تدقيق مبنية على المخاطر، أوراق العمل، ومتابعة الملاحظات.</p><span class="go">ابدأ من التدقيق الداخلي ←</span></a>
     </nav>
   </div>
 
@@ -60,6 +62,8 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
       <li><span class="n">4</span><div><b><a href="c/sharia.html">الامتثال الشرعي</a></b><small>القرارات الشرعية، المراجعات، الأحداث، والتطهير.</small></div></li>
       <li><span class="n">5</span><div><b><a href="c/circulars.html">التعاميم الرقابية</a></b><small>توزيع التعميم وتتبع إقرار كل إدارة.</small></div></li>
       <li><span class="n">6</span><div><b><a href="r/risks.html">سجل المخاطر</a></b><small>التقييم والمالك والمعالجة لكل خطر.</small></div></li>
+      <li><span class="n">7</span><div><b><a href="a/ia_universe.html">التدقيق الداخلي المبني على المخاطر</a></b><small>ترتيب الجهات حسب درجة الأولوية، والخطة، والملاحظات حتى الإغلاق.</small></div></li>
+      <li><span class="n">8</span><div><b><a href="c/aml.html">مكافحة غسل الأموال</a></b><small>تصنيف العملاء والمنتجات والقنوات والمناطق، والضوابط والتقارير.</small></div></li>
     </ol>
     <p class="note">هذه نسخة للتصفح فقط: تنتقل بين الشاشات بحرية، لكن الحفظ والإرسال وتغيير اللغة معطلة. للتجربة الكاملة بالإدخال والموافقات نجهز بيئة تجريبية على خادم المصرف.</p>
   </div></section>
