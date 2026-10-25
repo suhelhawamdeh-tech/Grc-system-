@@ -17,7 +17,7 @@ BASE = 'http://127.0.0.1:8080'
 PW = 'Demo-Pass-2024x'
 OUT = sys.argv[1]
 USERS = [('r', 'demo.risk'), ('c', 'demo.compliance'), ('e', 'demo.exec'), ('d', 'demo.dept.retail'), ('a', 'demo.auditor')]
-MAX = 48
+MAX = 56
 PER_SECTION = 3
 SKIP = re.compile(r'logout|/export|\.xlsx|\.csv|/download|/edit$|/print|/panel|/mfa|/password|/account|/setup|/admin|/import|/notes/\d')
 
@@ -36,6 +36,10 @@ INJECT = '''
 })();
 </script>
 '''
+
+# One sample question per role, asked in library mode so the snapshot shows a real answer with citations.
+QUESTIONS = {'r': 'كيف تُدار المخاطر وفق معيار ISO 31000؟', 'c': 'متى يجب تطبيق العناية الواجبة المشددة؟', 'e': 'ما مسؤوليات مجلس الإدارة تجاه الامتثال؟',
+             'd': 'ماذا نفعل عند تطابق محتمل مع قوائم العقوبات؟', 'a': 'ماذا يجب أن تتضمن ملاحظة التدقيق الداخلي؟'}
 
 ROLES = {'r': 'مدير المخاطر', 'c': 'مسؤول الامتثال', 'e': 'الإدارة التنفيذية', 'd': 'مدير إدارة (التجزئة)', 'a': 'المدقق الداخلي'}
 
@@ -67,7 +71,15 @@ def crawl(ctx, prefix):
     assert '/login' not in page.url, 'login failed for ' + prefix
     seen, pages = set(), {}
     detail = collections.Counter()
-    q = collections.deque(['/', '/my', '/help', '/ia', '/ia/findings', '/aml', '/aml/customers'])
+    page.goto(BASE + '/assistant')
+    page.fill('#f_question', QUESTIONS[prefix])
+    page.click('form.ask-form button[type=submit]')
+    page.wait_for_load_state('networkidle')
+    pages['/assistant'] = page.content()
+    seen.add('/assistant')
+    q = collections.deque(['/', '/my', '/assistant/library', '/help', '/ia', '/ia/findings', '/aml', '/aml/customers'])
+    for h in re.findall(r'href="(/assistant/library/\d+)"', pages['/assistant'])[:3]:
+        q.appendleft(h)
     while q and len(pages) < MAX:
         u = q.popleft()
         if u in seen:
@@ -83,7 +95,7 @@ def crawl(ctx, prefix):
             if not n or n in seen or n in q:
                 continue
             parts = n.strip('/').split('/')
-            sec = '/'.join(parts[:2]) if parts[0] in ('ia', 'aml') else parts[0]
+            sec = '/'.join(parts[:2]) if parts[0] in ('ia', 'aml', 'assistant') else parts[0]
             if re.search(r'/\d+$', n):
                 if detail[sec] >= PER_SECTION:
                     continue
