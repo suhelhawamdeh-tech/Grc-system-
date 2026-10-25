@@ -326,6 +326,40 @@ function icon(string $name): string
         'user' => '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
         'close' => '<path d="M18 6L6 18M6 6l12 12"/>',
         'eye' => '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/>',
+        'spark' => '<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>',
+        'lock' => '<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     ];
     return '<svg class="ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . ($p[$name] ?? $p['help']) . '</svg>';
 }
+
+/** "Related references" panel for a module: trusted sources from the reference library, with a link to ask the assistant. */
+function kb_refs(string $module): string
+{
+    if (!can('ai.use')) {
+        return '';
+    }
+    try {
+        \App\Support\KbLibrary::ensure();
+        $rows = \App\Support\KbLibrary::forModule($module, can('kb.manage'));
+    } catch (\Throwable) {
+        return '';
+    }
+    if (!$rows) {
+        return '';
+    }
+    $h = '<details class="card refs"><summary><strong>' . icon('book') . ' ' . e(t('ai.refs_title')) . '</strong> <span class="muted small">(' . count($rows) . ')</span></summary><ul>';
+    foreach ($rows as $r) {
+        $h .= '<li><a href="' . e(url('assistant/library/' . $r['id'])) . '">' . e(lname($r, 'title')) . '</a> <span class="muted small">' . e($r['issuer']) . ($r['pub_year'] ? ' · ' . (int)$r['pub_year'] : '') . '</span></li>';
+    }
+    return $h . '</ul><p><a class="btn small secondary" href="' . e(url('assistant')) . '">' . icon('spark') . ' ' . e(t('ai.ask_assistant')) . '</a> <a class="small" href="' . e(url('assistant/library')) . '">' . e(t('ai.library')) . '</a></p></details>';
+}
+
+/** Button opening the assistant with a de-identified context of the current record. */
+function ai_ask_button(string $context, int $id): string
+{
+    if (!can('ai.use') || \App\Core\Settings::get('ai_enabled', '1') !== '1') {
+        return '';
+    }
+    return '<a class="btn secondary ai-btn" href="' . e(url('assistant', ['context' => $context, 'id' => $id])) . '">' . icon('spark') . ' ' . e(t('ai.ask_about_this')) . '</a>';
+}
+

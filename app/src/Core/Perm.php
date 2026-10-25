@@ -8,8 +8,8 @@ final class Perm
 {
     public const ROLES = ['admin', 'risk_manager', 'compliance_officer', 'dept_manager', 'branch_liaison', 'exec_viewer', 'auditor'];
 
-    private const READ = ['risk.view', 'incident.view', 'dashboard.view', 'export.run'];
-    private const WORK = ['risk.view', 'risk.create', 'risk.edit', 'incident.view', 'incident.create', 'incident.edit', 'dashboard.view', 'export.run'];
+    private const READ = ['risk.view', 'incident.view', 'dashboard.view', 'export.run', 'ai.use'];
+    private const WORK = ['risk.view', 'risk.create', 'risk.edit', 'incident.view', 'incident.create', 'incident.edit', 'dashboard.view', 'export.run', 'ai.use'];
 
     public static function matrix(): array
     {
@@ -17,10 +17,10 @@ final class Perm
         $p2read = ['kri.view', 'appetite.view', 'compliance.view', 'committee.view', 'policy.view', 'rcsa.view', 'control.view', 'sharia.view', 'bia.view', 'circular.view', 'governance.view', 'recon.view', 'strategy.view', 'ia.view', 'ia.findings', 'aml.view'];
         return [
             'admin' => ['*'],
-            'risk_manager' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'scales.manage', 'ownership.transfer', 'kri.report', 'kri.manage', 'appetite.manage', 'committee.manage', 'policy.manage', 'rcsa.manage', 'control.manage', 'control.test', 'sharia.report', 'bia.manage', 'approval.decide', 'governance.manage', 'recon.manage', 'strategy.manage', 'ia.respond']),
-            'compliance_officer' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'kri.report', 'compliance.manage', 'committee.manage', 'policy.manage', 'control.manage', 'control.test', 'sharia.report', 'sharia.manage', 'bia.manage', 'approval.decide', 'circular.manage', 'governance.manage', 'recon.manage', 'ia.respond', 'aml.manage']),
+            'risk_manager' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'scales.manage', 'ownership.transfer', 'kri.report', 'kri.manage', 'appetite.manage', 'committee.manage', 'policy.manage', 'rcsa.manage', 'control.manage', 'control.test', 'sharia.report', 'bia.manage', 'approval.decide', 'governance.manage', 'recon.manage', 'strategy.manage', 'ia.respond', 'kb.manage']),
+            'compliance_officer' => array_merge(self::WORK, $p2read, ['risk.archive', 'incident.archive', 'kri.report', 'compliance.manage', 'committee.manage', 'policy.manage', 'control.manage', 'control.test', 'sharia.report', 'sharia.manage', 'bia.manage', 'approval.decide', 'circular.manage', 'governance.manage', 'recon.manage', 'ia.respond', 'aml.manage', 'kb.manage']),
             'dept_manager' => array_merge(self::WORK, ['risk.archive', 'incident.archive', 'kri.view', 'kri.report', 'compliance.view', 'compliance.update', 'policy.view', 'rcsa.view', 'rcsa.respond', 'control.view', 'sharia.view', 'sharia.report', 'bia.view', 'bia.manage', 'circular.view', 'circular.ack', 'ia.findings', 'ia.respond']),
-            'branch_liaison' => ['risk.view', 'risk.create', 'risk.edit', 'incident.view', 'incident.create', 'incident.edit', 'dashboard.view', 'export.run', 'policy.view', 'rcsa.view', 'rcsa.respond'],
+            'branch_liaison' => ['risk.view', 'risk.create', 'risk.edit', 'incident.view', 'incident.create', 'incident.edit', 'dashboard.view', 'export.run', 'policy.view', 'rcsa.view', 'rcsa.respond', 'ai.use'],
             'exec_viewer' => array_merge(self::READ, $p2read),
             'auditor' => array_merge(self::READ, $p2read, ['audit.view', 'ia.manage']),
         ];

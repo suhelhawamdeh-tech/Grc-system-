@@ -556,6 +556,7 @@ $sys = $admin->post('/admin/system/migrate', [], '/admin/system'); check('migrat
 require __DIR__ . '/phase2.php';
 require __DIR__ . '/phase3.php';
 require __DIR__ . '/phase4.php';
+require __DIR__ . '/phase5.php';
 
 // =========================================================================
 section('Language switch, RTL / LTR rendering');

@@ -36,7 +36,7 @@ final class T24
     public static function mapping(string $dataset): array
     {
         $map = array_map(static fn($d) => $d[0], self::DATASETS[$dataset]);
-        foreach (preg_split('/\R/', (string)Settings::get('t24_map_' . $dataset, '')) ?: [] as $line) {
+        foreach (preg_split('/\R/u', (string)Settings::get('t24_map_' . $dataset, '')) ?: [] as $line) {
             if (preg_match('/^\s*([a-z_]+)\s*=\s*(.+?)\s*$/', $line, $m) && isset($map[$m[1]])) {
                 $map[$m[1]] = $m[2];
             }
@@ -56,7 +56,7 @@ final class T24
     /** Validate mapping text from the settings form. @return ?string error key */
     public static function checkMapping(string $dataset, string $text): ?string
     {
-        foreach (preg_split('/\R/', $text) ?: [] as $line) {
+        foreach (preg_split('/\R/u', $text) ?: [] as $line) {
             if (trim($line) === '') {
                 continue;
             }

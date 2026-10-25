@@ -30,3 +30,4 @@ $tab = 'aml'; require __DIR__ . '/_rating.php'; ?>
 <div class="field actions"><button class="btn" type="submit"><?= e(t('aml.link')) ?></button></div></form><?php endif; ?></section>
 <section class="card"><h2><?= e(t('aml.rules')) ?></h2><ul>
 <li><?= e(t('aml.rule_weights')) ?></li><li><?= e(t('aml.rule_bands')) ?></li><li><?= e(t('aml.rule_pep')) ?></li><li><?= e(t('aml.rule_floor')) ?></li><li><?= e(t('aml.rule_cdd')) ?></li></ul></section>
+<?= kb_refs('aml') ?>

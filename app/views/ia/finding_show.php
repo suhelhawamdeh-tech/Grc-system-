@@ -3,7 +3,7 @@ $tab = 'findings'; $st = $f['status']; $mg = can('ia.manage'); $owner = (int)$f[
 $steps = ['open', 'responded', 'implemented', 'closed']; $cur = array_search($st, $steps, true);
 $due = $st === 'open' ? $f['response_due'] : $f['due_date']; ?>
 <div class="page-head"><div><h1><?= icon('flag') ?> <?= e($f['code']) ?> — <?= e($f['title']) ?></h1><p class="sub"><?php if (can('ia.view')): ?><a href="<?= e(url('ia/engagements/' . $f['engagement_id'])) ?>"><?= e($f['e_code'] . ' — ' . $f['e_title']) ?></a><?php else: ?><?= e($f['e_code']) ?><?php endif; ?></p></div>
-  <div class="actions"><a class="btn secondary" href="<?= e(url('ia/findings')) ?>"><?= e(t('common.back')) ?></a><?php if ($mg && $st === 'draft'): ?><a class="btn" href="<?= e(url('ia/findings/' . $f['id'] . '/edit')) ?>"><?= e(t('common.edit')) ?></a><?php endif; ?></div></div>
+  <div class="actions"><a class="btn secondary" href="<?= e(url('ia/findings')) ?>"><?= e(t('common.back')) ?></a><?= ai_ask_button('ia_finding', (int)$f['id']) ?><?php if ($mg && $st === 'draft'): ?><a class="btn" href="<?= e(url('ia/findings/' . $f['id'] . '/edit')) ?>"><?= e(t('common.edit')) ?></a><?php endif; ?></div></div>
 <?php require __DIR__ . '/_tabs.php'; ?>
 <?php if ($st === 'draft'): ?><div class="card notice"><p><?= e(t('ia.finding_draft_hint')) ?></p></div><?php else: ?>
 <ol class="stepper"><?php foreach ($steps as $i => $s): ?><li class="<?= $i < $cur ? 'done' : ($i === $cur ? 'current' : '') ?>"<?= $i === $cur ? ' aria-current="step"' : '' ?>><?= e(t('enum.iafs.' . $s)) ?></li><?php endforeach; ?></ol><?php endif; ?>

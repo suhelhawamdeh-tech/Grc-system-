@@ -41,3 +41,4 @@
   <tfoot><tr><td colspan="6"><?= e(t('incident.totals_filtered', ['n' => $sums['count']])) ?></td><td class="num"><?= e(money(\App\Core\Money::toDb($sums['gross']))) ?></td><td class="num"><?= e(money(\App\Core\Money::toDb($sums['recoveries']))) ?></td><td class="num"><?= e(money(\App\Core\Money::toDb($sums['net']))) ?></td><td></td></tr></tfoot>
 </table></div>
 <?= pager($total, $page, $per) ?>
+<?= kb_refs('incidents') ?>

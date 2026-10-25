@@ -346,3 +346,18 @@ $router->post('/admin/integrations/pull', 'IntegrationController@pull', 'integra
 $router->get('/admin/integrations/runs/{id}', 'IntegrationController@run', 'integration.manage');
 $router->get('/admin/integrations/sample/customers', 'IntegrationController@sample:customers', 'integration.manage');
 $router->get('/admin/integrations/sample/gl', 'IntegrationController@sample:gl', 'integration.manage');
+
+// ---- Release 5: AI assistant and reference library
+$router->get('/assistant', 'AssistantController@index', 'ai.use');
+$router->post('/assistant/ask', 'AssistantController@ask', 'ai.use');
+$router->get('/assistant/history/{id}', 'AssistantController@show', 'ai.use');
+$router->get('/assistant/library', 'AssistantController@library', 'ai.use');
+$router->get('/assistant/library/new', 'AssistantController@sourceNew', 'kb.manage');
+$router->post('/assistant/library', 'AssistantController@sourceStore', 'kb.manage');
+$router->get('/assistant/library/{id}', 'AssistantController@sourceShow', 'ai.use');
+$router->post('/assistant/library/{id}/retire', 'AssistantController@sourceRetire', 'kb.manage');
+$router->post('/circulars/{id}/to-library', 'AssistantController@fromCircular', 'kb.manage');
+$router->get('/admin/assistant', 'AssistantController@settings', 'settings.manage');
+$router->post('/admin/assistant', 'AssistantController@saveSettings', 'settings.manage');
+$router->post('/admin/assistant/test', 'AssistantController@testConnection', 'settings.manage');
+$router->post('/admin/assistant/sync', 'AssistantController@syncLibrary', 'settings.manage');

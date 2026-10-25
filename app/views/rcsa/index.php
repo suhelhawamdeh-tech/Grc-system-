@@ -11,3 +11,4 @@
 <?= pager($total, $page, $per) ?>
 <?php if (can('rcsa.manage')): ?><h2 style="margin-top:24px"><?= e(t('rcsa.templates')) ?></h2><div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('rcsa.template_title')) ?></th><th class="num"><?= e(t('rcsa.questions')) ?></th><th><?= e(t('common.status')) ?></th><th></th></tr></thead><tbody>
 <?php foreach ($templates as $t): ?><tr><td><?= e($t['title']) ?></td><td class="num"><?= (int)$t['n_q'] ?></td><td><?= $t['is_active'] ? '<span class="badge ok">' . e(t('common.active')) . '</span>' : '<span class="badge">' . e(t('common.inactive')) . '</span>' ?></td><td><a class="btn small secondary" href="<?= e(url('rcsa/templates/' . $t['id'] . '/edit')) ?>"><?= e(t('common.edit')) ?></a></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?>
+<?= kb_refs('rcsa') ?>

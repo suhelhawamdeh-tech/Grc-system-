@@ -25,3 +25,4 @@ $res = static fn(?string $r) => $r ? '<span class="badge ' . ($r === 'effective'
 <td><?= $res($c['last_result']) ?></td><td class="nowrap"><?= e(fdate($c['next_test_due']) ?: '—') ?><?= $late && !$c['archived_at'] ? ' <span class="badge danger">' . e(t('my.overdue')) . '</span>' : '' ?></td></tr>
 <?php endforeach; ?></tbody></table></div>
 <?= pager($total, $page, $per) ?>
+<?= kb_refs('controls') ?>

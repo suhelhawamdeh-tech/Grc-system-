@@ -5,7 +5,7 @@ declare(strict_types=1);
 if (!defined('APP_ROOT')) {
     define('APP_ROOT', dirname(__DIR__));
 }
-const APP_VERSION = '1.4.0';
+const APP_VERSION = '1.5.0';
 const MIN_PHP = '8.1.0';
 
 spl_autoload_register(static function (string $class): void {

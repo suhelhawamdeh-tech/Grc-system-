@@ -1,0 +1,2 @@
+<?php $tab = $tab ?? ''; $tabs = ['ask' => ['ai.tab_ask', 'assistant'], 'library' => ['ai.library', 'assistant/library']]; if (can('kb.manage')) { $tabs['add'] = ['ai.source_new', 'assistant/library/new']; } if (can('settings.manage')) { $tabs['settings'] = ['ai.settings', 'admin/assistant']; } ?>
+<nav class="pill-tabs" aria-label="<?= e(t('ai.title')) ?>"><?php foreach ($tabs as $k => [$lbl, $href]): ?><a href="<?= e(url($href)) ?>"<?= $k === $tab ? ' aria-current="page" class="active"' : '' ?>><?= e(t($lbl)) ?></a><?php endforeach; ?></nav>

@@ -1,7 +1,7 @@
 <?php /** @var array $c @var array $fx @var array $levels @var array $reviews @var array $reports */
 $tab = 'customers'; require __DIR__ . '/_rating.php'; $w = \App\Support\AmlScoring::WEIGHTS; $late = $c['next_review_due'] < date('Y-m-d'); ?>
 <div class="page-head"><div><h1><?= icon('user') ?> <span class="code"><?= e($c['customer_ref']) ?></span> — <?= e($c['full_name']) ?></h1><p class="sub"><?= e(t('enum.amlsrc.' . $c['source'])) ?> · <?= e(t('enum.amlst.' . $c['status'])) ?></p></div>
-  <div class="actions"><a class="btn secondary" href="<?= e(url('aml/customers')) ?>"><?= e(t('common.back')) ?></a><?php if (can('aml.manage')): ?><a class="btn" href="<?= e(url('aml/customers/' . $c['id'] . '/edit')) ?>"><?= e(t('common.edit')) ?></a><a class="btn secondary" href="<?= e(url('aml/reports/new', ['customer' => $c['id']])) ?>"><?= e(t('aml.report_new')) ?></a><?php endif; ?></div></div>
+  <div class="actions"><a class="btn secondary" href="<?= e(url('aml/customers')) ?>"><?= e(t('common.back')) ?></a><?= ai_ask_button('aml_customer', (int)$c['id']) ?><?php if (can('aml.manage')): ?><a class="btn" href="<?= e(url('aml/customers/' . $c['id'] . '/edit')) ?>"><?= e(t('common.edit')) ?></a><a class="btn secondary" href="<?= e(url('aml/reports/new', ['customer' => $c['id']])) ?>"><?= e(t('aml.report_new')) ?></a><?php endif; ?></div></div>
 <?php require __DIR__ . '/_tabs.php'; ?>
 <?php if ((int)$c['sanctions_match']): ?><div class="card notice"><p><?= icon('alert') ?> <?= e(t('aml.sanctions_banner')) ?></p></div><?php endif; ?>
 <div class="kpis"><div class="kpi"><div class="v"><?= $amlBadge($c['rating']) ?></div><div class="l"><?= e(t('aml.rating')) ?><?= $c['override_rating'] ? ' (' . e(t('aml.overridden')) . ')' : '' ?></div></div>

@@ -22,3 +22,4 @@ $crit = static fn(string $c) => '<span class="badge ' . ($c === 'critical' ? 'da
 <td class="num"><?= e(\App\Support\Bia::fmt($p['mtpd_hours'])) ?></td><td class="num"><?= e(\App\Support\Bia::fmt($p['rto_hours'])) ?></td><td class="num"><?= e(\App\Support\Bia::fmt($p['rpo_hours'])) ?></td>
 <td><span class="badge <?= $p['status'] === 'approved' ? 'ok' : ($p['status'] === 'pending_approval' ? 'warn' : '') ?>"><?= e(t('enum.bstatus.' . $p['status'])) ?></span></td></tr><?php endforeach; ?></tbody></table></div>
 <?= pager($total, $page, $per) ?>
+<?= kb_refs('bia') ?>

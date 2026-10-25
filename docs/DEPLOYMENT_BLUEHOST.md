@@ -116,3 +116,16 @@ and, inside `'app'`, `'base_url' => 'https://grc.example.com'` so digests contai
   - `0 3 1 * * /usr/local/bin/php /home/ACCOUNT/grc/bin/t24-sync.php --dataset=gl --file=/home/ACCOUNT/t24/gl-export.csv`
 - The T24 API must be reachable from the web server. On shared hosting it usually is not (T24 sits inside the bank network): in that case use file loads, or host the platform inside the bank.
 - Set `app.secret` in the config file before saving the API password: it is encrypted with that key.
+
+## 17. Release 1.5 configuration notes (AI assistant)
+- Apply migration 023 from **Administration → System**. The built-in reference library loads automatically the first time someone opens the assistant (or use **Administration → AI assistant → Reload the built-in library**).
+- The assistant works out of the box in **library mode**: no internet access and no external service are needed.
+- **Claude mode is optional.** Before switching it on: get the written approval of information security and compliance for using an external AI service; confirm Anthropic's commercial terms and data retention in the contract; then add the key to the config file outside `public_html` (never to the database):
+  ```php
+  'ai' => ['api_key' => 'sk-ant-...', 'timeout' => 120],
+  ```
+  or set the `ANTHROPIC_API_KEY` environment variable. Then open **Administration → AI assistant**, choose *Claude mode*, press **Test the Claude connection**, and keep the hourly limit low at first. The web server needs outbound HTTPS to `api.anthropic.com`.
+- Rotate the key if it may have been exposed. Never commit the config file.
+- **Library upkeep (monthly):** review questions marked "not covered by the library" in the settings page and add the missing Central Bank of Libya circulars, bank policies and procedures (**Reference library → Add a document**, or **Add to the reference library** from a registered circular). Mark internal documents *restricted* when only compliance and risk should see them.
+- The built-in passages are summaries with links to the originals. Libyan legal texts found online are often unofficial translations: rely on the official Arabic text and the latest CBL circulars.
+

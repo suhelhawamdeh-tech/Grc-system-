@@ -22,3 +22,4 @@ $tab = 'ia'; $planned = array_sum(array_map('intval', array_diff_key($eng, ['can
   <a class="help-card" href="<?= e(url('ia/plans')) ?>"><strong><?= icon('target') ?> <?= e(t('ia.plans')) ?></strong><span><?= e(t('ia.plans_hint')) ?></span></a>
   <a class="help-card" href="<?= e(url('ia/findings')) ?>"><strong><?= icon('flag') ?> <?= e(t('ia.findings')) ?></strong><span><?= e(t('ia.findings_hint')) ?></span></a>
 </div>
+<?= kb_refs('ia') ?>

@@ -54,6 +54,7 @@ $showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'we
 <?php if ($u): ?>
 <nav class="sidenav" id="sidenav" aria-label="<?= e(t('common.main_nav')) ?>">
   <?php echo $nav('/my', t('nav.my'), null, 'tasks'); ?>
+  <?php if (can('ai.use')) echo $nav('/assistant', t('nav.assistant'), null, 'spark'); ?>
   <?php if (can('dashboard.view')) echo $nav('/', t('nav.dashboard'), null, 'home'); ?>
   <?php if (can('risk.view')) { echo $nav('/risks', t('nav.risks'), null, 'shield'); echo $nav('/actions', t('nav.actions'), null, 'check'); } ?>
   <?php if (can('incident.view')) echo $nav('/incidents', t('nav.incidents'), null, 'alert'); ?>
@@ -88,6 +89,7 @@ $showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'we
     <?php if (can('scales.manage')) echo $nav('/admin/scales', t('scales.title'), null, 'sliders'); ?>
     <?php if (can('settings.manage')) { echo $nav('/admin/settings', t('admin.settings')); echo $nav('/admin/system', t('admin.system')); } ?>
     <?php if (can('integration.manage')) echo $nav('/admin/integrations', t('nav.integrations'), null, 'link'); ?>
+    <?php if (can('settings.manage')) echo $nav('/admin/assistant', t('ai.settings'), null, 'spark'); ?>
   <?php endif; ?>
 </nav>
 <?php endif; ?>

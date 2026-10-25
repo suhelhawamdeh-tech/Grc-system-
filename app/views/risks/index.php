@@ -56,3 +56,4 @@ if ($chips): ?><p><?= e(t('common.active_filters')) ?>: <?php foreach ($chips as
   </tbody>
 </table></div>
 <?= pager($total, $page, $per) ?>
+<?= kb_refs('risk') ?>

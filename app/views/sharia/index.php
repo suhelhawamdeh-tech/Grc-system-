@@ -19,3 +19,4 @@ $sev = static fn(string $s) => '<span class="badge ' . ($s === 'high' ? 'danger'
 <?php if (!$events): ?><p class="empty"><?= e(t('sha.none_open')) ?></p><?php else: ?>
 <div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('sha.e_code')) ?></th><th><?= e(t('sha.e_title')) ?></th><th><?= e(t('sha.e_dept')) ?></th><th><?= e(t('sha.e_severity')) ?></th><th><?= e(t('sha.e_status')) ?></th></tr></thead><tbody>
 <?php foreach ($events as $e): ?><tr><td class="nowrap"><a href="<?= e(url('sharia/events/' . $e['id'])) ?>"><?= e($e['code']) ?></a></td><td><?= e($e['title']) ?></td><td><?= e(lname($e, 'dept')) ?></td><td><?= $sev($e['severity']) ?></td><td><?= e(t('enum.sevent.' . $e['status'])) ?></td></tr><?php endforeach; ?></tbody></table></div><?php endif; ?></section>
+<?= kb_refs('sharia') ?>

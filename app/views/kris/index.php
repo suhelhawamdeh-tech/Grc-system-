@@ -16,3 +16,4 @@
 <td class="nowrap"><span class="badge warn"><?= e(\App\Core\Money::plain($k['amber_threshold'])) ?></span> <span class="badge danger"><?= e(\App\Core\Money::plain($k['red_threshold'])) ?></span> <span class="muted"><?= e(t('enum.dir.' . $k['direction'])) ?></span></td>
 <td><?= e(t('enum.kfreq.' . $k['frequency'])) ?></td></tr><?php endforeach; ?></tbody></table></div>
 <?= pager($total, $page, $per) ?>
+<?= kb_refs('kri') ?>

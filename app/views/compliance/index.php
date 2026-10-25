@@ -14,3 +14,4 @@
 <tr><td class="nowrap"><a href="<?= e(url('compliance/' . $o['id'])) ?>"><?= e($o['code']) ?></a></td><td><a href="<?= e(url('compliance/' . $o['id'])) ?>"><?= e($o['title']) ?></a></td><td><?= e($o['source']) ?></td><td><?= e(lname($o, 'dept')) ?></td><td><?= e($o['owner_name']) ?></td>
 <td class="nowrap"><?= e($o['due_date']) ?><?= $late ? ' <span class="badge danger">' . e(t('risk.overdue')) . '</span>' : '' ?></td><td><?= status_badge($o['status']) ?></td><td class="num"><?= (int)$o['evidence_count'] ?></td></tr><?php endforeach; ?></tbody></table></div>
 <?= pager($total, $page, $per) ?>
+<?= kb_refs('compliance') ?>
