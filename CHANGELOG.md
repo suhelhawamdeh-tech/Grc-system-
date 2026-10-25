@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.4.0
+- **Internal audit** (`/ia`): audit universe scored on six risk factors (department residual risk, materiality, regulatory exposure, complexity, time since last audit, last rating) with audit cycles by priority; annual plan built from the ranking, approval by the audit committee recorded and the plan locked; engagements planned → fieldwork → reporting → issued; workpapers with sample, exceptions, conclusion and evidence, reviewed by a second auditor (maker-checker); findings written as condition / criteria / cause / effect / recommendation, kept as drafts until the report is issued, then followed with management (response within 14 days, agreed action and date, implementation, auditor verification or return, counted extensions).
+- **Anti-money laundering** (`/aml`): risk factors in four dimensions (customers, products and services, delivery channels, geographic areas) with illustrative levels to be reviewed by the bank; customer rating from weighted dimensions plus hard rules (PEP or sanctions match = high; high-risk type or country never below medium), due-diligence level and review cycle; manual override with reason; enterprise-wide view with inherent risk, control effectiveness from linked controls and residual risk; AML reports (STR confidential to the AML team, CTR, periodic, EWRA) with due dates and submission records; CSV export.
+- **T24 integration** (`/admin/integrations`): customers and loss-ledger entries loaded from a T24 export file (CSV, pipe, semicolon, tab or JSON) or from the T24 REST API (IRIS-style paging, basic or bearer authentication, encrypted secret), with configurable field mapping, value mapping through the AML factors, all-or-nothing validation, run log and a cron job `bin/t24-sync.php`.
+- My tasks, e-mail digests and the dashboard include the new items; help topics and role quick-starts updated.
+- Migrations 020 to 022.
+
 ## 1.3.0
 - Risk acceptance authority (two levels, second needs the administrator) and approval-gated closure of large incidents (GRC-011, GRC-004).
 - Two-step verification (TOTP, recovery codes, optional enforcement) and password reset by e-mail (GRC-013).

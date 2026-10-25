@@ -2,7 +2,7 @@
 
 A PHP + MySQL application built for **Bluehost shared hosting (cPanel)**. Bilingual (Arabic RTL / English LTR), navy-and-gold banking design, LYD as the default currency.
 
-> **Status:** Phase 1 (core) and Phase 2 (KRIs, risk appetite, compliance obligations, committee decisions, policies, RCSA) are implemented and covered by an automated suite (609 checks, see [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md)). Remaining gaps are listed in [`docs/PLAN.md`](docs/PLAN.md).
+> **Status:** release 1.4 — core risk and incident management, governance and compliance modules, Sharia compliance, controls, BIA, internal audit, AML and T24 integration — covered by an automated suite (see [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md)). Remaining gaps are listed in [`docs/GAP_ANALYSIS_AND_BACKLOG_AR.md`](docs/GAP_ANALYSIS_AND_BACKLOG_AR.md).
 > The software has **not** been deployed to Bluehost or independently security-reviewed by the author; see [Limitations](#limitations-and-what-is-not-verified). Software alone does not establish regulatory or Sharia compliance.
 
 ## Quick start
@@ -53,11 +53,11 @@ tests/             dependency-free test runner (not shipped in the ZIP)
 |---|---|---|
 | System administrator | all | everything: users, org, scales, settings, audit |
 | Risk manager | all | risks, incidents, exports, dashboard, **scales**, ownership transfer |
-| Compliance officer | all | risks, incidents, exports, dashboard |
+| Compliance officer | all | risks, incidents, exports, dashboard, **AML** (customer rating, factors, reports) |
 | Department manager | **own department** | create/edit/archive risks and incidents in the department |
 | Branch liaison officer | **own branch** | create/edit risks and incidents of the branch (no archive) |
 | Executive viewer | all | read-only dashboard, lists, exports |
-| Auditor | all | read-only + audit log |
+| Auditor | all | read-only + audit log + **internal audit** (universe, plan, workpapers, findings) |
 
 Out-of-scope records return **404** (not 403) so existence is not revealed; lists, dashboard totals, CSV, print and attachment downloads all use the same scope predicate. Restricted users cannot create or move records outside their scope.
 
@@ -77,6 +77,13 @@ Out-of-scope records return **404** (not 403) so existence is not revealed; list
 | **Policies** (`/policies`) | read: everyone · manage: admin, risk, compliance | Policy/procedure/standard/charter/Sharia-resolution register; **immutable version history** with approval details and optional document; review dates; only one current version |
 | **RCSA** (`/rcsa`) | respond: dept managers/branch liaison (own scope) · manage/review: admin, risk | Bilingual questionnaires → launch per department/branch → assess → submit → reviewer approves or returns; the assessor cannot review their own assessment |
 
+### Release 1.4 modules
+| Module | Who | What it does |
+|---|---|---|
+| **Internal audit** (`/ia`) | run: auditor, admin · view: risk, compliance, exec · answer findings: owners (dept managers, risk, compliance) | Risk-scored audit universe, annual plan with recorded audit-committee approval, engagements, workpapers reviewed by a second auditor, findings followed to verified closure |
+| **AML** (`/aml`) | manage: compliance, admin · view: risk, exec, auditor | Customer, product, channel and geography factors; customer rating with due-diligence level and review cycle; enterprise-wide view with linked controls; confidential STRs and other AML reports |
+| **T24 integration** (`/admin/integrations`) | admin | File or API loads of customers (to AML) and loss-ledger entries (to reconciliation), field mapping, run log, cron job `bin/t24-sync.php` |
+
 Dashboard *Governance and compliance* tiles (KRIs red/amber, open breaches, overdue obligations, overdue committee actions, RCSA to review/overdue, policies past review) are computed from the tables and shown only to users with the matching permission (and scope).
 
 ### Security controls implemented
@@ -95,4 +102,4 @@ Categories for Sharia non-compliance risk, displaced commercial risk, equity inv
 7. Near misses carry zero loss; closing an incident requires a root cause.
 
 ## Limitations and what is not verified
-See [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md). In short: automated tests ran on PHP 8.4 + MariaDB 10.11 with PHP's built-in server. **Not verified:** real Apache/`.htaccess` behaviour, Bluehost/cPanel, PHP 8.1–8.3, MySQL 5.7/8, phpMyAdmin import UI, real HTTPS, email (none is sent), screen-reader use, formal WCAG audit, load/performance, penetration test. Not implemented: password-reset by email (admin resets passwords), MFA/SSO, email notifications, Excel (.xlsx) export (CSV only), PDF generation (browser "Print → Save as PDF"), multi-department users, per-field permissions.
+See [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md). In short: automated tests ran on PHP 8.4 + MariaDB 10.11 with PHP's built-in server. **Not verified:** a real Temenos T24 system (the integration was tested only against a simulated T24 API and sample files), real Apache/`.htaccess` behaviour, Bluehost/cPanel, PHP 8.1–8.3, MySQL 5.7/8, phpMyAdmin import UI, real HTTPS, email (none is sent), screen-reader use, formal WCAG audit, load/performance, penetration test. Not implemented: SSO/LDAP, a public REST API, server-side PDF generation (browser "Print → Save as PDF"), multi-department users, per-field permissions.

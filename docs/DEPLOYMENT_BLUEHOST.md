@@ -97,7 +97,7 @@ and, inside `'app'`, `'base_url' => 'https://grc.example.com'` so digests contai
 ## 14. Production readiness notes (open items, not done by the application)
 - Shared hosting has no high availability or disaster recovery. For production use at a bank, decide on a bank-controlled server, automated off-site backups and a tested restore (backlog GRC-039).
 - Commission an independent penetration test before holding real data (GRC-040).
-- SSO/LDAP, REST API and core-banking integration are not implemented (GRC-031 to GRC-033).
+- SSO/LDAP and a public REST API are not implemented (GRC-031, GRC-032). Core-banking integration with T24 is available from release 1.4 (section 16) but has only been tested against a simulated T24 API.
 
 
 ## 15. Release 1.3 configuration notes
@@ -106,3 +106,13 @@ and, inside `'app'`, `'base_url' => 'https://grc.example.com'` so digests contai
 - **Two-step verification** secrets are encrypted in the database with a key derived from `app.secret` in the config file (add a long random string there). If `app.secret` is absent, a key derived from the database credentials is used: set it before users enrol, because changing it later invalidates enrolled authenticators.
 - Administration → Settings now has: incident escalation threshold, risk-acceptance senior level, reconciliation tolerance, and "require two-step verification for everyone".
 - Apply migrations 014–019 from Administration → System.
+
+## 16. Release 1.4 configuration notes (internal audit, AML, T24)
+- Apply migrations 020–022 from **Administration → System**.
+- **Roles**: the *Auditor* role now runs internal audit (universe, plan, workpapers, findings). Department managers, risk managers and compliance officers answer findings assigned to them. The *Compliance officer* manages AML; risk managers, executives and auditors can view it.
+- **AML factors**: the factors and risk levels supplied are examples. Review them in **AML → Risk factors** against the bank's own risk assessment and the Central Bank of Libya instructions before rating real customers.
+- **T24**: in **Administration → T24 integration** download the templates, agree the export or API with the T24 team, adjust the field mapping and test with a small file first. For automatic loads add cron jobs, for example:
+  - `0 2 * * * /usr/local/bin/php /home/ACCOUNT/grc/bin/t24-sync.php --dataset=customers --api`
+  - `0 3 1 * * /usr/local/bin/php /home/ACCOUNT/grc/bin/t24-sync.php --dataset=gl --file=/home/ACCOUNT/t24/gl-export.csv`
+- The T24 API must be reachable from the web server. On shared hosting it usually is not (T24 sits inside the bank network): in that case use file loads, or host the platform inside the bank.
+- Set `app.secret` in the config file before saving the API password: it is encrypted with that key.

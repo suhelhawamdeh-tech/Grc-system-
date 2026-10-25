@@ -134,6 +134,7 @@ final class DemoSeeder
             }
         }
         self::phase2($users, $dep, $cat, $riskIds, $now, $d, $br);
+        self::release4($users + ['admin' => $adminId], $dep, $br, $riskIds, $now, $d);
         return array_keys($users);
     }
 
@@ -279,5 +280,86 @@ final class DemoSeeder
         $aid = Db::insert('rcsa_assessments', ['template_id' => $tid, 'department_id' => $dep['RET'], 'branch_id' => $br['TRP'] ?? null, 'assessor_user_id' => $users['demo.branch.tripoli'], 'due_date' => $d(14), 'status' => 'draft', 'created_by' => $users['demo.risk'], 'created_at' => $now, 'updated_at' => $now]);
         $code('rcsa_assessments', 'RCSA', $aid, 4);
         Db::exec('INSERT INTO rcsa_answers (assessment_id, question_id) SELECT ?, q.id FROM rcsa_questions q WHERE q.template_id = ?', [$aid, $tid]);
+    }
+
+    /** Synthetic internal-audit and AML records (release 4). */
+    private static function release4(array $users, array $dep, array $br, array $riskIds, string $now, callable $d): void
+    {
+        $aud = $users['demo.auditor'];
+        $y = (int)date('Y');
+        // Audit universe
+        $uni = [];
+        foreach ([['Branch cash and vault operations', 'RET', 4, 3, 2, -900, 'needs_improvement'], ['Credit administration and collateral', 'COR', 5, 4, 3, -500, 'satisfactory'], ['IT general controls and access', 'IT', 4, 4, 5, null, null],
+            ['Treasury and foreign exchange', 'FIN', 5, 4, 3, -1200, 'satisfactory'], ['AML/CFT compliance programme', 'CMP', 4, 5, 3, -400, 'needs_improvement'], ['Sharia compliance of financing contracts', 'ISL', 3, 5, 2, -1300, 'satisfactory']] as $i => [$nm, $dp, $ma, $re, $co, $last, $rt]) {
+            $id = Db::insert('audit_universe', ['name' => $nm, 'department_id' => $dep[$dp], 'description' => 'Synthetic auditable entity for demonstration.', 'materiality' => $ma, 'regulatory' => $re, 'complexity' => $co,
+                'last_audit_date' => $last === null ? null : $d($last), 'last_rating' => $rt, 'is_active' => 1, 'created_by' => $aud, 'created_at' => $now, 'updated_at' => $now]);
+            Db::update('audit_universe', ['code' => sprintf('AU-%03d', $id)], 'id = ?', [$id]);
+            $uni[$dp] = $id;
+        }
+        $plan = Db::insert('audit_plans', ['plan_year' => $y, 'title' => "Internal audit plan $y (synthetic)", 'status' => 'approved', 'approval_body' => 'Board audit committee (synthetic)', 'approval_ref' => "AC/$y/01", 'approved_on' => "$y-01-15",
+            'recorded_by' => $aud, 'notes' => 'Synthetic approval record.', 'created_by' => $aud, 'created_at' => $now, 'updated_at' => $now]);
+        $eng = static function (string $dp, string $title, string $status, int $seq) use ($plan, $uni, $aud, $now, $y) {
+            $id = Db::insert('audit_engagements', ['code' => sprintf('IA-%d-%02d', $y, $seq), 'plan_id' => $plan, 'universe_id' => $uni[$dp], 'title' => $title, 'objective' => 'Assess design and operating effectiveness of key controls (synthetic).', 'scope' => 'Synthetic scope.',
+                'lead_user_id' => $aud, 'planned_start' => "$y-0" . (2 * $seq) . '-01', 'planned_end' => "$y-0" . (2 * $seq) . '-28', 'priority_score' => 3.5, 'status' => $status, 'created_by' => $aud, 'created_at' => $now, 'updated_at' => $now]);
+            return $id;
+        };
+        $e1 = $eng('RET', 'Branch cash handling review', 'issued', 1);
+        Db::update('audit_engagements', ['actual_start' => "$y-02-03", 'actual_end' => $d(-40), 'rating' => 'needs_improvement', 'report_summary' => 'Synthetic report: cash counts are performed but dual control at vault opening is not consistently evidenced.', 'issued_at' => $d(-40) . ' 10:00:00'], 'id = ?', [$e1]);
+        $e2 = $eng('IT', 'Privileged access and change management', 'fieldwork', 2);
+        Db::update('audit_engagements', ['actual_start' => $d(-10)], 'id = ?', [$e2]);
+        $eng('CMP', 'AML customer due-diligence files', 'planned', 3);
+        $wp = static function (int $e, string $ref, string $title, string $status, ?string $concl, int $sample, int $exc) use ($aud, $users, $now) {
+            return Db::insert('audit_workpapers', ['engagement_id' => $e, 'ref' => $ref, 'title' => $title, 'procedure_text' => 'Synthetic test procedure: select a sample and check evidence.', 'sample_size' => $concl ? $sample : null, 'exceptions' => $concl ? $exc : null,
+                'conclusion' => $concl, 'result_text' => $concl ? 'Synthetic test result.' : null, 'status' => $status, 'prepared_by' => $concl ? $aud : null, 'prepared_at' => $concl ? $now : null,
+                'reviewed_by' => $status === 'reviewed' ? $users['admin'] ?? null : null, 'reviewed_at' => $status === 'reviewed' ? $now : null, 'created_by' => $aud, 'created_at' => $now, 'updated_at' => $now]);
+        };
+        $w1 = $wp($e1, 'WP-01', 'Vault dual control', 'reviewed', 'partially_effective', 25, 4);
+        $wp($e1, 'WP-02', 'Daily cash balancing', 'reviewed', 'effective', 25, 0);
+        $wp($e2, 'WP-01', 'Privileged account review', 'prepared', 'ineffective', 15, 6);
+        $wp($e2, 'WP-02', 'Change approval evidence', 'open', null, 0, 0);
+        $risk = array_values($riskIds)[0] ?? null;
+        foreach ([[$e1, $w1, 'Dual control at vault opening not evidenced', 'high', 'RET', 'demo.dept.retail', 'open', -26, null], [$e1, null, 'Cash limit exceptions not escalated', 'medium', 'RET', 'demo.dept.retail', 'responded', -26, 45],
+            [$e1, null, 'Branch key register incomplete', 'low', 'RET', 'demo.dept.retail', 'closed', -26, -10]] as [$e, $w, $t, $sev, $dp, $own, $st, $resp, $due]) {
+            $fid = Db::insert('audit_findings', ['engagement_id' => $e, 'workpaper_id' => $w, 'title' => $t, 'condition_text' => 'Synthetic condition: 4 of 25 sampled openings lacked a second signature.', 'criteria_text' => 'Synthetic branch operations manual, section 3.', 'cause_text' => 'Synthetic cause.',
+                'effect_text' => 'Risk of undetected cash loss.', 'recommendation' => 'Enforce and evidence dual control at every vault opening.', 'severity' => $sev, 'department_id' => $dep[$dp], 'owner_user_id' => $users[$own], 'risk_id' => $sev === 'high' ? $risk : null,
+                'status' => $st, 'response_due' => $d($resp + 14), 'management_response' => $st === 'open' ? null : 'Agreed (synthetic).', 'agreed_action' => $st === 'open' ? null : 'Retrain staff and add a sign-off field (synthetic).',
+                'due_date' => $due === null ? null : $d($due), 'original_due_date' => $due === null ? null : $d($due), 'implemented_note' => $st === 'closed' ? 'Done (synthetic).' : null, 'implemented_at' => $st === 'closed' ? $d(-12) . ' 09:00:00' : null,
+                'verification_note' => $st === 'closed' ? 'Evidence checked (synthetic).' : null, 'verified_by' => $st === 'closed' ? $aud : null, 'closed_at' => $st === 'closed' ? $d(-9) . ' 12:00:00' : null, 'created_by' => $aud, 'created_at' => $now, 'updated_at' => $now]);
+            Db::update('audit_findings', ['code' => sprintf('AF-%04d', $fid)], 'id = ?', [$fid]);
+        }
+
+        // AML: customers rated from the reference factors (synthetic names and numbers)
+        $fac = array_column(Db::all('SELECT id, code FROM aml_factors'), 'id', 'code');
+        $comp = $users['demo.compliance'];
+        foreach ([['900101', 'Synthetic Customer A', 'CUS-IND-RES', 'GEO-LY', ['PRD-CUR', 'PRD-SAV'], ['CHN-BRANCH', 'CHN-MOBILE'], 0, 0, -200, 'TRP'],
+            ['900102', 'Synthetic Customer B', 'CUS-IND-RES', 'GEO-LY', ['PRD-CUR'], ['CHN-BRANCH'], 0, 0, -900, 'BNG'],
+            ['900103', 'Synthetic Trading Company', 'CUS-CORP', 'GEO-LY', ['PRD-CUR', 'PRD-TRADE'], ['CHN-BRANCH', 'CHN-ONLINE'], 0, 0, -400, 'TRP'],
+            ['900104', 'Synthetic Exchange Shop', 'CUS-CASH', 'GEO-NEIGH', ['PRD-CUR', 'PRD-FX', 'PRD-WIRE'], ['CHN-BRANCH', 'CHN-AGENT'], 0, 0, -800, 'MSR'],
+            ['900105', 'Synthetic Charity', 'CUS-NPO', 'GEO-LY', ['PRD-CUR', 'PRD-WIRE'], ['CHN-ONLINE'], 0, 0, -300, 'TRP'],
+            ['900106', 'Synthetic Public Official', 'CUS-IND-RES', 'GEO-LY', ['PRD-CUR', 'PRD-MUR'], ['CHN-BRANCH'], 1, 0, -500, 'TRP'],
+            ['900107', 'Synthetic Non-resident', 'CUS-IND-NRS', 'GEO-OTHER', ['PRD-CUR'], ['CHN-ONLINE'], 0, 0, -1200, 'ZAW'],
+            ['900108', 'Synthetic Import Company', 'CUS-CORP', 'GEO-NEIGH', ['PRD-TRADE', 'PRD-WIRE'], ['CHN-BRANCH'], 0, 1, -60, 'BNG'],
+            ['900109', 'Synthetic Government Agency', 'CUS-GOV', 'GEO-LY', ['PRD-CUR'], ['CHN-BRANCH'], 0, 0, -700, 'TRP'],
+            ['900110', 'Synthetic Murabaha Client', 'CUS-IND-RES', 'GEO-LY', ['PRD-MUR'], ['CHN-BRANCH'], 0, 0, -1500, 'SBH']] as [$ref, $nm, $ty, $geo, $prods, $chans, $pep, $sanc, $since, $brc]) {
+            $cid = Db::insert('aml_customers', ['customer_ref' => $ref, 'full_name' => $nm, 'customer_type_id' => $fac[$ty], 'geography_id' => $fac[$geo], 'branch_id' => $br[$brc] ?? null, 'is_pep' => $pep, 'sanctions_match' => $sanc, 'source' => 'manual',
+                'onboarded_on' => $d($since), 'score' => 1, 'calc_rating' => 'low', 'rating' => 'low', 'cdd_level' => 'simplified', 'last_review_on' => $d($since + 30), 'next_review_due' => $d(365), 'status' => 'active', 'created_by' => $comp, 'created_at' => $now, 'updated_at' => $now]);
+            foreach (array_merge($prods, $chans) as $fc) {
+                Db::exec('INSERT INTO aml_customer_factors (customer_id, factor_id) VALUES (?, ?)', [$cid, $fac[$fc]]);
+            }
+            $r = AmlScoring::recalc($cid);
+            Db::update('aml_customers', ['next_review_due' => AmlScoring::nextReview($r['rating'], $d($since + 30))], 'id = ?', [$cid]);
+        }
+        $ctl = array_column(Db::all('SELECT id, name FROM controls ORDER BY id'), 'id');
+        foreach ([['product', 0], ['channel', 1]] as [$dim, $i]) {
+            if (isset($ctl[$i])) {
+                Db::insert('aml_dimension_controls', ['dimension' => $dim, 'control_id' => $ctl[$i], 'created_by' => $comp, 'created_at' => $now]);
+            }
+        }
+        $sus = (int)Db::val("SELECT id FROM aml_customers WHERE customer_ref = '900104'");
+        foreach ([['str', 'Unusual cash deposits followed by transfers (synthetic)', $sus, 3, 'draft', 1], ['periodic', 'Quarterly AML/CFT statistics (synthetic)', null, -20, 'submitted', 0], ['ewra', "Annual AML risk assessment $y (synthetic)", null, 40, 'draft', 0]] as [$ty, $ti, $cu, $due, $st, $conf]) {
+            $rid = Db::insert('aml_reports', ['report_type' => $ty, 'title' => $ti, 'customer_id' => $cu, 'recipient' => 'Financial intelligence unit (synthetic)', 'due_date' => $d($due), 'summary' => 'Synthetic report summary for demonstration.', 'confidential' => $conf, 'status' => $st,
+                'submitted_on' => $st === 'submitted' ? $d($due - 2) : null, 'submitted_by' => $st === 'submitted' ? $comp : null, 'reference_no' => $st === 'submitted' ? 'REF-SYN-01' : null, 'created_by' => $comp, 'created_at' => $now, 'updated_at' => $now]);
+            Db::update('aml_reports', ['code' => sprintf('AMLR-%04d', $rid)], 'id = ?', [$rid]);
+        }
     }
 }

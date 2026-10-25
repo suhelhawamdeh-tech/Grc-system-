@@ -119,6 +119,14 @@ final class DashboardController extends Controller
             $p['sha_open'] = (int)Db::val("SELECT COUNT(*) FROM sharia_events e WHERE e.status <> 'closed' AND $w", $pp);
             $p['sha_purify'] = (int)Db::val("SELECT COUNT(*) FROM sharia_events e WHERE e.purification_status = 'pending' AND $w", $pp);
         }
+        if (Perm::roleHas($u['role'], 'ia.view')) {
+            $p['ia_overdue'] = (int)Db::val("SELECT COUNT(*) FROM audit_findings WHERE (status = 'open' AND response_due < ?) OR (status = 'responded' AND due_date < ?)", [$today, $today]);
+            $p['ia_high'] = (int)Db::val("SELECT COUNT(*) FROM audit_findings WHERE severity = 'high' AND status NOT IN ('draft','closed')");
+        }
+        if (Perm::roleHas($u['role'], 'aml.view')) {
+            $p['aml_high'] = (int)Db::val("SELECT COUNT(*) FROM aml_customers WHERE status = 'active' AND rating = 'high'");
+            $p['aml_review_overdue'] = (int)Db::val("SELECT COUNT(*) FROM aml_customers WHERE status = 'active' AND next_review_due < ?", [$today]);
+        }
         if (Perm::roleHas($u['role'], 'appetite.view')) {
             $p['breaches'] = (int)Db::val("SELECT COUNT(*) FROM appetite_breaches WHERE status IN ('open','escalated')");
         }

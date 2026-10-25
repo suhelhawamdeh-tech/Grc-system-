@@ -63,7 +63,7 @@ final class Validator
     public function intRange(string $f, string $labelKey, int $min, int $max): self
     {
         $v = $this->str($f);
-        if (!preg_match('/^\d{1,3}$/', $v) || (int)$v < $min || (int)$v > $max) {
+        if (!preg_match('/^\d{1,9}$/', $v) || (int)$v < $min || (int)$v > $max) {
             $this->fail($f, 'validation.int_range', ['field' => t($labelKey), 'min' => $min, 'max' => $max]);
         }
         return $this;

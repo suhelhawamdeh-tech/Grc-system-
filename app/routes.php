@@ -275,3 +275,74 @@ $router->post('/governance/{id}', 'GovernanceController@bodyUpdate', 'governance
 $router->post('/governance/{id}/members', 'GovernanceController@addMember', 'governance.manage');
 $router->post('/governance/{id}/members/{uid}/remove', 'GovernanceController@removeMember', 'governance.manage');
 $router->post('/governance/{id}/meetings', 'GovernanceController@meetingStore', 'governance.manage');
+
+// ---- Release 4: internal audit
+$router->get('/ia', 'IaController@index', 'ia.view');
+$router->get('/ia/universe', 'IaController@universe', 'ia.view');
+$router->get('/ia/universe/new', 'IaController@universeNew', 'ia.manage');
+$router->post('/ia/universe', 'IaController@universeStore', 'ia.manage');
+$router->get('/ia/universe/{id}/edit', 'IaController@universeEdit', 'ia.manage');
+$router->post('/ia/universe/{id}', 'IaController@universeUpdate', 'ia.manage');
+$router->get('/ia/plans', 'IaController@plans', 'ia.view');
+$router->post('/ia/plans', 'IaController@planStore', 'ia.manage');
+$router->get('/ia/plans/{id}', 'IaController@planShow', 'ia.view');
+$router->post('/ia/plans/{id}/engagements', 'IaController@engagementStore', 'ia.manage');
+$router->post('/ia/plans/{id}/approve', 'IaController@planApprove', 'ia.manage');
+$router->get('/ia/engagements/{id}', 'IaController@engagementShow', 'ia.view');
+$router->post('/ia/engagements/{id}/start', 'IaController@engagementStart', 'ia.manage');
+$router->post('/ia/engagements/{id}/reporting', 'IaController@engagementReporting', 'ia.manage');
+$router->post('/ia/engagements/{id}/issue', 'IaController@engagementIssue', 'ia.manage');
+$router->post('/ia/engagements/{id}/cancel', 'IaController@engagementCancel', 'ia.manage');
+$router->post('/ia/engagements/{id}/workpapers', 'IaController@workpaperStore', 'ia.manage');
+$router->get('/ia/engagements/{id}/findings/new', 'IaController@findingNew', 'ia.manage');
+$router->post('/ia/engagements/{id}/findings', 'IaController@findingStore', 'ia.manage');
+$router->get('/ia/workpapers/{id}', 'IaController@workpaperShow', 'ia.view');
+$router->post('/ia/workpapers/{id}', 'IaController@workpaperSave', 'ia.manage');
+$router->post('/ia/workpapers/{id}/review', 'IaController@workpaperReview', 'ia.manage');
+$router->post('/ia/workpapers/{id}/attachments', 'IaController@workpaperUpload', 'ia.manage');
+$router->get('/ia/findings', 'IaController@findings', 'ia.findings');
+$router->get('/ia/findings/{id}', 'IaController@findingShow', 'ia.findings');
+$router->get('/ia/findings/{id}/edit', 'IaController@findingEdit', 'ia.manage');
+$router->post('/ia/findings/{id}', 'IaController@findingUpdate', 'ia.manage');
+$router->post('/ia/findings/{id}/respond', 'IaController@findingRespond', 'ia.respond');
+$router->post('/ia/findings/{id}/implemented', 'IaController@findingImplemented', 'ia.respond');
+$router->post('/ia/findings/{id}/verify', 'IaController@findingVerify', 'ia.manage');
+$router->post('/ia/findings/{id}/extend', 'IaController@findingExtend', 'ia.manage');
+$router->post('/ia/findings/{id}/attachments', 'IaController@findingUpload', 'ia.findings');
+
+// ---- Release 4: anti-money laundering
+$router->get('/aml', 'AmlController@index', 'aml.view');
+$router->post('/aml/controls', 'AmlController@linkControl', 'aml.manage');
+$router->post('/aml/controls/remove', 'AmlController@unlinkControl', 'aml.manage');
+$router->get('/aml/factors', 'AmlController@factors', 'aml.view');
+$router->get('/aml/factors/new', 'AmlController@factorNew', 'aml.manage');
+$router->post('/aml/factors', 'AmlController@factorStore', 'aml.manage');
+$router->get('/aml/factors/{id}/edit', 'AmlController@factorEdit', 'aml.manage');
+$router->post('/aml/factors/{id}', 'AmlController@factorUpdate', 'aml.manage');
+$router->get('/aml/customers', 'AmlController@customers', 'aml.view');
+$router->get('/aml/customers/export', 'AmlController@export', 'aml.view');
+$router->get('/aml/customers/new', 'AmlController@customerNew', 'aml.manage');
+$router->post('/aml/customers', 'AmlController@customerStore', 'aml.manage');
+$router->get('/aml/customers/{id}', 'AmlController@customerShow', 'aml.view');
+$router->get('/aml/customers/{id}/edit', 'AmlController@customerEdit', 'aml.manage');
+$router->post('/aml/customers/{id}', 'AmlController@customerUpdate', 'aml.manage');
+$router->post('/aml/customers/{id}/review', 'AmlController@customerReview', 'aml.manage');
+$router->post('/aml/customers/{id}/override', 'AmlController@customerOverride', 'aml.manage');
+$router->get('/aml/reports', 'AmlController@reports', 'aml.view');
+$router->get('/aml/reports/new', 'AmlController@reportNew', 'aml.manage');
+$router->post('/aml/reports', 'AmlController@reportStore', 'aml.manage');
+$router->get('/aml/reports/{id}', 'AmlController@reportShow', 'aml.view');
+$router->get('/aml/reports/{id}/edit', 'AmlController@reportEdit', 'aml.manage');
+$router->post('/aml/reports/{id}', 'AmlController@reportUpdate', 'aml.manage');
+$router->post('/aml/reports/{id}/submit', 'AmlController@reportSubmit', 'aml.manage');
+$router->post('/aml/reports/{id}/attachments', 'AmlController@reportUpload', 'aml.manage');
+
+// ---- Release 4: core-banking integration (Temenos T24)
+$router->get('/admin/integrations', 'IntegrationController@index', 'integration.manage');
+$router->post('/admin/integrations/settings', 'IntegrationController@saveSettings', 'integration.manage');
+$router->post('/admin/integrations/test', 'IntegrationController@test', 'integration.manage');
+$router->post('/admin/integrations/upload', 'IntegrationController@upload', 'integration.manage');
+$router->post('/admin/integrations/pull', 'IntegrationController@pull', 'integration.manage');
+$router->get('/admin/integrations/runs/{id}', 'IntegrationController@run', 'integration.manage');
+$router->get('/admin/integrations/sample/customers', 'IntegrationController@sample:customers', 'integration.manage');
+$router->get('/admin/integrations/sample/gl', 'IntegrationController@sample:gl', 'integration.manage');

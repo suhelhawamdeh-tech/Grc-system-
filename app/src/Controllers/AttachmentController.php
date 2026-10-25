@@ -67,6 +67,29 @@ final class AttachmentController extends Controller
             case 'sharia_event':
                 $row = Db::one('SELECT department_id FROM sharia_events WHERE id = ?', [$id]);
                 return $row && Scope::allowsDept($user, $row) && ($forEdit ? $can('sharia.report') : $can('sharia.view'));
+            case 'audit_workpaper':
+                return Db::val('SELECT 1 FROM audit_workpapers WHERE id = ?', [$id]) && ($forEdit ? $can('ia.manage') : $can('ia.view'));
+            case 'audit_finding':
+                $f = Db::one('SELECT status, department_id, owner_user_id FROM audit_findings WHERE id = ?', [$id]);
+                if (!$f) {
+                    return false;
+                }
+                if ($can('ia.manage')) {
+                    return true;
+                }
+                if ($forEdit || $f['status'] === 'draft') {
+                    return false;
+                }
+                return $can('ia.view') || ($can('ia.findings') && ((int)$f['department_id'] === (int)($user['department_id'] ?? 0) || (int)$f['owner_user_id'] === (int)$user['id']));
+            case 'aml_report':
+                $r = Db::one('SELECT confidential FROM aml_reports WHERE id = ?', [$id]);
+                if (!$r) {
+                    return false;
+                }
+                if ($forEdit || (int)$r['confidential'] === 1) {
+                    return $can('aml.manage');
+                }
+                return $can('aml.view');
             case 'policy_version':
                 $row = Db::one('SELECT id FROM policy_versions WHERE id = ?', [$id]);
                 return $row && ($forEdit ? $can('policy.manage') : $can('policy.view'));
@@ -119,6 +142,9 @@ final class AttachmentController extends Controller
             'sharia_ruling' => 'sharia/rulings/' . $a['entity_id'],
             'sharia_event' => 'sharia/events/' . $a['entity_id'],
             'control_test' => 'controls/' . (int)Db::val('SELECT control_id FROM control_tests WHERE id = ?', [$a['entity_id']]),
+            'audit_workpaper' => 'ia/workpapers/' . $a['entity_id'],
+            'audit_finding' => 'ia/findings/' . $a['entity_id'],
+            'aml_report' => 'aml/reports/' . $a['entity_id'],
             default => 'policies/' . (int)Db::val('SELECT policy_id FROM policy_versions WHERE id = ?', [$a['entity_id']]),
         };
         $this->redirect(url($base) . '#attachments', 'upload.deleted');

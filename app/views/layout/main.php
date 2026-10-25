@@ -75,6 +75,11 @@ $showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'we
     <?php if (can('policy.view')) echo $nav('/policies', t('nav.policies'), null, 'book'); ?>
     <?php if (can('rcsa.view')) echo $nav('/rcsa', t('nav.rcsa'), null, 'clipboard'); ?>
   <?php endif; ?>
+  <?php if (can('ia.view') || can('ia.findings') || can('aml.view')): ?>
+    <h3><?= e(t('nav.assurance')) ?></h3>
+    <?php if (can('ia.view') || can('ia.findings')) echo $nav(can('ia.view') ? '/ia' : '/ia/findings', t('nav.ia'), '/ia', 'clipboard'); ?>
+    <?php if (can('aml.view')) echo $nav('/aml', t('nav.aml'), null, 'eye'); ?>
+  <?php endif; ?>
   <?php if (can('audit.view')) echo $nav('/audit', t('nav.audit'), null, 'search'); ?>
   <?php if (can('users.manage') || can('org.manage') || can('scales.manage')): ?>
     <h3><?= e(t('nav.admin')) ?></h3>
@@ -82,6 +87,7 @@ $showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'we
     <?php if (can('org.manage')) { echo $nav('/admin/departments', t('admin.departments')); echo $nav('/admin/branches', t('admin.branches')); echo $nav('/admin/categories', t('admin.categories')); echo $nav('/admin/periods', t('admin.periods')); } ?>
     <?php if (can('scales.manage')) echo $nav('/admin/scales', t('scales.title'), null, 'sliders'); ?>
     <?php if (can('settings.manage')) { echo $nav('/admin/settings', t('admin.settings')); echo $nav('/admin/system', t('admin.system')); } ?>
+    <?php if (can('integration.manage')) echo $nav('/admin/integrations', t('nav.integrations'), null, 'link'); ?>
   <?php endif; ?>
 </nav>
 <?php endif; ?>

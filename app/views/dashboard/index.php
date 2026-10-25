@@ -38,6 +38,8 @@ $incLink = static fn(array $extra = []) => url('incidents', array_merge(['from' 
 <?= $tile('dec_overdue', 'dash.dec_overdue', url('committees', ['overdue' => 1])) ?><?= $tile('rcsa_review', 'dash.rcsa_review', url('rcsa', ['status' => 'submitted']), false) ?>
 <?= $tile('rcsa_overdue', 'dash.rcsa_overdue', url('rcsa', ['overdue' => 1])) ?><?= $tile('pol_overdue', 'dash.pol_overdue', url('policies', ['review_overdue' => 1])) ?>
 <?= $tile('obj_red', 'dash.obj_red', url('strategy')) ?><?= $tile('cir_pending', 'dash.cir_pending', url('circulars', ['status' => 'distributed'])) ?><?= $tile('bia_unapproved', 'dash.bia_unapproved', url('bia', ['status' => 'draft'])) ?><?= $tile('bia_gaps', 'dash.bia_gaps', url('bia', ['gap' => 1])) ?><?= $tile('appr_pending', 'dash.appr_pending', url('approvals')) ?>
+<?= $tile('ia_overdue', 'dash.ia_overdue', url('ia/findings', ['overdue' => 1])) ?><?= $tile('ia_high', 'dash.ia_high', url('ia/findings', ['status' => 'not_closed', 'severity' => 'high'])) ?>
+<?= $tile('aml_high', 'dash.aml_high', url('aml/customers', ['rating' => 'high']), false) ?><?= $tile('aml_review_overdue', 'dash.aml_review_overdue', url('aml/customers', ['review' => 1])) ?>
 <?= $tile('sha_open', 'dash.sha_open', url('sharia/events', ['open' => 1])) ?><?= $tile('sha_purify', 'dash.sha_purify', url('sharia/events', ['purification' => 1])) ?>
 <?= $tile('kri_breaches', 'dash.kri_breaches', url('kris', ['alert' => 1])) ?><?= $tile('unproven', 'dash.unproven', url('risks', ['unproven' => 1])) ?><?= $tile('ctl_weak', 'dash.ctl_weak', url('controls', ['state' => 'ineffective'])) ?><?= $tile('ctl_overdue', 'dash.ctl_overdue', url('controls', ['state' => 'overdue'])) ?>
 </div><?php endif; ?>

@@ -14,6 +14,12 @@ $cfg = [
   'kri_breaches' => ['icon' => 'pulse', 'label' => 'my.kri_breaches', 'link' => fn($r) => url('kris/' . $r['kri_id']) . '#breaches'],
   'approvals' => ['icon' => 'check', 'label' => 'my.approvals', 'link' => fn($r) => url('approvals')],
   'bia_review' => ['icon' => 'layers', 'label' => 'my.bia_review', 'link' => fn($r) => url('bia/' . $r['id'])],
+  'ia_respond' => ['icon' => 'flag', 'label' => 'my.ia_respond', 'link' => fn($r) => url('ia/findings/' . $r['id']) . '#respond'],
+  'ia_implement' => ['icon' => 'flag', 'label' => 'my.ia_implement', 'link' => fn($r) => url('ia/findings/' . $r['id']) . '#implement'],
+  'ia_verify' => ['icon' => 'search', 'label' => 'my.ia_verify', 'link' => fn($r) => url('ia/findings/' . $r['id']) . '#verify'],
+  'ia_review_wp' => ['icon' => 'clipboard', 'label' => 'my.ia_review_wp', 'link' => fn($r) => url('ia/workpapers/' . $r['id']) . '#review'],
+  'aml_reviews' => ['icon' => 'eye', 'label' => 'my.aml_reviews', 'link' => fn($r) => url('aml/customers/' . $r['id']) . '#review'],
+  'aml_reports' => ['icon' => 'file', 'label' => 'my.aml_reports', 'link' => fn($r) => url('aml/reports/' . $r['id'])],
   'notes' => ['icon' => 'note', 'label' => 'my.notes', 'link' => fn($r) => $r['page_path'] ? base_path() . $r['page_path'] : url('notes')],
 ];
 $total = 0; foreach ($sections as $rows) { $total += count($rows); } ?>

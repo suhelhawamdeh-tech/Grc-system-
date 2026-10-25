@@ -278,3 +278,29 @@ ol.steps li a { font-weight: 600; }
 .meter { background: #e5eaf1; border-radius: 999px; height: 12px; overflow: hidden; } .meter.big { height: 18px; }
 .meter .fill { display: block; height: 100%; border-radius: 999px; transition: width .4s ease; }
 .meter .fill.green { background: #2e7d32; } .meter .fill.amber { background: #f9a825; } .meter .fill.red { background: #c62828; }
+
+/* Release 4: module sub-navigation, notices, score meters (internal audit, AML, integrations) */
+.pill-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+.pill-tabs a { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--navy); text-decoration: none; font-weight: 600; font-size: .9rem; }
+.pill-tabs a:hover { border-color: var(--gold); }
+.pill-tabs a.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.card.notice { border-inline-start: 4px solid var(--gold); background: var(--gold-soft); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.card.notice p { margin: 0; }
+.meter { display: inline-flex; align-items: center; gap: 8px; min-width: 120px; }
+.meter .track { flex: 1; height: 8px; border-radius: 4px; background: #e7ecf3; overflow: hidden; min-width: 60px; }
+.meter .fill { display: block; height: 100%; background: var(--navy-3); }
+.meter.high .fill { background: var(--danger); }
+.meter.medium .fill { background: #d99a1e; }
+.meter.low .fill { background: var(--ok); }
+.factor-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.dim-card { background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--navy); border-radius: var(--radius); padding: 14px; }
+.dim-card.high { border-top-color: var(--danger); }
+.dim-card.medium { border-top-color: #d99a1e; }
+.dim-card.low { border-top-color: var(--ok); }
+.dim-card h3 { margin: 0 0 6px; font-size: 1rem; }
+.dim-card .lvls { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; direction: ltr; unicode-bidi: isolate; }
+table.data .badge, .dim-card .badge, .meter b { white-space: nowrap; }
+.dim-card dl.details { grid-template-columns: auto 1fr; gap: 6px 10px; align-items: center; }
+.dim-card dl.details dd { overflow-wrap: normal; }
+pre.code { white-space: pre-wrap; overflow-x: auto; max-width: 100%; }

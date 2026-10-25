@@ -1,7 +1,7 @@
 # Test report (session 1)
 
 **Command:** `php tests/run.php` — dependency-free runner; copies the app to a temp dir, wipes two scratch databases, installs on a clean DB, starts PHP's built-in server and drives it over HTTP with a cookie-aware client.
-**Result: 1234 checks passed, 0 failed** (609 in the first release plus 625 for releases 1.1 to 1.3: usability, controls, Sharia, BIA/approvals, e-mail with a fake SMTP sink, Excel export and board pack). Not verified here: Bluehost, Apache, PHP 8.1–8.3, real SMTP providers, Microsoft Excel opening of the generated .xlsx (structure and XML validity are tested, but the file was not opened in Excel), screen readers.
+**Result: 1433 checks passed, 0 failed** (609 in the first release, 625 for releases 1.1 to 1.3: usability, controls, Sharia, BIA/approvals, e-mail with a fake SMTP sink, Excel export and board pack; 199 for release 1.4: internal audit, AML and T24 integration with a simulated T24 API). Not verified for release 1.4: a real Temenos T24 system or API. Not verified here: Bluehost, Apache, PHP 8.1–8.3, real SMTP providers, Microsoft Excel opening of the generated .xlsx (structure and XML validity are tested, but the file was not opened in Excel), screen readers.
 
 **Environment actually used:** Linux container, PHP 8.4.19 (CLI, built-in server), MariaDB 10.11.14, curl. Chromium (Playwright) was used only to take screenshots of Arabic/English/mobile pages for a visual check.
 
@@ -28,6 +28,20 @@
 | Language switch, RTL / LTR rendering | 63 | 0 |
 | Web setup wizard on a clean database + subdirectory deployment | 28 | 0 |
 | Packaging | 7 | 0 |
+
+
+### Release 1.4 sections
+| Area | Passed | Failed |
+|---|---|---|
+| Release 4 unit: audit priority and AML scoring | 14 | 0 |
+| Release 4: access to internal audit, AML and integration pages | 42 | 0 |
+| Internal audit: universe and risk-based plan | 23 | 0 |
+| Internal audit: fieldwork, workpapers and independent review | 15 | 0 |
+| Internal audit: findings to closure | 31 | 0 |
+| AML: customer risk rating | 24 | 0 |
+| AML: controls and confidential reports | 16 | 0 |
+| T24 integration: settings and file loads | 21 | 0 |
+| T24 integration: API and scheduled job | 13 | 0 |
 
 ## What the tests demonstrate
 * **Authentication:** CSRF rejection, uniform login errors, session ID regeneration, throttling after 5 failures (even with the right password), forced password change, logout via POST only, deactivated users blocked.

@@ -1108,4 +1108,296 @@ CREATE TABLE IF NOT EXISTS objective_risks (
 
 INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('019_strategy', NOW());
 
+-- ===== migration 020_internal_audit =====
+CREATE TABLE IF NOT EXISTS audit_universe (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  name VARCHAR(200) NOT NULL,
+  department_id INT UNSIGNED NULL,
+  description TEXT NULL,
+  materiality TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  regulatory TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  complexity TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  last_audit_date DATE NULL,
+  last_rating ENUM('satisfactory','needs_improvement','unsatisfactory') NULL,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_au_code (code),
+  CONSTRAINT fk_au_dept FOREIGN KEY (department_id) REFERENCES departments(id),
+  CONSTRAINT fk_au_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS audit_plans (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  plan_year SMALLINT UNSIGNED NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  status ENUM('draft','approved') NOT NULL DEFAULT 'draft',
+  approval_body VARCHAR(150) NULL,
+  approval_ref VARCHAR(80) NULL,
+  approved_on DATE NULL,
+  recorded_by INT UNSIGNED NULL,
+  notes TEXT NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_ap_year (plan_year),
+  CONSTRAINT fk_ap_rec FOREIGN KEY (recorded_by) REFERENCES users(id),
+  CONSTRAINT fk_ap_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS audit_engagements (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  plan_id INT UNSIGNED NOT NULL,
+  universe_id INT UNSIGNED NOT NULL,
+  title VARCHAR(250) NOT NULL,
+  objective TEXT NOT NULL,
+  scope TEXT NULL,
+  lead_user_id INT UNSIGNED NOT NULL,
+  planned_start DATE NOT NULL,
+  planned_end DATE NOT NULL,
+  actual_start DATE NULL,
+  actual_end DATE NULL,
+  priority_score DECIMAL(4,2) NULL,
+  status ENUM('planned','fieldwork','reporting','issued','cancelled') NOT NULL DEFAULT 'planned',
+  rating ENUM('satisfactory','needs_improvement','unsatisfactory') NULL,
+  report_summary TEXT NULL,
+  issued_at DATETIME NULL,
+  cancel_reason TEXT NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_ae_code (code),
+  KEY idx_ae_status (status, planned_end),
+  CONSTRAINT fk_ae_plan FOREIGN KEY (plan_id) REFERENCES audit_plans(id),
+  CONSTRAINT fk_ae_uni FOREIGN KEY (universe_id) REFERENCES audit_universe(id),
+  CONSTRAINT fk_ae_lead FOREIGN KEY (lead_user_id) REFERENCES users(id),
+  CONSTRAINT fk_ae_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS audit_workpapers (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  engagement_id INT UNSIGNED NOT NULL,
+  ref VARCHAR(20) NOT NULL,
+  title VARCHAR(250) NOT NULL,
+  procedure_text TEXT NOT NULL,
+  control_id INT UNSIGNED NULL,
+  sample_size INT UNSIGNED NULL,
+  exceptions INT UNSIGNED NULL,
+  conclusion ENUM('effective','partially_effective','ineffective','not_applicable') NULL,
+  result_text TEXT NULL,
+  status ENUM('open','prepared','reviewed') NOT NULL DEFAULT 'open',
+  prepared_by INT UNSIGNED NULL,
+  prepared_at DATETIME NULL,
+  reviewed_by INT UNSIGNED NULL,
+  reviewed_at DATETIME NULL,
+  review_note TEXT NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_wp_ref (engagement_id, ref),
+  CONSTRAINT fk_wp_eng FOREIGN KEY (engagement_id) REFERENCES audit_engagements(id),
+  CONSTRAINT fk_wp_ctl FOREIGN KEY (control_id) REFERENCES controls(id),
+  CONSTRAINT fk_wp_prep FOREIGN KEY (prepared_by) REFERENCES users(id),
+  CONSTRAINT fk_wp_rev FOREIGN KEY (reviewed_by) REFERENCES users(id),
+  CONSTRAINT fk_wp_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS audit_findings (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  engagement_id INT UNSIGNED NOT NULL,
+  workpaper_id INT UNSIGNED NULL,
+  title VARCHAR(250) NOT NULL,
+  condition_text TEXT NOT NULL,
+  criteria_text TEXT NULL,
+  cause_text TEXT NULL,
+  effect_text TEXT NULL,
+  recommendation TEXT NOT NULL,
+  severity ENUM('high','medium','low') NOT NULL,
+  department_id INT UNSIGNED NOT NULL,
+  owner_user_id INT UNSIGNED NOT NULL,
+  risk_id INT UNSIGNED NULL,
+  status ENUM('draft','open','responded','implemented','closed') NOT NULL DEFAULT 'draft',
+  response_due DATE NULL,
+  management_response TEXT NULL,
+  agreed_action TEXT NULL,
+  due_date DATE NULL,
+  original_due_date DATE NULL,
+  extension_count TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  implemented_note TEXT NULL,
+  implemented_at DATETIME NULL,
+  verification_note TEXT NULL,
+  verified_by INT UNSIGNED NULL,
+  closed_at DATETIME NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_af_code (code),
+  KEY idx_af_status (status, due_date),
+  KEY idx_af_owner (owner_user_id, status),
+  CONSTRAINT fk_af_eng FOREIGN KEY (engagement_id) REFERENCES audit_engagements(id),
+  CONSTRAINT fk_af_wp FOREIGN KEY (workpaper_id) REFERENCES audit_workpapers(id),
+  CONSTRAINT fk_af_dept FOREIGN KEY (department_id) REFERENCES departments(id),
+  CONSTRAINT fk_af_owner FOREIGN KEY (owner_user_id) REFERENCES users(id),
+  CONSTRAINT fk_af_risk FOREIGN KEY (risk_id) REFERENCES risks(id),
+  CONSTRAINT fk_af_ver FOREIGN KEY (verified_by) REFERENCES users(id),
+  CONSTRAINT fk_af_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('020_internal_audit', NOW());
+
+-- ===== migration 021_aml =====
+CREATE TABLE IF NOT EXISTS aml_factors (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  dimension ENUM('customer','product','channel','geography') NOT NULL,
+  code VARCHAR(30) NOT NULL,
+  name_en VARCHAR(150) NOT NULL,
+  name_ar VARCHAR(150) NOT NULL,
+  risk_level TINYINT UNSIGNED NOT NULL,
+  t24_code VARCHAR(60) NULL,
+  is_default TINYINT(1) NOT NULL DEFAULT 0,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_af_code (code),
+  KEY idx_af_dim (dimension, is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS aml_customers (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  customer_ref VARCHAR(40) NOT NULL,
+  full_name VARCHAR(200) NOT NULL,
+  customer_type_id INT UNSIGNED NOT NULL,
+  geography_id INT UNSIGNED NOT NULL,
+  branch_id INT UNSIGNED NULL,
+  is_pep TINYINT(1) NOT NULL DEFAULT 0,
+  sanctions_match TINYINT(1) NOT NULL DEFAULT 0,
+  source ENUM('manual','t24') NOT NULL DEFAULT 'manual',
+  onboarded_on DATE NULL,
+  score DECIMAL(4,2) NOT NULL,
+  calc_rating ENUM('low','medium','high') NOT NULL,
+  override_rating ENUM('low','medium','high') NULL,
+  override_reason TEXT NULL,
+  override_by INT UNSIGNED NULL,
+  rating ENUM('low','medium','high') NOT NULL,
+  cdd_level ENUM('simplified','standard','enhanced') NOT NULL,
+  last_review_on DATE NULL,
+  next_review_due DATE NOT NULL,
+  status ENUM('active','exited') NOT NULL DEFAULT 'active',
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_ac_ref (customer_ref),
+  KEY idx_ac_rating (status, rating),
+  KEY idx_ac_review (status, next_review_due),
+  CONSTRAINT fk_ac_type FOREIGN KEY (customer_type_id) REFERENCES aml_factors(id),
+  CONSTRAINT fk_ac_geo FOREIGN KEY (geography_id) REFERENCES aml_factors(id),
+  CONSTRAINT fk_ac_branch FOREIGN KEY (branch_id) REFERENCES branches(id),
+  CONSTRAINT fk_ac_ovr FOREIGN KEY (override_by) REFERENCES users(id),
+  CONSTRAINT fk_ac_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS aml_customer_factors (
+  customer_id INT UNSIGNED NOT NULL,
+  factor_id INT UNSIGNED NOT NULL,
+  PRIMARY KEY (customer_id, factor_id),
+  CONSTRAINT fk_acf_cust FOREIGN KEY (customer_id) REFERENCES aml_customers(id) ON DELETE CASCADE,
+  CONSTRAINT fk_acf_fac FOREIGN KEY (factor_id) REFERENCES aml_factors(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS aml_customer_reviews (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  customer_id INT UNSIGNED NOT NULL,
+  reviewed_on DATE NOT NULL,
+  rating ENUM('low','medium','high') NOT NULL,
+  note TEXT NOT NULL,
+  reviewed_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  KEY idx_acr_cust (customer_id),
+  CONSTRAINT fk_acr_cust FOREIGN KEY (customer_id) REFERENCES aml_customers(id) ON DELETE CASCADE,
+  CONSTRAINT fk_acr_user FOREIGN KEY (reviewed_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS aml_dimension_controls (
+  dimension ENUM('customer','product','channel','geography') NOT NULL,
+  control_id INT UNSIGNED NOT NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  PRIMARY KEY (dimension, control_id),
+  CONSTRAINT fk_adc_ctl FOREIGN KEY (control_id) REFERENCES controls(id),
+  CONSTRAINT fk_adc_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS aml_reports (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  report_type ENUM('str','ctr','periodic','ewra','other') NOT NULL,
+  title VARCHAR(250) NOT NULL,
+  customer_id INT UNSIGNED NULL,
+  recipient VARCHAR(150) NOT NULL,
+  reference_no VARCHAR(80) NULL,
+  due_date DATE NOT NULL,
+  summary TEXT NOT NULL,
+  confidential TINYINT(1) NOT NULL DEFAULT 0,
+  status ENUM('draft','submitted') NOT NULL DEFAULT 'draft',
+  submitted_on DATE NULL,
+  submitted_by INT UNSIGNED NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_ar_code (code),
+  KEY idx_ar_status (status, due_date),
+  CONSTRAINT fk_ar_cust FOREIGN KEY (customer_id) REFERENCES aml_customers(id),
+  CONSTRAINT fk_ar_sub FOREIGN KEY (submitted_by) REFERENCES users(id),
+  CONSTRAINT fk_ar_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO aml_factors (dimension, code, name_en, name_ar, risk_level, t24_code, is_default, is_active, created_at, updated_at) VALUES
+('customer', 'CUS-IND-RES', 'Individual, resident', 'فرد مقيم', 1, '1001', 1, 1, NOW(), NOW()),
+('customer', 'CUS-IND-NRS', 'Individual, non-resident', 'فرد غير مقيم', 2, '1002', 0, 1, NOW(), NOW()),
+('customer', 'CUS-CORP', 'Company', 'شركة', 2, '2001', 0, 1, NOW(), NOW()),
+('customer', 'CUS-CASH', 'Cash-intensive business', 'نشاط كثيف التعامل النقدي', 3, '2002', 0, 1, NOW(), NOW()),
+('customer', 'CUS-NPO', 'Charity / non-profit organisation', 'جمعية خيرية / منظمة غير ربحية', 3, '3001', 0, 1, NOW(), NOW()),
+('customer', 'CUS-GOV', 'Government entity', 'جهة حكومية', 1, '4001', 0, 1, NOW(), NOW()),
+('product', 'PRD-CUR', 'Current account', 'حساب جارٍ', 1, '1001', 1, 1, NOW(), NOW()),
+('product', 'PRD-SAV', 'Investment savings account (mudaraba)', 'حساب ادخار استثماري (مضاربة)', 1, '6001', 0, 1, NOW(), NOW()),
+('product', 'PRD-MUR', 'Murabaha financing', 'تمويل مرابحة', 2, '21051', 0, 1, NOW(), NOW()),
+('product', 'PRD-TRADE', 'Trade finance and letters of credit', 'التمويل التجاري والاعتمادات المستندية', 3, '21070', 0, 1, NOW(), NOW()),
+('product', 'PRD-WIRE', 'International transfers', 'الحوالات الدولية', 3, 'FT', 0, 1, NOW(), NOW()),
+('product', 'PRD-FX', 'Foreign currency cash exchange', 'صرف العملات الأجنبية نقداً', 3, 'TT', 0, 1, NOW(), NOW()),
+('channel', 'CHN-BRANCH', 'Branch, face to face', 'الفرع، حضورياً', 1, 'BRANCH', 1, 1, NOW(), NOW()),
+('channel', 'CHN-ONLINE', 'Internet banking', 'الخدمات المصرفية عبر الإنترنت', 2, 'INTERNET', 0, 1, NOW(), NOW()),
+('channel', 'CHN-MOBILE', 'Mobile banking', 'تطبيق الهاتف', 2, 'MOBILE', 0, 1, NOW(), NOW()),
+('channel', 'CHN-AGENT', 'Third party / introducer', 'طرف ثالث / وسيط', 3, 'AGENT', 0, 1, NOW(), NOW()),
+('geography', 'GEO-LY', 'Libya', 'ليبيا', 1, 'LY', 1, 1, NOW(), NOW()),
+('geography', 'GEO-NEIGH', 'Neighbouring country', 'دولة مجاورة', 2, 'TN|EG|DZ|NE|TD|SD', 0, 1, NOW(), NOW()),
+('geography', 'GEO-OTHER', 'Other country', 'دولة أخرى', 2, NULL, 0, 1, NOW(), NOW()),
+('geography', 'GEO-HIGH', 'High-risk jurisdiction (per current FATF lists)', 'دولة عالية المخاطر (حسب قوائم مجموعة العمل المالي السارية)', 3, NULL, 0, 1, NOW(), NOW());
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('021_aml', NOW());
+
+-- ===== migration 022_integrations =====
+CREATE TABLE IF NOT EXISTS integration_runs (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  system_code VARCHAR(20) NOT NULL,
+  dataset VARCHAR(30) NOT NULL,
+  mode ENUM('file','api','cli') NOT NULL,
+  file_name VARCHAR(200) NULL,
+  status ENUM('success','failed') NOT NULL,
+  rows_read INT UNSIGNED NOT NULL DEFAULT 0,
+  rows_created INT UNSIGNED NOT NULL DEFAULT 0,
+  rows_updated INT UNSIGNED NOT NULL DEFAULT 0,
+  error_text TEXT NULL,
+  run_by INT UNSIGNED NULL,
+  started_at DATETIME NOT NULL,
+  finished_at DATETIME NOT NULL,
+  KEY idx_ir_sys (system_code, dataset, started_at),
+  CONSTRAINT fk_intr_user FOREIGN KEY (run_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('022_integrations', NOW());
+
 SET FOREIGN_KEY_CHECKS = 1;
