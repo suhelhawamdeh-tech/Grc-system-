@@ -135,6 +135,20 @@ final class KriController extends Controller
             $v->fail('critical_threshold', 'kri.err_critical');
         }
         $v->in('data_source', 'kri.data_source', ['manual', 'import', 'api'], false);
+        // Appetite framework fields (board-level metrics and policy limits).
+        $v->in('tier', 'raf.tier', ['kri', 'board', 'policy', 'operational'], false)->max('formula', 'raf.formula', 2000)->max('source_note', 'raf.source', 250)->max('action_amber', 'raf.action_amber', 2000)
+            ->max('action_red', 'raf.action_red', 2000)->date('card_reviewed_on', 'raf.card_reviewed_on', false)->in('report_frequency', 'raf.report_frequency', \App\Support\RiskFunction::FREQUENCIES, false)
+            ->in('monitor_section', 'docs.section', \App\Support\Framework::SECTIONS, false)->in('raf_category', 'raf.category', \App\Support\Appetite::categories(), false);
+        if ($v->str('tier') === 'board' && $v->str('raf_category') === '') {
+            $v->fail('raf_category', 'raf.err_category');
+        }
+        $appRaw = $v->str('appetite_value');
+        $appetite = $appRaw === '' ? null : Money::parse($appRaw, Money::decimals());
+        if ($appRaw !== '' && $appetite === null) {
+            $v->fail('appetite_value', 'validation.amount', ['field' => t('raf.appetite_value')]);
+        } elseif ($appetite !== null && $amber !== null && ($v->str('direction') === 'higher_worse' ? $appetite > $amber : $appetite < $amber)) {
+            $v->fail('appetite_value', 'raf.err_appetite_order');
+        }
         $composite = isset($_POST['is_composite']);
         $comps = [];
         if ($composite) {
@@ -169,9 +183,12 @@ final class KriController extends Controller
         }
         $data = ['name' => $v->str('name'), 'description' => $v->str('description') ?: null, 'category_id' => $cat, 'department_id' => $dept, 'owner_user_id' => $owner, 'risk_id' => $risk,
             'unit' => $v->str('unit'), 'direction' => $v->str('direction'), 'amber_threshold' => Money::toDb($amber), 'red_threshold' => Money::toDb($red), 'critical_threshold' => $crit === null ? null : Money::toDb($crit), 'data_source' => $v->str('data_source') ?: 'manual', 'is_composite' => $composite ? 1 : 0, 'frequency' => $v->str('frequency'),
+            'tier' => $v->str('tier') ?: 'kri', 'raf_category' => $v->str('raf_category') ?: null, 'appetite_value' => $appetite === null ? null : Money::toDb($appetite), 'formula' => $v->str('formula') ?: null,
+            'source_note' => $v->str('source_note') ?: null, 'monitor_section' => $v->str('monitor_section') ?: null, 'report_frequency' => $v->str('report_frequency') ?: null, 'is_regulatory' => isset($_POST['is_regulatory']) ? 1 : 0,
+            'action_amber' => $v->str('action_amber') ?: null, 'action_red' => $v->str('action_red') ?: null, 'card_reviewed_on' => $v->str('card_reviewed_on') ?: null, 'calibrated' => 1,
             'is_active' => $ex ? (!empty($_POST['is_active']) ? 1 : 0) : 1, 'updated_at' => date('Y-m-d H:i:s')];
         if ($ex) {
-            $ch = $this->diff($ex, $data, ['name', 'department_id', 'owner_user_id', 'direction', 'amber_threshold', 'red_threshold', 'critical_threshold', 'frequency', 'is_active']);
+            $ch = $this->diff($ex, $data, ['name', 'department_id', 'owner_user_id', 'direction', 'amber_threshold', 'red_threshold', 'critical_threshold', 'frequency', 'is_active', 'tier', 'appetite_value', 'calibrated', 'is_regulatory']);
             Db::update('kris', $data, 'id = ?', [$ex['id']]);
             // Re-evaluate the status of existing readings against the new thresholds so history stays consistent.
             $this->recompute((int)$ex['id'], $amber, $red, $data['direction'], $crit);
@@ -246,6 +263,8 @@ final class KriController extends Controller
         }
         if (!$k['is_active']) {
             $v->fail('value', 'kri.err_inactive');
+        } elseif (!(int)$k['calibrated']) {
+            $v->fail('value', 'raf.err_uncalibrated');
         }
         if (!$v->ok()) {
             $this->invalid($v->errors(), url('kris/' . $id) . '#reading');
@@ -279,5 +298,41 @@ final class KriController extends Controller
         Db::update('kri_breaches', ['justification' => $v->str('justification'), 'action_plan' => $v->str('action_plan'), 'status' => $resolve ? 'resolved' : 'open', 'resolved_on' => $resolve ? date('Y-m-d') : null, 'resolution_note' => $resolve ? $v->str('resolution_note') : null, 'updated_at' => date('Y-m-d H:i:s')], 'id = ?', [$bid]);
         $this->audit($resolve ? 'kri.breach_resolved' : 'kri.breach_updated', 'kri', $id, ['breach_id' => $bid]);
         $this->redirect(url('kris/' . $id) . '#breaches', 'admin.saved');
+    }
+
+    /** Appetite limit notice (warning or maximum) for a board metric, as in the appetite framework annex. */
+    private function noticeData(int $id, int $bid): array
+    {
+        $k = $this->load($id);
+        $b = Db::one('SELECT b.*, r.reading_date, r.value FROM kri_breaches b JOIN kri_readings r ON r.id = b.reading_id WHERE b.id = ? AND b.kri_id = ?', [$bid, $id]) ?? $this->notFound();
+        if ($k['tier'] !== 'board') {
+            $this->notFound();
+        }
+        $trend = Db::all('SELECT reading_date, value, status FROM kri_readings WHERE kri_id = ? AND reading_date <= ? ORDER BY reading_date DESC, id DESC LIMIT 3', [$id, $b['reading_date']]);
+        return [$k, $b, $trend];
+    }
+
+    public function notice(int $id, int $bid): string
+    {
+        [$k, $b, $trend] = $this->noticeData($id, $bid);
+        return $this->view('kris/notice', ['title' => t('raf.notice_title') . ' — ' . $k['code'], 'k' => $k, 'b' => $b, 'trend' => $trend], 'layout/print');
+    }
+
+    public function noticeDocx(int $id, int $bid): never
+    {
+        [$k, $b, $trend] = $this->noticeData($id, $bid);
+        $u = $k['unit'];
+        $org = lname(['name_en' => \App\Core\Settings::get('org_name_en'), 'name_ar' => \App\Core\Settings::get('org_name_ar')]);
+        $d = new \App\Support\Docx(locale() === 'ar', t('raf.notice_title'), $org . ' — ' . t('raf.dashboard'), t('report.confidential') . ' — ' . date('Y-m-d'));
+        $red = in_array($b['level'], ['red', 'critical'], true);
+        $d->heading(t('raf.notice_title'), 1)->kv([t('raf.notice_no') => 'RAF-' . $b['id'], t('rm.detected_at') => $b['reading_date'], t('raf.metric') => $k['code'] . ' — ' . $k['name'],
+            t('raf.category') => $k['raf_category'] ? t('enum.rafcat.' . $k['raf_category']) : '—', t('raf.state') => $red ? t('raf.state_red') : t('raf.state_amber'),
+            t('raf.current_value') => Money::plain($b['value']) . ' ' . $u, t('raf.appetite_value') => $k['appetite_value'] !== null ? Money::plain($k['appetite_value']) . ' ' . $u : '—',
+            t('kri.amber') => Money::plain($k['amber_threshold']) . ' ' . $u, t('kri.red') => Money::plain($k['red_threshold']) . ' ' . $u,
+            t('raf.trend_last3') => implode(' ← ', array_map(fn($r) => Money::plain($r['value']), $trend)), t('raf.causes') => $b['justification'] ?? '—', t('raf.plan') => $b['action_plan'] ?? '—',
+            t('raf.owner_department') => lname($k, 'dept'), t('raf.escalation') => $red ? t('raf.escalate_red') . ((int)$k['is_regulatory'] ? ' + ' . t('raf.escalate_cbl') : '') : t('raf.escalate_amber')]);
+        $d->box(t('rm.notice_warning_title'), [t('raf.notice_warning')])->table([t('rm.section_head'), t('rm.director')], [['', ''], [t('rm.signature'), t('rm.signature')]]);
+        $this->audit('appetite.notice_exported', 'kri', $id, ['breach_id' => $bid]);
+        $d->send($k['code'] . '-notice-' . $bid . '.docx');
     }
 }

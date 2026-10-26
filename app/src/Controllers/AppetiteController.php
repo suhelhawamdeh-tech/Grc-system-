@@ -179,4 +179,29 @@ final class AppetiteController extends Controller
         $this->audit('appetite.breach_updated', 'appetite', (int)$b['statement_id'], ['breach_id' => $id, 'status' => $v->str('status')]);
         $this->redirect(url('appetite'), 'admin.saved');
     }
+
+    /** Risk appetite framework dashboard: board-level metrics by category with green / amber / red status and trend. */
+    public function framework(): string
+    {
+        $groups = \App\Support\Appetite::dashboard();
+        $tpl = \App\Support\Appetite::template();
+        $have = array_flip(array_filter(array_column(Db::all('SELECT template_key FROM kris WHERE template_key IS NOT NULL'), 'template_key')));
+        $missing = count(array_filter($tpl['metrics'], fn($m) => !isset($have[$m[0]])));
+        $esc = Db::all("SELECT id, code, title, status, escalated_at FROM rm_escalations WHERE source_type = 'appetite_red' ORDER BY escalated_at DESC LIMIT 6");
+        $u = $this->user();
+        return $this->view('appetite/framework', ['title' => t('raf.dashboard'), 'groups' => $groups, 'counts' => \App\Support\Appetite::counts($groups), 'missing' => $missing, 'esc' => $esc,
+            'departments' => Ref::departments(true), 'myDept' => (int)($u['department_id'] ?? 0)]);
+    }
+
+    /** Create the template's board metrics (uncalibrated) for the chosen owning department. */
+    public function createTemplate(): never
+    {
+        $u = $this->user();
+        $dept = Request::int('department_id');
+        if ($dept === null || !isset(Ref::departments(true)[$dept])) {
+            $this->redirect(url('appetite/framework'), 'raf.err_department', 'error');
+        }
+        $n = \App\Support\Appetite::createFromTemplate($dept, (int)$u['id'], (int)$u['id']);
+        $this->redirect(url('appetite/framework'), 'raf.template_created', 'success', ['n' => $n]);
+    }
 }

@@ -88,7 +88,7 @@ final class DashboardController extends Controller
             [$w, $pp] = Scope::sqlDept($u, 'k');
             $latest = 'JOIN kri_readings lr ON lr.id = (SELECT x.id FROM kri_readings x WHERE x.kri_id = k.id ORDER BY x.reading_date DESC, x.id DESC LIMIT 1)';
             $p['kri_red'] = (int)Db::val("SELECT COUNT(*) FROM kris k $latest WHERE k.is_active = 1 AND lr.status IN ('red','critical') AND $w", $pp);
-            $p['kri_breaches'] = (int)Db::val("SELECT COUNT(*) FROM kri_breaches b JOIN kris k ON k.id = b.kri_id WHERE b.status = 'open' AND $w", $pp);
+            $p['kri_breaches'] = (int)Db::val("SELECT COUNT(*) FROM kri_breaches b JOIN kris k ON k.id = b.kri_id WHERE b.status = 'open' AND b.level <> 'amber' AND $w", $pp);
             $p['kri_amber'] = (int)Db::val("SELECT COUNT(*) FROM kris k $latest WHERE k.is_active = 1 AND lr.status = 'amber' AND $w", $pp);
         }
         if (Perm::roleHas($u['role'], 'control.view')) {

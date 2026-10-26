@@ -33,6 +33,8 @@ final class KriReadings
             $bid = Db::insert('kri_breaches', ['kri_id' => $kri['id'], 'reading_id' => $rid, 'level' => $status, 'status' => 'open', 'escalated_at' => $status === 'critical' ? $now : null, 'created_at' => $now, 'updated_at' => $now]);
             Audit::log('kri.breach_opened', 'kri', (int)$kri['id'], ['breach_id' => $bid, 'level' => $status]);
         }
+        // Board-level appetite metrics: amber warning notice, or immediate escalation at the maximum.
+        Appetite::afterReading($kri, $rid, $status, $userId);
         return ['status' => $status, 'reading_id' => $rid, 'breach_id' => $bid];
     }
 }

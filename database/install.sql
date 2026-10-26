@@ -1682,4 +1682,26 @@ INSERT IGNORE INTO settings (setting_key, setting_value, updated_at) VALUES ('rm
 
 INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('025_risk_function', NOW());
 
+-- ===== migration 026_appetite_framework =====
+ALTER TABLE kris
+  ADD COLUMN tier ENUM('kri','board','policy','operational') NOT NULL DEFAULT 'kri' AFTER frequency,
+  ADD COLUMN raf_category VARCHAR(20) NULL AFTER tier,
+  ADD COLUMN appetite_value DECIMAL(18,3) NULL AFTER raf_category,
+  ADD COLUMN formula TEXT NULL,
+  ADD COLUMN source_note VARCHAR(250) NULL,
+  ADD COLUMN monitor_section VARCHAR(20) NULL,
+  ADD COLUMN report_frequency VARCHAR(20) NULL,
+  ADD COLUMN is_regulatory TINYINT(1) NOT NULL DEFAULT 0,
+  ADD COLUMN calibrated TINYINT(1) NOT NULL DEFAULT 1,
+  ADD COLUMN action_amber TEXT NULL,
+  ADD COLUMN action_red TEXT NULL,
+  ADD COLUMN card_reviewed_on DATE NULL,
+  ADD COLUMN template_key VARCHAR(30) NULL,
+  ADD UNIQUE KEY uq_kri_template (template_key),
+  ADD KEY idx_kri_tier (tier, raf_category);
+
+ALTER TABLE kri_breaches MODIFY level ENUM('amber','red','critical') NOT NULL;
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('026_appetite_framework', NOW());
+
 SET FOREIGN_KEY_CHECKS = 1;

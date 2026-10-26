@@ -147,6 +147,8 @@ final class Importer
                     $e[] = t('import.e_kri', ['v' => $r['kri_code']]);
                 } elseif (!$k['is_active']) {
                     $e[] = t('kri.err_inactive');
+                } elseif (!(int)($k['calibrated'] ?? 1)) {
+                    $e[] = t('raf.err_uncalibrated');
                 }
                 if (!self::date($r['reading_date']) || $r['reading_date'] > date('Y-m-d')) {
                     $e[] = t('import.e_date', ['f' => 'reading_date']);

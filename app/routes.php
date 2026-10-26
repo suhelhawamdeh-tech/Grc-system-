@@ -125,8 +125,12 @@ $router->get('/kris/{id}/edit', 'KriController@edit', 'kri.manage');
 $router->post('/kris/{id}', 'KriController@update', 'kri.manage');
 $router->post('/kris/{id}/readings', 'KriController@addReading', 'kri.report');
 $router->post('/kris/{id}/breaches/{bid}', 'KriController@updateBreach', 'kri.report');
+$router->get('/kris/{id}/breaches/{bid}/notice', 'KriController@notice', 'kri.view');
+$router->get('/kris/{id}/breaches/{bid}/docx', 'KriController@noticeDocx', 'kri.view');
 
 $router->get('/appetite', 'AppetiteController@index', 'appetite.view');
+$router->get('/appetite/framework', 'AppetiteController@framework', 'appetite.view');
+$router->post('/appetite/framework/template', 'AppetiteController@createTemplate', 'appetite.manage');
 $router->get('/appetite/new', 'AppetiteController@create', 'appetite.manage');
 $router->post('/appetite', 'AppetiteController@store', 'appetite.manage');
 $router->post('/appetite/evaluate', 'AppetiteController@evaluate', 'appetite.manage');
