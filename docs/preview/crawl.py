@@ -17,8 +17,10 @@ BASE = 'http://127.0.0.1:8080'
 PW = 'Demo-Pass-2024x'
 OUT = sys.argv[1]
 USERS = [('r', 'demo.risk'), ('c', 'demo.compliance'), ('e', 'demo.exec'), ('d', 'demo.dept.retail'), ('a', 'demo.auditor')]
-MAX = 56
+MAX = 84
 PER_SECTION = 3
+FIRST = ('/rm', '/board-reports', '/registers', '/icaap', '/appetite', '/policies/framework', '/ia', '/aml')
+KEEP_QUERY = re.compile(r'^/registers\?r=[a-z_]+$')  # register lists are addressed by a query parameter
 SKIP = re.compile(r'logout|/export|\.xlsx|\.csv|/download|/edit$|/print|/panel|/mfa|/password|/account|/setup|/admin|/import|/notes/\d')
 
 INJECT = '''
@@ -46,14 +48,14 @@ ROLES = {'r': 'مدير المخاطر', 'c': 'مسؤول الامتثال', 'e'
 
 def fname(path):
     p = path.strip('/')
-    return (p.replace('/', '_') or 'home') + '.html'
+    return (re.sub(r'[/?=]', '_', p) or 'home') + '.html'
 
 
 def norm(href):
     href = htmlmod.unescape(href)
     if not href.startswith('/') or href.startswith('//'):
         return None
-    if '?' in href or href.startswith('/assets'):
+    if href.startswith('/assets') or ('?' in href and not KEEP_QUERY.match(href)):
         return None
     href = href.split('#')[0].rstrip('/') or '/'
     if SKIP.search(href):
@@ -77,7 +79,8 @@ def crawl(ctx, prefix):
     page.wait_for_load_state('networkidle')
     pages['/assistant'] = page.content()
     seen.add('/assistant')
-    q = collections.deque(['/', '/my', '/assistant/library', '/help', '/ia', '/ia/findings', '/aml', '/aml/customers'])
+    q = collections.deque(['/', '/my', '/rm', '/rm/breaches', '/board-reports', '/appetite/framework', '/icaap', '/registers', '/policies/framework',
+                           '/assistant/library', '/help', '/ia', '/ia/findings', '/aml', '/aml/customers'])
     for h in re.findall(r'href="(/assistant/library/\d+)"', pages['/assistant'])[:3]:
         q.appendleft(h)
     while q and len(pages) < MAX:
@@ -95,13 +98,13 @@ def crawl(ctx, prefix):
             if not n or n in seen or n in q:
                 continue
             parts = n.strip('/').split('/')
-            sec = '/'.join(parts[:2]) if parts[0] in ('ia', 'aml', 'assistant') else parts[0]
+            sec = '/'.join(parts[:2]) if parts[0] in ('ia', 'aml', 'assistant', 'rm') else parts[0].split('?')[0]
             if re.search(r'/\d+$', n):
                 if detail[sec] >= PER_SECTION:
                     continue
                 detail[sec] += 1
-                q.appendleft(n) if n.startswith(('/ia', '/aml')) else q.append(n)
-            elif n.startswith(('/ia', '/aml')) or n.count('/') == 1:
+                q.appendleft(n) if n.startswith(FIRST) else q.append(n)
+            elif n.startswith(FIRST) or n.count('/') == 1:
                 q.appendleft(n)
             else:
                 q.append(n)
