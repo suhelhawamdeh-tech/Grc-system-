@@ -13,7 +13,7 @@ final class Attention
 
     /** Section key => translation key of its heading (used by My tasks and e-mail digests). */
     public const LABELS = ['actions' => 'my.actions', 'decisions' => 'my.decisions', 'obligations' => 'my.obligations', 'kris' => 'my.kris', 'rcsa' => 'my.rcsa', 'rcsa_review' => 'my.rcsa_review', 'control_tests' => 'my.control_tests',
-        'sharia_events' => 'my.sharia_events', 'sharia_reviews' => 'my.sharia_reviews', 'circulars' => 'my.circulars', 'circulars_overdue' => 'my.circulars_overdue', 'kri_breaches' => 'my.kri_breaches', 'approvals' => 'my.approvals', 'bia_review' => 'my.bia_review', 'ia_respond' => 'my.ia_respond', 'ia_implement' => 'my.ia_implement', 'ia_verify' => 'my.ia_verify', 'ia_review_wp' => 'my.ia_review_wp', 'aml_reviews' => 'my.aml_reviews', 'aml_reports' => 'my.aml_reports', 'rm_tasks' => 'my.rm_tasks', 'rm_opinions' => 'my.rm_opinions', 'rm_plans' => 'my.rm_plans', 'rm_escalations' => 'my.rm_escalations', 'notes' => 'my.notes'];
+        'sharia_events' => 'my.sharia_events', 'sharia_reviews' => 'my.sharia_reviews', 'circulars' => 'my.circulars', 'circulars_overdue' => 'my.circulars_overdue', 'kri_breaches' => 'my.kri_breaches', 'approvals' => 'my.approvals', 'bia_review' => 'my.bia_review', 'ia_respond' => 'my.ia_respond', 'ia_implement' => 'my.ia_implement', 'ia_verify' => 'my.ia_verify', 'ia_review_wp' => 'my.ia_review_wp', 'aml_reviews' => 'my.aml_reviews', 'aml_reports' => 'my.aml_reports', 'rm_tasks' => 'my.rm_tasks', 'rm_opinions' => 'my.rm_opinions', 'rm_plans' => 'my.rm_plans', 'rm_escalations' => 'my.rm_escalations', 'icaap' => 'my.icaap', 'notes' => 'my.notes'];
 
     /** @return array<string,array> section key => rows (each row: label, due, link, overdue) */
     public static function items(array $u): array
@@ -57,6 +57,11 @@ final class Attention
         $s['rm_plans'] = Perm::roleHas($u['role'], 'rm.respond') && (int)($u['department_id'] ?? 0) ? Db::all("SELECT b.id, CONCAT(b.code, ' — ', b.limit_name) AS title, b.plan_due AS due FROM rm_breaches b
             WHERE b.kind = 'breach' AND b.status = 'open' AND b.owner_department_id = ? ORDER BY b.plan_due IS NULL, b.plan_due LIMIT 50", [(int)$u['department_id']]) : [];
         $s['rm_escalations'] = Perm::roleHas($u['role'], 'rm.approve') ? Db::all("SELECT e.id, CONCAT(e.code, ' — ', e.title) AS title, DATE(e.escalated_at) AS due FROM rm_escalations e WHERE e.status <> 'closed' ORDER BY e.escalated_at LIMIT 50") : [];
+        // ICAAP: phases past their end date and data requests not received, for the Basel unit.
+        $s['icaap'] = Perm::roleHas($u['role'], 'icaap.manage') ? Db::all("SELECT c.id, CONCAT('ICAAP ', c.year, ' — ', p.phase_no) AS title, p.end_date AS due FROM icaap_phases p JOIN icaap_cycles c ON c.id = p.cycle_id
+            WHERE c.status IN ('preparation','in_progress','committee','board') AND p.status <> 'complete' AND p.end_date IS NOT NULL AND p.end_date <= ?
+            UNION ALL SELECT c.id, CONCAT('ICAAP ', c.year, ' — ', r.provider) AS title, r.due_on AS due FROM icaap_data_requests r JOIN icaap_cycles c ON c.id = r.cycle_id
+            WHERE c.status IN ('preparation','in_progress') AND r.received_on IS NULL AND r.due_on IS NOT NULL AND r.due_on <= ? ORDER BY due LIMIT 50", [$horizon, $horizon]) : [];
         $s['notes'] = Db::all('SELECT n.id, n.body AS title, n.remind_on AS due, n.page_path FROM user_notes n WHERE n.user_id = ? AND n.is_done = 0 AND n.remind_on IS NOT NULL AND n.remind_on <= ? ORDER BY n.remind_on LIMIT 50', [$id, $today]);
         foreach ($s as &$rows) {
             foreach ($rows as &$r) {

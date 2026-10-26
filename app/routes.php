@@ -399,3 +399,24 @@ $router->get('/rm/escalations/{id}', 'RiskFunctionController@escalationShow', 'r
 $router->post('/rm/escalations/{id}/respond', 'RiskFunctionController@escalationRespond', 'rm.work');
 $router->post('/rm/escalations/{id}/close', 'RiskFunctionController@escalationClose', 'rm.approve');
 $router->get('/rm/escalations/{id}/docx', 'RiskFunctionController@escalationDocx', 'rm.view');
+
+// ICAAP (release 1.6)
+$router->get('/icaap', 'IcaapController@index', 'icaap.view');
+$router->post('/icaap', 'IcaapController@store', 'icaap.manage');
+$router->get('/icaap/{id}', 'IcaapController@show', 'icaap.view');
+$router->post('/icaap/{id}/phases/{no}', 'IcaapController@phase', 'icaap.manage');
+$router->get('/icaap/{id}/capital', 'IcaapController@capital', 'icaap.view');
+$router->post('/icaap/{id}/capital', 'IcaapController@saveCapital', 'icaap.manage');
+$router->get('/icaap/{id}/risks', 'IcaapController@risks', 'icaap.view');
+$router->post('/icaap/{id}/risks', 'IcaapController@saveRisks', 'icaap.manage');
+$router->get('/icaap/{id}/stress', 'IcaapController@stress', 'icaap.view');
+$router->post('/icaap/{id}/stress', 'IcaapController@saveStress', 'icaap.manage');
+$router->get('/icaap/{id}/log', 'IcaapController@log', 'icaap.view');
+$router->post('/icaap/{id}/requests', 'IcaapController@addRequest', 'icaap.manage');
+$router->post('/icaap/{id}/requests/{rid}', 'IcaapController@updateRequest', 'icaap.manage');
+$router->post('/icaap/{id}/assumptions', 'IcaapController@addAssumption', 'icaap.manage');
+$router->get('/icaap/{id}/report', 'IcaapController@report', 'icaap.view');
+$router->post('/icaap/{id}/report', 'IcaapController@saveReport', 'icaap.manage');
+$router->post('/icaap/{id}/approval', 'IcaapController@approve', 'icaap.manage');
+$router->get('/icaap/{id}/print', 'IcaapController@print', 'icaap.view');
+$router->get('/icaap/{id}/docx', 'IcaapController@docx', 'icaap.view');

@@ -24,6 +24,7 @@ $cfg = [
   'rm_opinions' => ['icon' => 'scale', 'label' => 'my.rm_opinions', 'link' => fn($r) => url('rm/opinions/' . $r['id'])],
   'rm_plans' => ['icon' => 'alert', 'label' => 'my.rm_plans', 'link' => fn($r) => url('rm/breaches/' . $r['id'])],
   'rm_escalations' => ['icon' => 'flag', 'label' => 'my.rm_escalations', 'link' => fn($r) => url('rm/escalations/' . $r['id'])],
+  'icaap' => ['icon' => 'scale', 'label' => 'my.icaap', 'link' => fn($r) => url('icaap/' . $r['id'])],
   'notes' => ['icon' => 'note', 'label' => 'my.notes', 'link' => fn($r) => $r['page_path'] ? base_path() . $r['page_path'] : url('notes')],
 ];
 $total = 0; foreach ($sections as $rows) { $total += count($rows); } ?>
