@@ -401,6 +401,14 @@ $router->post('/rm/escalations/{id}/close', 'RiskFunctionController@escalationCl
 $router->get('/rm/escalations/{id}/docx', 'RiskFunctionController@escalationDocx', 'rm.view');
 
 // ICAAP (release 1.6)
+// Supporting registers of the risk function (release 1.6)
+$router->get('/registers', 'RegisterController@index', 'rm.view');
+$router->get('/registers/new', 'RegisterController@create', 'rm.work');
+$router->post('/registers', 'RegisterController@store', 'rm.work');
+$router->post('/registers/template', 'RegisterController@template', 'rm.work');
+$router->get('/registers/{id}', 'RegisterController@show', 'rm.view');
+$router->get('/registers/{id}/edit', 'RegisterController@edit', 'rm.work');
+$router->post('/registers/{id}', 'RegisterController@update', 'rm.work');
 // Quarterly board risk report (release 1.6)
 $router->get('/board-reports', 'BoardReportController@index', 'rm.view');
 $router->post('/board-reports', 'BoardReportController@store', 'rm.work');

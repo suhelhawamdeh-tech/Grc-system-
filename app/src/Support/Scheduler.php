@@ -9,13 +9,15 @@ use App\Core\Db;
 /** Work that must happen on a date, run by the daily cron job (bin/notify.php). */
 final class Scheduler
 {
-    /** @return array{rcsa_launched:int,rm_tasks:int} */
+    /** @return array{rcsa_launched:int,rm_tasks:int,security_expired:int} */
     public static function run(): array
     {
-        $out = ['rcsa_launched' => 0, 'rm_tasks' => 0];
+        $out = ['rcsa_launched' => 0, 'rm_tasks' => 0, 'security_expired' => 0];
         // Risk function work calendar: this period's task for every recurring procedure.
         RiskFunction::syncProcedures();
         $out['rm_tasks'] = RiskFunction::generateTasks();
+        // Temporary security acceptances past their expiry are expired and escalated.
+        $out['security_expired'] = Registers::expireSecurity();
         $today = date('Y-m-d');
         foreach (Db::all('SELECT * FROM rcsa_schedules WHERE is_active = 1 AND next_run <= ? ORDER BY next_run, id', [$today]) as $s) {
             if (!Db::val('SELECT 1 FROM rcsa_templates WHERE id = ? AND is_active = 1', [$s['template_id']]) || !Db::val('SELECT 1 FROM users WHERE id = ? AND is_active = 1', [$s['assessor_user_id']])) {

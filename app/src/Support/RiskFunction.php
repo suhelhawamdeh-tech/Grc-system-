@@ -19,7 +19,7 @@ final class RiskFunction
     /** Days after the end of the period by which the output is due, unless the procedure sets its own. */
     public const DUE_DAYS = ['monthly' => 10, 'quarterly' => 30, 'semiannual' => 30, 'annual' => 60];
 
-    public const ESC_SOURCES = ['appetite_red', 'regulatory_breach', 'material_breach', 'contrary_decision', 'critical_event', 'access_restriction', 'data_integrity', 'icaap', 'other'];
+    public const ESC_SOURCES = ['appetite_red', 'regulatory_breach', 'material_breach', 'contrary_decision', 'critical_event', 'access_restriction', 'data_integrity', 'icaap', 'security_exception', 'other'];
     public const ESC_TO = ['committee_chair', 'board', 'cbl'];
 
     /** Add catalogue procedures that are not yet in the database (existing ones keep the bank's changes). @return int added */

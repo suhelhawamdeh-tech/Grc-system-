@@ -1872,4 +1872,33 @@ UPDATE policies SET doc_level = CASE category WHEN 'charter' THEN 1 WHEN 'framew
 
 INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('028_board_reports', NOW());
 
+-- ===== migration 029_registers =====
+CREATE TABLE IF NOT EXISTS rm_register_items (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  register VARCHAR(20) NOT NULL,
+  code VARCHAR(20) NULL,
+  title VARCHAR(250) NOT NULL,
+  status VARCHAR(20) NOT NULL,
+  department_id INT UNSIGNED NULL,
+  owner_user_id INT UNSIGNED NULL,
+  due_date DATE NULL,
+  ref_id INT UNSIGNED NULL,
+  data TEXT NULL,
+  escalation_id INT UNSIGNED NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_reg_code (code),
+  KEY idx_reg_list (register, status, due_date),
+  KEY idx_reg_owner (owner_user_id, status),
+  KEY idx_reg_ref (register, ref_id),
+  CONSTRAINT fk_reg_dept FOREIGN KEY (department_id) REFERENCES departments(id),
+  CONSTRAINT fk_reg_owner FOREIGN KEY (owner_user_id) REFERENCES users(id),
+  CONSTRAINT fk_reg_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE rm_escalations MODIFY source_type ENUM('appetite_red','regulatory_breach','material_breach','contrary_decision','critical_event','access_restriction','data_integrity','icaap','security_exception','other') NOT NULL;
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('029_registers', NOW());
+
 SET FOREIGN_KEY_CHECKS = 1;
