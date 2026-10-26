@@ -557,6 +557,7 @@ require __DIR__ . '/phase2.php';
 require __DIR__ . '/phase3.php';
 require __DIR__ . '/phase4.php';
 require __DIR__ . '/phase5.php';
+require __DIR__ . '/phase6.php';
 
 // =========================================================================
 section('Language switch, RTL / LTR rendering');
