@@ -39,7 +39,7 @@ return [
         'prefix' => 'MAT', 'icon' => 'target', 'section' => 'office', 'due' => null, 'ref' => null,
         'statuses' => ['assessed', 'approved'], 'open' => [],
         'fields' => [
-            'axis' => ['select', true, ['governance', 'appetite', 'identification', 'measurement', 'monitoring', 'reporting', 'culture', 'data_systems']],
+            'axis' => ['select', true, ['governance', 'appetite', 'policies', 'methodologies', 'data_systems', 'reporting', 'culture', 'competencies']],
             'year' => ['int', true],
             'level' => ['score', false],
             'target' => ['score', false],
@@ -82,10 +82,13 @@ return [
         'statuses' => ['not_started', 'in_progress', 'partial', 'compliant', 'not_applicable'], 'open' => ['not_started', 'in_progress', 'partial'],
         'fields' => [
             'clause' => ['text', false],
+            'risk_role' => ['textarea', false],
+            'output' => ['text', false],
+            'kri' => ['text', false],
             'evidence' => ['textarea', false],
             'gap' => ['textarea', false],
         ],
-        'list' => ['clause'],
+        'list' => ['clause', 'output', 'kri'],
     ],
     'committee_plan' => [
         'prefix' => 'CMP', 'icon' => 'clipboard', 'section' => 'office', 'due' => 'reg.f_meeting_target', 'ref' => null,
@@ -99,19 +102,29 @@ return [
         'list' => ['committee', 'item_type'],
         'template' => 'committee',
     ],
-    // Standard annual plan of the board risk committee: [item_type, months, title_ar, title_en]
+    // Standard annual plan of the board risk committee, by quarter: [item_type, months, title_ar, title_en]
     'committee_template' => [
-        ['standing', [3, 6, 9, 12], 'التقرير الربعي الشامل للمخاطر', 'Quarterly comprehensive risk report'],
-        ['standing', [3, 6, 9, 12], 'لوحة مقاييس الرغبة في المخاطر والتجاوزات', 'Risk appetite dashboard and breaches'],
-        ['standing', [3, 6, 9, 12], 'متابعة قرارات اللجنة والمجلس السابقة', 'Follow-up of previous committee and board decisions'],
-        ['standing', [3, 6, 9, 12], 'الحالات المصعدة إلى رئيس اللجنة', 'Cases escalated to the committee chair'],
-        ['annual', [3], 'مراجعة إطار الرغبة في المخاطر والحدود', 'Review of the risk appetite framework and limits'],
-        ['annual', [3], 'تقرير التقييم الداخلي لكفاية رأس المال قبل رفعه إلى المجلس', 'ICAAP report before submission to the board'],
-        ['annual', [6], 'نتائج اختبارات الضغط', 'Stress test results'],
-        ['annual', [9], 'المراجعة الدورية للسياسات والأدلة المستحقة', 'Periodic review of policies and manuals due'],
-        ['annual', [12], 'خطة عمل إدارة المخاطر للسنة القادمة وموازنتها', 'Risk function plan and budget for the next year'],
-        ['annual', [12], 'التقييم الذاتي لأداء اللجنة ومراجعة الميثاق', 'Committee self-assessment and charter review'],
-        ['annual', [12], 'مستوى نضج إطار إدارة المخاطر', 'Maturity of the risk management framework'],
-        ['private_session', [6, 12], 'جلسة مغلقة مع مدير إدارة المخاطر دون حضور الإدارة التنفيذية', 'Private session with the risk director without executive management'],
+        // Every meeting (standing agenda)
+        ['standing', [3, 6, 9, 12], 'متابعة محضر الاجتماع السابق والقرارات والتوصيات', 'Previous minutes, decisions and recommendations follow-up'],
+        ['standing', [3, 6, 9, 12], 'التقرير الربعي الموحد للمخاطر ولوحة مقاييس الرغبة في المخاطر', 'Quarterly consolidated risk report and risk appetite dashboard'],
+        ['standing', [3, 6, 9, 12], 'الحالات المصعدة منذ الاجتماع السابق وخطط معالجتها', 'Cases escalated since the last meeting and their treatment plans'],
+        ['private_session', [3, 6, 9, 12], 'جلسة منفردة مع مدير إدارة المخاطر دون حضور الإدارة التنفيذية', 'Private session with the risk director without executive management'],
+        // First quarter
+        ['annual', [3], 'خطة عمل إدارة المخاطر وخطة اللجنة للسنة', 'Risk function work plan and committee plan for the year'],
+        ['annual', [3], 'مراجعة بيان الرغبة في المخاطر ومعايرة مقاييسه', 'Review of the risk appetite statement and calibration of its metrics'],
+        ['annual', [3], 'برنامج اختبارات الضغط وجدول التقييم الداخلي لكفاية رأس المال', 'Stress testing programme and ICAAP timetable'],
+        // Second quarter
+        ['annual', [6], 'تقرير التقييم الداخلي لكفاية رأس المال وتقييم كفاية السيولة قبل رفعهما إلى المجلس', 'ICAAP report and liquidity adequacy assessment before submission to the board'],
+        ['annual', [6], 'رأي وحدة بازل في خطة رأس المال', 'Basel unit opinion on the capital plan'],
+        // Third quarter
+        ['annual', [9], 'تقرير جاهزية استمرارية الأعمال', 'Business continuity readiness report'],
+        ['annual', [9], 'نتائج الاختبارات الأمنية المستقلة', 'Results of independent security testing'],
+        ['annual', [9], 'نتائج التحقق من المنهجيات والنماذج', 'Results of methodology and model validation'],
+        // Fourth quarter
+        ['annual', [12], 'المراجعة السنوية للسياسات', 'Annual review of policies'],
+        ['annual', [12], 'اتساق الخطة والموازنة مع الرغبة في المخاطر', 'Consistency of the plan and budget with the risk appetite'],
+        ['annual', [12], 'تقييم أداء إدارة المخاطر وتقييم اللجنة الذاتي ومستوى نضج الإطار', 'Evaluation of the risk function, committee self-assessment and framework maturity'],
+        ['annual', [12], 'التقرير السنوي للجنة إلى المجلس', 'Committee annual report to the board'],
+        ['private_session', [12], 'جلسة منفردة مع مدير المراجعة الداخلية', 'Private session with the head of internal audit'],
     ],
 ];
