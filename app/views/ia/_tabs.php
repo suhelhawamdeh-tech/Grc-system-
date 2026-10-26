@@ -1,0 +1,2 @@
+<?php $tab = $tab ?? ''; $tabs = []; if (can('ia.view')) { $tabs = ['ia' => ['ia.overview', 'ia'], 'universe' => ['ia.universe', 'ia/universe'], 'plans' => ['ia.plans', 'ia/plans']]; } $tabs['findings'] = ['ia.findings', 'ia/findings']; ?>
+<nav class="pill-tabs" aria-label="<?= e(t('ia.title')) ?>"><?php foreach ($tabs as $k => [$lbl, $href]): ?><a href="<?= e(url($href)) ?>"<?= $k === $tab ? ' aria-current="page" class="active"' : '' ?>><?= e(t($lbl)) ?></a><?php endforeach; ?></nav>

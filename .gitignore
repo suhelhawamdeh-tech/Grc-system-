@@ -1,0 +1,17 @@
+/config/config.php
+/config/*.local.php
+/grc-config/
+.env
+.env.*
+/storage/logs/*
+/storage/uploads/*
+/storage/sessions/*
+/storage/cache/*
+!/storage/**/.htaccess
+!/storage/**/.gitkeep
+/storage/installed.lock
+/storage/setup-token.txt
+/dist/
+*.zip
+*.log
+.DS_Store

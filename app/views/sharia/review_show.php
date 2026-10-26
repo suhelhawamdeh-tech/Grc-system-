@@ -1,0 +1,6 @@
+<?php /** @var array $r */ $late = $r['status'] !== 'completed' && $r['planned_date'] < date('Y-m-d'); ?>
+<div class="page-head"><div><h1><?= icon('search') ?> <?= e($r['code']) ?> — <?= e($r['title']) ?></h1><p class="sub"><span class="badge <?= $r['status'] === 'completed' ? 'ok' : '' ?>"><?= e(t('enum.rvstatus.' . $r['status'])) ?></span><?= $late ? ' <span class="badge danger">' . e(t('my.overdue')) . '</span>' : '' ?></p></div>
+  <div class="actions"><a class="btn secondary" href="<?= e(url('sharia/reviews')) ?>"><?= e(t('common.back')) ?></a><?php if (can('sharia.manage')): ?><a class="btn" href="<?= e(url('sharia/reviews/' . $r['id'] . '/edit')) ?>"><?= e(t('common.edit')) ?></a><?php endif; ?></div></div>
+<section class="card"><dl class="details"><dt><?= e(t('sha.v_type')) ?></dt><dd><?= e(t('enum.rvtype.' . $r['review_type'])) ?></dd><dt><?= e(t('sha.v_dept')) ?></dt><dd><?= e(lname($r, 'dept') ?: '—') ?></dd><dt><?= e(t('sha.v_reviewer')) ?></dt><dd><?= e($r['reviewer_name']) ?></dd>
+<dt><?= e(t('sha.v_planned')) ?></dt><dd><?= e(fdate($r['planned_date'])) ?></dd><dt><?= e(t('sha.v_completed')) ?></dt><dd><?= e(fdate($r['completed_on']) ?: '—') ?></dd>
+<dt><?= e(t('sha.v_scope')) ?></dt><dd class="pre"><?= e($r['scope'] ?? '—') ?></dd><dt><?= e(t('sha.v_summary')) ?></dt><dd class="pre"><?= e($r['summary'] ?? '—') ?></dd></dl></section>

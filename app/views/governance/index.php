@@ -1,0 +1,8 @@
+<?php /** @var array $rows */ ?>
+<div class="page-head"><div><h1><?= icon('users') ?> <?= e(t('gov.title')) ?></h1><p class="sub"><?= e(t('gov.subtitle')) ?></p></div>
+  <div class="actions"><a class="btn secondary" href="<?= e(url('governance/report')) ?>"><?= e(t('gov.report')) ?></a><?php if (can('governance.manage')): ?><a class="btn gold" href="<?= e(url('governance/new')) ?>"><?= e(t('gov.body_new')) ?></a><?php endif; ?></div></div>
+<div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('cir.id')) ?></th><th><?= e(t('gov.b_name')) ?></th><th><?= e(t('gov.b_type')) ?></th><th class="num"><?= e(t('gov.members')) ?></th><th class="num"><?= e(t('gov.held_this_year')) ?></th><th><?= e(t('gov.next_meeting')) ?></th></tr></thead><tbody>
+<?php if (!$rows): ?><tr><td colspan="6" class="empty"><?= icon('users') ?><br><?= e(t('common.no_results')) ?></td></tr><?php endif; ?>
+<?php foreach ($rows as $b): ?><tr><td class="nowrap"><a href="<?= e(url('governance/' . $b['id'])) ?>"><?= e($b['code']) ?></a></td><td><a href="<?= e(url('governance/' . $b['id'])) ?>"><?= e($b['name']) ?></a><?= $b['is_active'] ? '' : ' <span class="badge">' . e(t('common.inactive')) . '</span>' ?><?= $b['is_active'] && !(int)$b['chairs_n'] ? ' <span class="badge danger">' . e(t('gov.no_chair')) . '</span>' : '' ?></td><td><?= e(t('enum.committee.' . $b['body_type'])) ?></td>
+<td class="num"><?= (int)$b['members_n'] ?></td><td class="num"><span class="<?= (int)$b['held_n'] < (int)$b['min_meetings_per_year'] ? 'badge warn' : 'badge ok' ?>"><?= (int)$b['held_n'] ?> / <?= (int)$b['min_meetings_per_year'] ?></span></td><td class="nowrap"><?= e(fdate($b['next_date']) ?: '—') ?></td></tr><?php endforeach; ?></tbody></table></div>
+<?= kb_refs('governance') ?>

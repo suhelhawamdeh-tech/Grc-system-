@@ -1,0 +1,11 @@
+<?php /** @var array $rows @var array $f @var int $total @var int $page @var int $per */ ?>
+<div class="page-head"><div><h1><?= icon('search') ?> <?= e(t('sha.reviews')) ?></h1><p class="sub"><?= e(t('sha.reviews_hint')) ?> · <?= e(t('common.total_n', ['n' => $total])) ?></p></div>
+  <div class="actions"><a class="btn secondary" href="<?= e(url('sharia')) ?>"><?= e(t('common.back')) ?></a><?php if (can('sharia.manage')): ?><a class="btn gold" href="<?= e(url('sharia/reviews/new')) ?>"><?= e(t('sha.review_new')) ?></a><?php endif; ?></div></div>
+<form method="get" action="<?= e(url('sharia/reviews')) ?>" class="card filters">
+  <?= ff('select', 'status', 'sha.v_status', $f['status'], ['options' => opts(['planned', 'in_progress', 'completed'], fn($x) => t('enum.rvstatus.' . $x), null), 'blank_label' => 'common.all']) ?>
+  <div class="field"><label class="check"><input type="checkbox" name="late" value="1"<?= checked($f['late']) ?>> <?= e(t('sha.late_only')) ?></label></div>
+  <div class="field actions"><button class="btn" type="submit"><?= e(t('common.filter')) ?></button><a class="btn secondary" href="<?= e(url('sharia/reviews')) ?>"><?= e(t('common.reset')) ?></a></div></form>
+<div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('sha.e_code')) ?></th><th><?= e(t('sha.v_title')) ?></th><th><?= e(t('sha.v_type')) ?></th><th><?= e(t('sha.v_reviewer')) ?></th><th><?= e(t('sha.v_planned')) ?></th><th><?= e(t('sha.v_status')) ?></th></tr></thead><tbody>
+<?php if (!$rows): ?><tr><td colspan="6" class="empty"><?= e(t('common.no_results')) ?></td></tr><?php endif; ?>
+<?php foreach ($rows as $r): $late = $r['status'] !== 'completed' && $r['planned_date'] < date('Y-m-d'); ?><tr><td class="nowrap"><a href="<?= e(url('sharia/reviews/' . $r['id'])) ?>"><?= e($r['code']) ?></a></td><td><a href="<?= e(url('sharia/reviews/' . $r['id'])) ?>"><?= e($r['title']) ?></a></td><td><?= e(t('enum.rvtype.' . $r['review_type'])) ?></td><td><?= e($r['reviewer_name']) ?></td><td class="nowrap"><?= e(fdate($r['planned_date'])) ?><?= $late ? ' <span class="badge danger">' . e(t('my.overdue')) . '</span>' : '' ?></td><td><span class="badge <?= $r['status'] === 'completed' ? 'ok' : '' ?>"><?= e(t('enum.rvstatus.' . $r['status'])) ?></span></td></tr><?php endforeach; ?></tbody></table></div>
+<?= pager($total, $page, $per) ?>

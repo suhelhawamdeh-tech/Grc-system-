@@ -1,0 +1,4 @@
+<?php
+// Copy to app-path.php when the application folder (app/, storage/, database/) is NOT the parent of this folder.
+// Return the absolute path of the folder that contains app/bootstrap.php, e.g.:
+return '/home/YOUR_CPANEL_USER/grc-app';

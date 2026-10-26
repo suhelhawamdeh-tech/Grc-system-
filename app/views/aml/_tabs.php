@@ -1,0 +1,2 @@
+<?php $tab = $tab ?? ''; $tabs = ['aml' => ['aml.overview', 'aml'], 'customers' => ['aml.customers', 'aml/customers'], 'factors' => ['aml.factors', 'aml/factors'], 'reports' => ['aml.reports', 'aml/reports']]; ?>
+<nav class="pill-tabs" aria-label="<?= e(t('aml.title')) ?>"><?php foreach ($tabs as $k => [$lbl, $href]): ?><a href="<?= e(url($href)) ?>"<?= $k === $tab ? ' aria-current="page" class="active"' : '' ?>><?= e(t($lbl)) ?></a><?php endforeach; ?></nav>

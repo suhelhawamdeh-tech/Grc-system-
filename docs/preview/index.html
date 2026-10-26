@@ -1,0 +1,78 @@
+<title>تجربة منصة الحوكمة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;700&family=Noto+Sans+Arabic:wght@400;700&display=swap">
+<style>
+/* Layout: navy header band with the role chooser as four cards, then a short "what to try" path; one deliberate gold-on-navy/ivory look. */
+:root{--gold:#C9A227;--gold-hi:#E9C866;--gold-dk:#8F7119;--navy:#0B2545;--navy-2:#13315C;--ivory:#FBF7EE;--card:#FFFFFF;--ink:#1D2433;--muted:#566074;--on-navy:#DFE6F2;--line:#E5D6A8;
+--f-display:'Noto Kufi Arabic','Noto Sans Arabic',Tahoma,sans-serif;--f-body:'Noto Sans Arabic','Segoe UI',Tahoma,sans-serif;color-scheme:light}
+body{background:var(--ivory);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.85}
+main{direction:rtl}
+.wrap{max-width:1040px;margin:0 auto;padding-inline:20px}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+.top{background:radial-gradient(120% 100% at 85% 0%,#1d4477 0%,var(--navy) 60%,#071a33 100%);color:#fff;padding-block:48px 72px;border-bottom:4px solid var(--gold)}
+.tag{display:inline-block;border:1px solid var(--gold);color:var(--gold-hi);padding:2px 14px;border-radius:999px;font-size:14px;font-family:var(--f-display)}
+.top h1{font-size:clamp(28px,4.4vw,42px);line-height:1.5;margin-top:14px}
+.top h1 span{color:var(--gold-hi)}
+.top p{color:var(--on-navy);max-width:40em;margin:10px 0 0;font-size:17px}
+.roles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:-44px}
+.role{display:flex;flex-direction:column;gap:6px;background:var(--card);border-radius:14px;padding:20px;border-top:4px solid var(--gold);box-shadow:0 8px 24px rgba(11,37,69,.14);text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
+.role:hover,.role:focus-visible{transform:translateY(-3px);box-shadow:0 14px 30px rgba(11,37,69,.2);outline:none}
+.role:focus-visible{outline:3px solid var(--gold-hi);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.role{transition:none}.role:hover{transform:none}}
+.oct{width:46px;height:46px;display:grid;place-items:center;background:linear-gradient(135deg,#F1D78A,var(--gold) 55%,var(--gold-dk));color:var(--navy);font-family:var(--f-display);font-weight:700;clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%)}
+.role h2{font-size:18px;color:var(--navy);margin-top:4px}
+.role p{margin:0;color:var(--muted);font-size:14.5px;flex:1}
+.go{font-family:var(--f-display);color:var(--gold-dk);font-size:14px}
+.sec{padding-block:44px}
+.sec h3{color:var(--navy);font-size:22px;margin-bottom:16px}
+.try{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.try li{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;display:flex;gap:12px;align-items:flex-start}
+.try b{display:block;color:var(--navy);font-family:var(--f-display);font-size:15px}
+.try a{color:var(--navy);text-decoration:underline;text-decoration-color:var(--gold);text-underline-offset:3px}
+.try span.n{flex:none;width:28px;height:28px;border-radius:50%;background:var(--navy);color:var(--gold-hi);display:grid;place-items:center;font-family:var(--f-display);font-size:13px}
+.try small{color:var(--muted);font-size:14px}
+.note{margin-top:24px;background:#FFF8E6;border-right:4px solid var(--gold);border-radius:10px;padding:14px 18px;color:var(--ink);font-size:15px}
+@media (max-width:1000px){.roles{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.roles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.wrap{padding-inline:16px}.roles,.try{grid-template-columns:1fr}.roles{margin-top:-32px}}
+</style>
+<main>
+  <header class="top"><div class="wrap">
+    <span class="tag">نسخة تصفح تجريبية · الإصدار 1.6 · بيانات وهمية</span>
+    <h1>جرّب منصة الحوكمة وإدارة المخاطر والامتثال <span>كما يراها كل مستخدم</span></h1>
+    <p>اختر دوراً لتتصفح المنصة بعينه. كل مستخدم يرى ما يخصه فقط، وتظهر له مهامه وتنبيهاته ودليله المبسط.</p>
+  </div></header>
+
+  <div class="wrap">
+    <nav class="roles" aria-label="اختر الدور">
+      <a class="role" href="r/home.html"><span class="oct">1</span><h2>مدير المخاطر</h2><p>سجل المخاطر، المؤشرات، الحوادث، الضوابط، والموافقات.</p><span class="go">ابدأ من لوحة المعلومات ←</span></a>
+      <a class="role" href="c/home.html"><span class="oct">2</span><h2>مسؤول الامتثال</h2><p>الالتزامات، التعاميم الرقابية، الامتثال الشرعي، والسياسات.</p><span class="go">ابدأ من لوحة المعلومات ←</span></a>
+      <a class="role" href="e/home.html"><span class="oct">3</span><h2>الإدارة التنفيذية</h2><p>نظرة شاملة للاطلاع واتخاذ القرار، مع التقارير والأهداف.</p><span class="go">ابدأ من لوحة المعلومات ←</span></a>
+      <a class="role" href="d/my.html"><span class="oct">4</span><h2>مدير إدارة</h2><p>مخاطر إدارته ومهامه وإقرار التعاميم الموجهة إليه.</p><span class="go">ابدأ من «مهامي» ←</span></a>
+      <a class="role" href="a/ia.html"><span class="oct">5</span><h2>المدقق الداخلي</h2><p>خطة تدقيق مبنية على المخاطر، أوراق العمل، ومتابعة الملاحظات.</p><span class="go">ابدأ من التدقيق الداخلي ←</span></a>
+    </nav>
+  </div>
+
+  <section class="sec"><div class="wrap">
+    <h3>جولة مقترحة في خمس دقائق</h3>
+    <ol class="try">
+      <li><span class="n">✦</span><div><b><a href="e/board-reports_4.html">التقرير الربعي للمخاطر إلى المجلس — جديد</a></b><small>التقرير القياسي بأقسامه الأحد عشر: الخطاب، ولوحة المؤشرات، وملف المخاطر، والقرارات المقترحة، والتوصيات حسب الإدارة ومتابعتها بعد الاعتماد.</small></div></li>
+      <li><span class="n">✦</span><div><b><a href="r/appetite_framework.html">إطار الرغبة في المخاطر — جديد</a></b><small>مقاييس المجلس بمستوى الرغبة وحد الإنذار والحد الأقصى، والحالات الخضراء والصفراء والحمراء.</small></div></li>
+      <li><span class="n">✦</span><div><b><a href="r/icaap_1.html">التقييم الداخلي لكفاية رأس المال — جديد</a></b><small>المراحل، والمخاطر الجوهرية، والركيزة الثانية، واختبارات الضغط لثلاث سنوات، والاعتمادات.</small></div></li>
+      <li><span class="n">✦</span><div><b><a href="r/rm.html">منضدة وظيفة إدارة المخاطر — جديد</a></b><small>تقويم الإجراءات الدورية، والآراء المستقلة بمبدأ الأربع أعين، والتجاوزات، وسجل التصعيد إلى رئيس لجنة المخاطر.</small></div></li>
+      <li><span class="n">✦</span><div><b><a href="r/registers.html">السجلات المساندة — جديد</a></b><small>النماذج، وتسليم البيانات، والنضج، والقبولات الأمنية المؤقتة، والمخاطر الناشئة، ومصفوفة المتطلبات، وخطة اللجنة السنوية.</small></div></li>
+      <li><span class="n">✦</span><div><b><a href="r/policies_framework.html">وثائق الإطار</a></b><small>هرم الوثائق بمستوياته السبعة، واستيراد ملفات Word، وكشف الإحالات الناقصة.</small></div></li>
+      <li><span class="n">✦</span><div><b><a href="c/assistant.html">المساعد الذكي للامتثال</a></b><small>إجابة عن سؤال في العناية الواجبة المشددة، مستندة إلى مكتبة من 28 مرجعاً موثوقاً، مع رقم المرجع بعد كل نقطة.</small></div></li>
+      <li><span class="n">✦</span><div><b><a href="c/assistant_library.html">مكتبة المراجع</a></b><small>فاتف، بازل، الأمم المتحدة، القوانين الليبية ومصرف ليبيا المركزي، ISO وCOSO وIIA وAAOIFI، مع رابط لكل أصل.</small></div></li>
+      <li><span class="n">1</span><div><b><a href="e/home.html">لوحة المعلومات</a></b><small>صورة المصرف في شاشة واحدة، وكل رقم يقود إلى تفاصيله.</small></div></li>
+      <li><span class="n">2</span><div><b><a href="d/my.html">مهامي</a></b><small>كل ما ينتظر المستخدم في مكان واحد.</small></div></li>
+      <li><span class="n">3</span><div><b><a href="r/help.html">مركز المساعدة</a></b><small>دليل مبسط مكتوب حسب دور المستخدم.</small></div></li>
+      <li><span class="n">4</span><div><b><a href="c/sharia.html">الامتثال الشرعي</a></b><small>القرارات الشرعية، المراجعات، الأحداث، والتطهير.</small></div></li>
+      <li><span class="n">5</span><div><b><a href="c/circulars.html">التعاميم الرقابية</a></b><small>توزيع التعميم وتتبع إقرار كل إدارة.</small></div></li>
+      <li><span class="n">6</span><div><b><a href="r/risks.html">سجل المخاطر</a></b><small>التقييم والمالك والمعالجة لكل خطر.</small></div></li>
+      <li><span class="n">7</span><div><b><a href="a/ia_universe.html">التدقيق الداخلي المبني على المخاطر</a></b><small>ترتيب الجهات حسب درجة الأولوية، والخطة، والملاحظات حتى الإغلاق.</small></div></li>
+      <li><span class="n">8</span><div><b><a href="c/aml.html">مكافحة غسل الأموال</a></b><small>تصنيف العملاء والمنتجات والقنوات والمناطق، والضوابط والتقارير.</small></div></li>
+    </ol>
+    <p class="note">هذه نسخة للتصفح فقط: تنتقل بين الشاشات بحرية، لكن الحفظ والإرسال وتغيير اللغة معطلة. للتجربة الكاملة بالإدخال والموافقات نجهز بيئة تجريبية على خادم المصرف.</p>
+  </div></section>
+</main>

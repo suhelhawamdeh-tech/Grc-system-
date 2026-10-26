@@ -1,0 +1,89 @@
+# Test report (session 1)
+
+**Command:** `php tests/run.php` — dependency-free runner; copies the app to a temp dir, wipes two scratch databases, installs on a clean DB, starts PHP's built-in server and drives it over HTTP with a cookie-aware client.
+**Result: 1620 checks passed, 0 failed** (609 in the first release, 625 for releases 1.1 to 1.3: usability, controls, Sharia, BIA/approvals, e-mail with a fake SMTP sink, Excel export and board pack; 199 for release 1.4: internal audit, AML and T24 integration with a simulated T24 API; 98 for release 1.5: reference library and AI assistant, with a simulated Claude API; 89 for release 1.6: framework documents, risk-function workbench, risk appetite framework, ICAAP, quarterly board report and supporting registers). Not verified for release 1.4: a real Temenos T24 system or API. Not verified for release 1.5: a call to the real Claude API, and the quality of real model answers. Not verified for release 1.6: opening the generated Word files in Microsoft Word (they are checked as valid Office Open XML and parsed), and the bank's real documents (tests use a synthetic Word document built by the platform). Not verified here: Bluehost, Apache, PHP 8.1–8.3, real SMTP providers, Microsoft Excel opening of the generated .xlsx (structure and XML validity are tested, but the file was not opened in Excel), screen readers.
+
+**Environment actually used:** Linux container, PHP 8.4.19 (CLI, built-in server), MariaDB 10.11.14, curl. Chromium (Playwright) was used only to take screenshots of Arabic/English/mobile pages for a visual check.
+
+| Area | Passed | Failed |
+|---|---|---|
+| Unit: money, scoring, csv, permissions, i18n | 37 | 0 |
+| Clean install via CLI on an empty database, then start server | 19 | 0 |
+| Authentication | 34 | 0 |
+| Authorization: roles, direct URLs, scope | 96 | 0 |
+| Risk workflow: create / validate / score / edit / filter / archive | 48 | 0 |
+| Incidents: loss calculation and validation | 22 | 0 |
+| CSV export safety and print reports | 15 | 0 |
+| Uploads | 23 | 0 |
+| Admin: users, org structure, scales, settings, audit | 37 | 0 |
+| Phase 2 unit: KRI status logic | 4 | 0 |
+| Phase 2 authorization matrix | 73 | 0 |
+| Phase 2: KRIs | 19 | 0 |
+| Phase 2: risk appetite and breaches | 13 | 0 |
+| Phase 2: compliance obligations | 20 | 0 |
+| Phase 2: committee decisions | 7 | 0 |
+| Phase 2: policies and versions | 13 | 0 |
+| Phase 2: RCSA workflow | 24 | 0 |
+| Phase 2: governance dashboard tiles = database | 7 | 0 |
+| Language switch, RTL / LTR rendering | 63 | 0 |
+| Web setup wizard on a clean database + subdirectory deployment | 28 | 0 |
+| Packaging | 7 | 0 |
+
+
+### Release 1.4 sections
+| Area | Passed | Failed |
+|---|---|---|
+| Release 4 unit: audit priority and AML scoring | 14 | 0 |
+| Release 4: access to internal audit, AML and integration pages | 42 | 0 |
+| Internal audit: universe and risk-based plan | 23 | 0 |
+| Internal audit: fieldwork, workpapers and independent review | 15 | 0 |
+| Internal audit: findings to closure | 31 | 0 |
+| AML: customer risk rating | 24 | 0 |
+| AML: controls and confidential reports | 16 | 0 |
+| T24 integration: settings and file loads | 21 | 0 |
+| T24 integration: API and scheduled job | 13 | 0 |
+
+### Release 1.5 sections
+| Area | Passed | Failed |
+|---|---|---|
+| Release 5 unit: library content, search, redaction, rendering | 14 | 0 |
+| Reference library: sync and pages | 25 | 0 |
+| Reference library: bank documents | 17 | 0 |
+| Assistant: library mode | 11 | 0 |
+| Assistant: questions about a record (de-identified context) | 7 | 0 |
+| Assistant: administration and limits | 9 | 0 |
+| Assistant: Claude mode (fake API) | 15 | 0 |
+
+### Release 1.6 sections
+| Area | Passed | Failed |
+|---|---|---|
+| Release 6 unit: framework constants, document reader, registers config | 8 | 0 |
+| Framework documents: import, hierarchy, confidentiality | 6 | 0 |
+| Risk-function workbench: opinions, breaches, escalations | 14 | 0 |
+| Risk appetite framework: template, calibration, amber and red | 9 | 0 |
+| ICAAP: inputs, materiality, Pillar 2, stress, approvals | 19 | 0 |
+| Quarterly board risk report | 14 | 0 |
+| Supporting registers | 19 | 0 |
+
+## What the tests demonstrate
+* **Authentication:** CSRF rejection, uniform login errors, session ID regeneration, throttling after 5 failures (even with the right password), forced password change, logout via POST only, deactivated users blocked.
+* **Authorization:** role × URL matrix (Phase 1 and 2), unauthorised direct URLs, out-of-scope records return 404 (view, edit, POST edit, archive, print, attachments, CSV, dashboard), scope enforced on create/move, restricted users cannot widen CSV via query parameters.
+* **Risk assessment:** score = L×I computed server-side (forged score fields ignored), residual recorded explicitly, rationale rule, field-level history, filters/search (Arabic, LIKE-wildcards, SQL-injection strings, junk parameters), archive/restore.
+* **Losses:** exact decimal arithmetic (0.3−0.1=0.200), validation rules, net = gross − recoveries, totals equal `SUM()` in the database.
+* **Dashboard:** KPI values, heat-map cell sums, chart drill-down counts and Phase 2 tiles are compared with independent SQL for admin, department-scoped, branch-scoped and executive users.
+* **Exports:** BOM, column consistency, formula-injection neutralisation (`= + - @ TAB`), `;` variant, audit of exports, print pages RTL/LTR.
+* **Uploads:** allow-list + content sniffing (PHP disguised as pdf/png, fake docx, exe, html, double extension, empty, 6 MB), random non-public storage, authorised `attachment` download with `nosniff`, soft delete.
+* **i18n:** identical ar/en key sets (base + module files), no untranslated keys rendered on ~30 pages in both languages, `dir`/`lang` attributes, language switch, open-redirect protection, stylesheet uses logical properties only, no inline scripts.
+* **Installation:** CLI install on an empty DB, second install refused, web wizard (token, DB test, config written with 600 perms + deny file, admin creation, lock, 404 afterwards, closed even if the lock file is deleted), sub-directory deployment under `/grc/` (assets, links, cookie path, deep-link `next`).
+* **AI assistant:** the request sent to the (simulated) Claude API carries the key only in the header, the required API version and fallback headers, the chosen model and effort, the system rules and numbered sources, and no customer name, customer number or account number; answers are escaped, invented citations dropped, refusals and API errors handled (library passages shown instead), no request at all when the library has nothing relevant; personal numbers and e-mails removed before storage; history private to each user; restricted documents hidden from other roles; rate limit, switch-off and settings validation (Claude mode refused without a key).
+* **Release 1.6:** a synthetic Word document is imported (level and classification from its control table, missing reference listed, no duplicate on re-import, confidential file refused to a department manager); opinions need a second person and a contrary decision is escalated; no exception against a regulatory limit; uncalibrated appetite metrics refuse readings, amber gives a notice and red an escalation; ICAAP figures checked against hand calculations (27.0833% ratio, Pillar 1 300m, Pillar 2 40m, buffer 17m, margin 293m, stress paths) with phase gates, approval order and lock; the board report refuses an incomplete submission or a board date before the committee, creates decisions and dated actions once on approval and is then locked; registers derive late deliveries, refuse invalid dates and targets, expire and escalate security acceptances exactly once, and build the maturity and committee templates without duplicates.
+* **Packaging:** ZIP contents (no tests/secrets/runtime data), `install.sql` imports into an empty DB and equals the migrated schema.
+
+## NOT verified (cannot be claimed)
+* Real **Bluehost / cPanel** behaviour; real **Apache** and the shipped `.htaccess` files (tests use PHP's built-in server with an equivalent router); AutoSSL/HTTPS and the `Secure`/HSTS paths.
+* **PHP 8.1–8.3** (only 8.4 exercised; code avoids 8.4-only features but this is untested) and **MySQL 5.7/8.x** (only MariaDB 10.11).
+* phpMyAdmin's import UI (the SQL was executed through PDO with emulated prepares).
+* Excel opening the CSV (structure, BOM and escaping verified programmatically, not in Excel), print-to-PDF output quality, screen readers, keyboard-only walkthrough, formal WCAG contrast/accessibility audit (band colours use a luminance-based text colour; not measured).
+* Performance/load, concurrency, large datasets; session handling under host-specific `session.save_path`/GC settings.
+* Independent penetration test or security certification — none has been performed; the controls listed in the README are implemented and unit/integration tested only as described above.
+* Arabic wording was written by the author of this software (an AI) and needs review by a native-speaking banking/compliance professional before production use.

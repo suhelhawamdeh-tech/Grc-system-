@@ -1,0 +1,15 @@
+# FALLBACK layout only: use this when the WHOLE project is uploaded into a (sub)domain document root
+# and you cannot point the document root at the public/ folder. Preferred layout: document root = public/.
+Options -Indexes
+DirectoryIndex disabled
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Private folders are never served
+    RewriteRule ^(app|database|storage|bin|docs|config|grc-config|tests)(/|$) - [F,L]
+    RewriteRule ^(README\.md|composer\.json|\.git.*)$ - [F,L]
+    # Everything else is handled by public/
+    RewriteRule ^$ public/ [L]
+    RewriteCond %{REQUEST_URI} !^/?public/
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

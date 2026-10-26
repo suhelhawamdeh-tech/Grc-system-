@@ -1,0 +1,5 @@
+<?php /** @var array $rows */ ?>
+<div class="page-head"><div><h1><?= icon('alert') ?> <?= e(t('incident.patterns')) ?></h1><p class="sub"><?= e(t('incident.patterns_hint')) ?></p></div><div class="actions"><a class="btn secondary" href="<?= e(url('incidents')) ?>"><?= e(t('common.back')) ?></a></div></div>
+<div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('incident.category')) ?></th><th><?= e(t('incident.department')) ?></th><th class="num"><?= e(t('board.incidents')) ?></th><th class="num"><?= e(t('dash.net_loss_period')) ?></th><th><?= e(t('incident.last_occurrence')) ?></th></tr></thead><tbody>
+<?php if (!$rows): ?><tr><td colspan="5" class="empty"><?= e(t('incident.no_patterns')) ?></td></tr><?php endif; ?>
+<?php foreach ($rows as $r): ?><tr><td><a href="<?= e(url('incidents', ['category' => $r['category_id'], 'department' => $r['department_id']])) ?>"><?= e(lname($r, 'c')) ?></a></td><td><?= e(lname($r, 'd')) ?></td><td class="num"><?= (int)$r['n'] ?></td><td class="num"><?= e(money($r['net'])) ?></td><td><?= e(fdate($r['last_date'])) ?></td></tr><?php endforeach; ?></tbody></table></div>
