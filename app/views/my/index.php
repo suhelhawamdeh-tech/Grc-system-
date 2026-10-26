@@ -20,6 +20,10 @@ $cfg = [
   'ia_review_wp' => ['icon' => 'clipboard', 'label' => 'my.ia_review_wp', 'link' => fn($r) => url('ia/workpapers/' . $r['id']) . '#review'],
   'aml_reviews' => ['icon' => 'eye', 'label' => 'my.aml_reviews', 'link' => fn($r) => url('aml/customers/' . $r['id']) . '#review'],
   'aml_reports' => ['icon' => 'file', 'label' => 'my.aml_reports', 'link' => fn($r) => url('aml/reports/' . $r['id'])],
+  'rm_tasks' => ['icon' => 'tasks', 'label' => 'my.rm_tasks', 'link' => fn($r) => url('rm/calendar') . '#t' . $r['id']],
+  'rm_opinions' => ['icon' => 'scale', 'label' => 'my.rm_opinions', 'link' => fn($r) => url('rm/opinions/' . $r['id'])],
+  'rm_plans' => ['icon' => 'alert', 'label' => 'my.rm_plans', 'link' => fn($r) => url('rm/breaches/' . $r['id'])],
+  'rm_escalations' => ['icon' => 'flag', 'label' => 'my.rm_escalations', 'link' => fn($r) => url('rm/escalations/' . $r['id'])],
   'notes' => ['icon' => 'note', 'label' => 'my.notes', 'link' => fn($r) => $r['page_path'] ? base_path() . $r['page_path'] : url('notes')],
 ];
 $total = 0; foreach ($sections as $rows) { $total += count($rows); } ?>

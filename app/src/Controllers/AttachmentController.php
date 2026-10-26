@@ -91,8 +91,15 @@ final class AttachmentController extends Controller
                 }
                 return $can('aml.view');
             case 'policy_version':
-                $row = Db::one('SELECT id FROM policy_versions WHERE id = ?', [$id]);
-                return $row && ($forEdit ? $can('policy.manage') : $can('policy.view'));
+                $row = Db::one('SELECT v.id, p.classification FROM policy_versions v JOIN policies p ON p.id = v.policy_id WHERE v.id = ?', [$id]);
+                if (!$row) {
+                    return false;
+                }
+                // Files of confidential and secret documents: document and library managers (risk, compliance, admin) and internal audit.
+                if (!$forEdit && in_array($row['classification'], \App\Support\Framework::RESTRICTED, true)) {
+                    return $can('policy.manage') || $can('kb.manage') || $can('ia.manage');
+                }
+                return $forEdit ? $can('policy.manage') : $can('policy.view');
             default:
                 return false;
         }

@@ -1,0 +1,16 @@
+<?php /** @var array $rows @var array $f */ $tab = 'breaches'; ?>
+<div class="page-head"><div><h1><?= icon('alert') ?> <?= e(t('rm.breaches')) ?></h1><p class="sub"><?= e(t('rm.breaches_hint')) ?></p></div>
+<div class="actions"><?php if (can('rm.work')): ?><a class="btn gold" href="<?= e(url('rm/breaches/new')) ?>"><?= e(t('rm.breach_new')) ?></a><a class="btn secondary" href="<?= e(url('rm/breaches/new', ['kind' => 'exception'])) ?>"><?= e(t('rm.exception_new')) ?></a><?php endif; ?></div></div>
+<?php require __DIR__ . '/_tabs.php'; ?>
+<form method="get" action="<?= e(url('rm/breaches')) ?>" class="card filters" role="search">
+<?= ff('select', 'kind', 'rm.kind', $f['kind'], ['options' => ['breach' => t('enum.rmkind.breach'), 'exception' => t('enum.rmkind.exception')], 'blank_label' => 'common.all']) ?>
+<?= ff('select', 'status', 'pol.status', $f['status'], ['options' => opts(['open', 'plan_received', 'resolved', 'closed'], fn($x) => t('enum.rmbs.' . $x), null) ?: [], 'blank_label' => 'common.all']) ?>
+<?= ff('select', 'section', 'docs.section', $f['section'], ['options' => opts(\App\Support\Framework::SECTIONS, fn($x) => t('enum.rmsec.' . $x), null) ?: [], 'blank_label' => 'common.all']) ?>
+<div class="field actions"><button class="btn" type="submit"><?= e(t('common.filter')) ?></button><a class="btn secondary" href="<?= e(url('rm/breaches')) ?>"><?= e(t('common.reset')) ?></a></div></form>
+<div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('rm.notice_no')) ?></th><th><?= e(t('rm.limit_name')) ?></th><th><?= e(t('rm.limit_type')) ?></th><th><?= e(t('rm.limit_value')) ?></th><th><?= e(t('rm.actual_value')) ?></th><th><?= e(t('rm.owner_department')) ?></th><th><?= e(t('rm.plan_due')) ?></th><th><?= e(t('pol.status')) ?></th></tr></thead><tbody>
+<?php if (!$rows): ?><tr><td colspan="8" class="muted"><?= e(t('common.no_results')) ?></td></tr><?php endif; ?>
+<?php foreach ($rows as $b): $late = $b['plan_due'] && $b['status'] === 'open' && $b['plan_due'] < date('Y-m-d'); ?><tr><td class="nowrap" dir="ltr"><a href="<?= e(url('rm/breaches/' . $b['id'])) ?>"><?= e($b['code']) ?></a></td>
+<td><a href="<?= e(url('rm/breaches/' . $b['id'])) ?>"><?= e($b['limit_name']) ?></a><br><span class="muted small"><?= e(t('enum.rmkind.' . $b['kind'])) ?> · <?= e(t('enum.rmsec.' . $b['section'])) ?><?= $b['subject'] ? ' · ' . e($b['subject']) : '' ?></span></td>
+<td><span class="badge <?= $b['limit_type'] === 'regulatory' ? 'danger' : '' ?>"><?= e(t('enum.rmlt.' . $b['limit_type'])) ?></span><?= $b['material'] ? ' <span class="badge warn">' . e(t('rm.material')) . '</span>' : '' ?></td>
+<td class="num"><?= e($b['limit_value'] ?? '—') ?> <?= e($b['unit'] ?? '') ?></td><td class="num"><?= e($b['actual_value'] ?? '—') ?> <?= e($b['unit'] ?? '') ?></td><td><?= e(lname(['name_en' => $b['dept_en'], 'name_ar' => $b['dept_ar']])) ?></td>
+<td class="nowrap"><?= e(fdate($b['plan_due']) ?: '—') ?><?= $late ? ' <span class="badge danger">' . e(t('my.overdue')) . '</span>' : '' ?></td><td><span class="badge"><?= e(t('enum.rmbs.' . $b['status'])) ?></span><?= $b['escalation_id'] ? ' <span class="badge danger">' . e(t('rm.escalated_short')) . '</span>' : '' ?></td></tr><?php endforeach; ?></tbody></table></div>

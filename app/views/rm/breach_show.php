@@ -1,0 +1,25 @@
+<?php /** @var array $b @var ?array $esc @var ?float $excess */ $tab = 'breaches'; $exc = $b['kind'] === 'exception'; $open = in_array($b['status'], ['open', 'plan_received'], true); ?>
+<div class="page-head"><div><h1><?= icon('alert') ?> <?= e($b['code']) ?> — <?= e($b['limit_name']) ?></h1><p class="sub"><?= e(t('enum.rmkind.' . $b['kind'])) ?> · <?= e(t('enum.rmsec.' . $b['section'])) ?> · <span class="badge"><?= e(t('enum.rmbs.' . $b['status'])) ?></span></p></div>
+<div class="actions"><a class="btn secondary" href="<?= e(url('rm/breaches')) ?>"><?= e(t('common.back')) ?></a><a class="btn secondary" href="<?= e(url('rm/breaches/' . $b['id'] . '/print')) ?>"><?= e(t('common.print')) ?></a><a class="btn secondary" href="<?= e(url('rm/breaches/' . $b['id'] . '/docx')) ?>"><?= icon('file') ?> Word</a></div></div>
+<?php require __DIR__ . '/_tabs.php'; ?>
+<div class="grid cols-2"><section class="card"><h2><?= e(t($exc ? 'rm.exception_title' : 'rm.notice_title')) ?></h2><dl class="details">
+<dt><?= e(t('rm.limit_type')) ?></dt><dd><span class="badge <?= $b['limit_type'] === 'regulatory' ? 'danger' : '' ?>"><?= e(t('enum.rmlt.' . $b['limit_type'])) ?></span> · <?= e(t('enum.rmtier.' . $b['limit_tier'])) ?></dd>
+<?php if ($b['kri_code']): ?><dt><?= e(t('rm.kri')) ?></dt><dd><a href="<?= e(url('kris/' . $b['kri_id'])) ?>"><?= e($b['kri_code'] . ' — ' . $b['kri_name']) ?></a></dd><?php endif; ?>
+<dt><?= e(t('rm.breach_subject')) ?></dt><dd><?= e($b['subject'] ?? '—') ?></dd>
+<dt><?= e(t('rm.limit_value')) ?></dt><dd class="num"><?= e($b['limit_value'] ?? '—') ?> <?= e($b['unit'] ?? '') ?></dd><dt><?= e(t('rm.actual_value')) ?></dt><dd class="num"><?= e($b['actual_value'] ?? '—') ?> <?= e($b['unit'] ?? '') ?></dd>
+<dt><?= e(t('rm.excess')) ?></dt><dd><?= $excess !== null ? e($excess) . '%' : '—' ?></dd>
+<dt><?= e(t($exc ? 'rm.requested_at' : 'rm.detected_at')) ?></dt><dd><?= e(fdatetime($b['detected_at'])) ?> · <?= e($b['creator']) ?></dd>
+<dt><?= e(t($exc ? 'rm.requesting_department' : 'rm.owner_department')) ?></dt><dd><?= e(lname(['name_en' => $b['dept_en'], 'name_ar' => $b['dept_ar']])) ?></dd>
+<?php if ($b['cause']): ?><dt><?= e(t($exc ? 'rm.exception_reason' : 'rm.cause')) ?></dt><dd class="pre"><?= e($b['cause']) ?></dd><?php endif; ?>
+<?php if ($exc): ?><dt><?= e(t('rm.opinion')) ?></dt><dd><?= $b['risk_opinion'] ? op_badge($b['risk_opinion']) : '—' ?></dd><dt><?= e(t('rm.approver_body')) ?></dt><dd><?= e($b['approver_body'] ?? '—') ?></dd><dt><?= e(t('rm.expires_on')) ?></dt><dd><?= e(fdate($b['expires_on']) ?: '—') ?></dd>
+<?php if ($b['decision']): ?><dt><?= e(t('rm.decision')) ?></dt><dd><?= e(t('enum.rmexd.' . $b['decision'])) ?> · <?= e(fdate($b['decision_on'])) ?></dd><?php endif; ?><?php endif; ?>
+<?php if ($esc): ?><dt><?= e(t('rm.escalation')) ?></dt><dd><a href="<?= e(url('rm/escalations/' . $esc['id'])) ?>" dir="ltr"><?= e($esc['code']) ?></a> <span class="badge"><?= e(t('enum.rmes.' . $esc['status'])) ?></span></dd><?php endif; ?></dl>
+<p class="muted small"><?= icon('lock') ?> <?= e(t($exc ? 'rm.exception_warning' : 'rm.notice_warning')) ?></p></section>
+<section class="card" id="plan"><h2><?= e(t($exc ? 'rm.exception_decision' : 'rm.plan')) ?></h2><dl class="details">
+<?php if (!$exc): ?><dt><?= e(t('rm.plan_due')) ?></dt><dd><?= e(fdate($b['plan_due']) ?: '—') ?></dd><dt><?= e(t('rm.plan_text')) ?></dt><dd class="pre"><?= e($b['plan_text'] ?? '—') ?></dd><?php if ($b['plan_received_on']): ?><dt><?= e(t('rm.plan_received_on')) ?></dt><dd><?= e(fdate($b['plan_received_on'])) ?></dd><?php endif; ?><?php endif; ?>
+<?php if ($b['resolution_note']): ?><dt><?= e(t('rm.resolution_note')) ?></dt><dd class="pre"><?= e($b['resolution_note']) ?> · <?= e(fdate($b['resolved_on'])) ?></dd><?php endif; ?></dl>
+<?php if (!$exc && $open && (can('rm.work') || can('rm.respond'))): ?><form method="post" action="<?= e(url('rm/breaches/' . $b['id'] . '/plan')) ?>" novalidate><?= csrf_field() ?>
+<?= ff('textarea', 'plan_text', 'rm.plan_text', $b['plan_text'] ?? '', ['required' => true, 'hint' => t('rm.plan_text_hint')]) ?><button class="btn" type="submit"><?= e(t('rm.save_plan')) ?></button></form><?php endif; ?>
+<?php if ($open && can('rm.work')): ?><details id="resolve"<?= $exc ? ' open' : '' ?>><summary><strong><?= e(t($exc ? 'rm.record_exception_decision' : 'rm.resolve')) ?></strong></summary><form method="post" action="<?= e(url('rm/breaches/' . $b['id'] . '/resolve')) ?>" class="form-grid" novalidate><?= csrf_field() ?>
+<?php if ($exc): ?><?= ff('select', 'decision', 'rm.decision', '', ['required' => true, 'options' => ['approved' => t('enum.rmexd.approved'), 'rejected' => t('enum.rmexd.rejected')]]) ?><?= ff('date', 'decision_on', 'rm.decision_on', date('Y-m-d'), ['required' => true]) ?><?php endif; ?>
+<?= ff('textarea', 'resolution_note', 'rm.resolution_note', '', ['required' => true, 'wide' => true]) ?><div class="field"><button class="btn gold" type="submit"><?= e(t('common.save')) ?></button></div></form></details><?php endif; ?></section></div>

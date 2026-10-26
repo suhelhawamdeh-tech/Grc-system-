@@ -1,0 +1,19 @@
+<?php /** @var array $stats @var array $tasks @var array $bySection @var array $esc */ $tab = 'home'; $loc = locale(); ?>
+<div class="page-head"><div><h1><?= icon('shield') ?> <?= e(t('rm.title')) ?></h1><p class="sub"><?= e(t('rm.subtitle')) ?></p></div>
+<div class="actions"><?php if (can('rm.work')): ?><a class="btn" href="<?= e(url('rm/opinions/new')) ?>"><?= e(t('rm.opinion_new')) ?></a><a class="btn secondary" href="<?= e(url('rm/breaches/new')) ?>"><?= e(t('rm.breach_new')) ?></a><a class="btn danger" href="<?= e(url('rm/escalations/new')) ?>"><?= e(t('rm.escalation_new')) ?></a><?php endif; ?></div></div>
+<?php require __DIR__ . '/_tabs.php'; ?>
+<div class="card notice"><p><?= icon('lock') ?> <?= e(t('rm.independence_note')) ?></p></div>
+<div class="kpis">
+<a class="kpi<?= $stats['tasks_overdue'] ? ' alert' : '' ?>" href="<?= e(url('rm/calendar', ['status' => 'overdue'])) ?>"><div class="v"><?= (int)$stats['tasks_overdue'] ?></div><div class="l"><?= e(t('rm.kpi_overdue')) ?></div></a>
+<a class="kpi" href="<?= e(url('rm/calendar')) ?>"><div class="v"><?= (int)$stats['tasks_due'] ?></div><div class="l"><?= e(t('rm.kpi_due')) ?></div></a>
+<a class="kpi" href="<?= e(url('rm/opinions')) ?>"><div class="v"><?= (int)$stats['opinions'] ?></div><div class="l"><?= e(t('rm.kpi_opinions')) ?></div></a>
+<a class="kpi<?= $stats['breaches'] ? ' alert' : '' ?>" href="<?= e(url('rm/breaches', ['status' => 'open'])) ?>"><div class="v"><?= (int)$stats['breaches'] ?></div><div class="l"><?= e(t('rm.kpi_breaches')) ?></div></a>
+<a class="kpi<?= $stats['escalations'] ? ' alert' : '' ?>" href="<?= e(url('rm/escalations', ['status' => 'open'])) ?>"><div class="v"><?= (int)$stats['escalations'] ?></div><div class="l"><?= e(t('rm.kpi_escalations')) ?></div></a>
+<a class="kpi" href="<?= e(url('rm/opinions', ['status' => 'contrary'])) ?>"><div class="v"><?= (int)$stats['contrary'] ?></div><div class="l"><?= e(t('rm.kpi_contrary')) ?></div></a></div>
+<div class="grid cols-2">
+<section class="card"><h2><?= icon('tasks') ?> <?= e(t('rm.due_soon')) ?></h2>
+<?php if (!$tasks): ?><p class="muted"><?= e(t('rm.nothing_due')) ?></p><?php else: ?><ul class="history"><?php foreach ($tasks as $t): ?><li><a href="<?= e(url('rm/calendar')) ?>#t<?= (int)$t['id'] ?>"><span class="code" dir="ltr"><?= e($t['code']) ?></span> <?= e($t['title_' . $loc] ?: $t['title_en']) ?></a> <span class="muted small"><?= e($t['period_key']) ?> · <?= e(fdate($t['due_date'])) ?></span><?= $t['due_date'] < date('Y-m-d') ? ' <span class="badge danger">' . e(t('my.overdue')) . '</span>' : '' ?></li><?php endforeach; ?></ul><?php endif; ?></section>
+<section class="card"><h2><?= icon('alert') ?> <?= e(t('rm.open_escalations')) ?></h2>
+<?php if (!$esc): ?><p class="muted"><?= e(t('rm.no_escalations')) ?></p><?php else: ?><ul class="history"><?php foreach ($esc as $x): ?><li><a href="<?= e(url('rm/escalations/' . $x['id'])) ?>"><span class="code" dir="ltr"><?= e($x['code']) ?></span> <?= e($x['title']) ?></a> <span class="muted small"><?= e(t('enum.rmsrc.' . $x['source_type'])) ?> · <?= e(fdatetime($x['escalated_at'])) ?></span></li><?php endforeach; ?></ul><?php endif; ?></section></div>
+<section class="card"><h2><?= e(t('rm.by_section')) ?></h2><div class="table-wrap"><table class="data"><thead><tr><th><?= e(t('docs.section')) ?></th><th><?= e(t('rm.open_tasks')) ?></th><th><?= e(t('rm.late_tasks')) ?></th><th><?= e(t('rm.done_tasks')) ?></th></tr></thead><tbody>
+<?php foreach (\App\Support\Framework::SECTIONS as $s): $r = $bySection[$s] ?? ['open_n' => 0, 'late' => 0, 'done' => 0]; ?><tr><td><a href="<?= e(url('rm/calendar', ['section' => $s])) ?>"><?= e(t('enum.rmsec.' . $s)) ?></a></td><td><?= (int)$r['open_n'] ?></td><td><?= (int)$r['late'] ? '<span class="badge danger">' . (int)$r['late'] . '</span>' : '0' ?></td><td><?= (int)$r['done'] ?></td></tr><?php endforeach; ?></tbody></table></div></section>

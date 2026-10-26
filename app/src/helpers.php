@@ -286,6 +286,20 @@ function opts(array $rows, callable $label, ?string $key = 'id'): array
     return $out;
 }
 
+/** Badge for an independent risk opinion (no objection, conditional, reservation). */
+function op_badge(string $o): string
+{
+    $cls = match ($o) { 'no_objection' => 'ok', 'conditional' => 'warn', default => 'danger' };
+    return '<span class="badge ' . $cls . '">' . e(t('enum.rmop.' . $o)) . '</span>';
+}
+
+/** Badge for a document classification (public, internal, confidential, secret). */
+function cls_badge(string $c): string
+{
+    $cls = match ($c) { 'secret' => 'danger', 'confidential' => 'warn', 'public' => 'ok', default => '' };
+    return '<span class="badge ' . $cls . '">' . e(t('enum.cls.' . $c)) . '</span>';
+}
+
 function status_badge(string $status): string
 {
     $cls = match ($status) {

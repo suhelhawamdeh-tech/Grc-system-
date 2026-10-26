@@ -28,6 +28,7 @@ Db::init((array)Config::get('db'));
 I18n::init('ar');
 $sched = \App\Support\Scheduler::run();
 echo "rcsa_launched={$sched['rcsa_launched']}\n";
+echo "rm_tasks={$sched['rm_tasks']}\n";
 if ($sched['rcsa_launched'] > 0) {
     Audit::log('scheduler.run', 'system', null, $sched, null, 'cron');
 }

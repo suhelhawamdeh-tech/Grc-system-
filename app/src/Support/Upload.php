@@ -82,6 +82,18 @@ final class Upload
     /** Store a validated upload. @return int attachment id */
     public static function store(array $f, string $entityType, int $entityId, int $userId): int
     {
+        return self::save($f['tmp_name'], (string)$f['name'], (int)$f['size'], true, $entityType, $entityId, $userId);
+    }
+
+    /** Store a file that is already on the server (command-line imports); the source is copied, not moved. */
+    public static function storeLocal(string $path, string $name, string $entityType, int $entityId, int $userId): int
+    {
+        return self::save($path, $name, (int)filesize($path), false, $entityType, $entityId, $userId);
+    }
+
+    private static function save(string $src, string $originalName, int $size, bool $uploaded, string $entityType, int $entityId, int $userId): int
+    {
+        $f = ['name' => $originalName, 'size' => $size];
         $ext = strtolower(pathinfo((string)$f['name'], PATHINFO_EXTENSION));
         $sub = date('Y') . '/' . date('m');
         $dir = self::dir() . '/' . $sub;
@@ -90,7 +102,7 @@ final class Upload
         }
         $stored = $sub . '/' . bin2hex(random_bytes(16)) . '.bin';
         $target = self::dir() . '/' . $stored;
-        $moved = move_uploaded_file($f['tmp_name'], $target);
+        $moved = $uploaded ? move_uploaded_file($src, $target) : copy($src, $target);
         if (!$moved) {
             throw new \RuntimeException('Cannot store upload');
         }

@@ -1466,4 +1466,220 @@ INSERT IGNORE INTO settings (setting_key, setting_value, updated_at) VALUES
 
 INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('023_assistant', NOW());
 
+-- ===== migration 024_framework_documents =====
+ALTER TABLE policies
+  MODIFY code VARCHAR(40) NULL,
+  ADD COLUMN title_en VARCHAR(250) NULL AFTER title,
+  ADD COLUMN doc_level TINYINT UNSIGNED NULL AFTER category,
+  ADD COLUMN classification ENUM('public','internal','confidential','secret') NOT NULL DEFAULT 'internal' AFTER doc_level,
+  ADD COLUMN approval_body VARCHAR(150) NULL AFTER classification,
+  ADD COLUMN parent_id INT UNSIGNED NULL AFTER approval_body,
+  ADD COLUMN parent_code VARCHAR(40) NULL AFTER parent_id,
+  ADD COLUMN rm_section VARCHAR(20) NULL AFTER parent_id,
+  ADD COLUMN refs TEXT NULL,
+  ADD COLUMN kb_source_id INT UNSIGNED NULL,
+  ADD CONSTRAINT fk_pol_parent FOREIGN KEY (parent_id) REFERENCES policies(id);
+
+ALTER TABLE kb_sources ADD COLUMN policy_id INT UNSIGNED NULL AFTER circular_id;
+
+ALTER TABLE risk_categories
+  ADD COLUMN erm_group VARCHAR(20) NULL AFTER kind,
+  ADD COLUMN monitor_section VARCHAR(20) NULL AFTER erm_group;
+
+INSERT IGNORE INTO risk_categories (code, name_en, name_ar, kind, sort_order, is_active, created_at, updated_at) VALUES
+('BCM', 'Business continuity risk', 'مخاطر استمرارية الأعمال', 'conventional', 45, 1, NOW(), NOW()),
+('CAP', 'Capital adequacy risk', 'مخاطر كفاية رأس المال', 'conventional', 35, 1, NOW(), NOW());
+
+UPDATE risk_categories SET erm_group = CASE code
+    WHEN 'CR' THEN 'credit' WHEN 'ISL-EIR' THEN 'credit'
+    WHEN 'MR' THEN 'market' WHEN 'ISL-ACR' THEN 'market'
+    WHEN 'ISL-ROR' THEN 'rate_of_return' WHEN 'ISL-DCR' THEN 'rate_of_return' WHEN 'ISL-FID' THEN 'rate_of_return'
+    WHEN 'LQ' THEN 'liquidity'
+    WHEN 'OP' THEN 'operational' WHEN 'FRD' THEN 'operational' WHEN 'LEG' THEN 'operational' WHEN 'TPR' THEN 'operational'
+    WHEN 'BCM' THEN 'continuity' WHEN 'CYB' THEN 'infosec' WHEN 'ISL-SNC' THEN 'sharia' WHEN 'CAP' THEN 'capital'
+    WHEN 'STR' THEN 'strategic' WHEN 'REP' THEN 'reputation' WHEN 'CMP' THEN 'compliance' WHEN 'AML' THEN 'compliance'
+    ELSE erm_group END
+WHERE erm_group IS NULL;
+
+UPDATE risk_categories SET monitor_section = CASE erm_group
+    WHEN 'credit' THEN 'credit' WHEN 'market' THEN 'market' WHEN 'rate_of_return' THEN 'market' WHEN 'liquidity' THEN 'market'
+    WHEN 'operational' THEN 'operational' WHEN 'continuity' THEN 'operational' WHEN 'sharia' THEN 'operational'
+    WHEN 'infosec' THEN 'infosec' WHEN 'capital' THEN 'basel' ELSE 'office' END
+WHERE monitor_section IS NULL AND erm_group IS NOT NULL;
+
+UPDATE score_bands b
+JOIN (SELECT COUNT(*) AS n, SUM((min_score = 1 AND max_score = 4) OR (min_score = 5 AND max_score = 9) OR (min_score = 10 AND max_score = 14) OR (min_score = 15 AND max_score = 25)) AS d FROM score_bands) x ON x.n = 4 AND x.d = 4
+SET b.max_score = CASE b.min_score WHEN 10 THEN 16 ELSE b.max_score END,
+    b.min_score = CASE b.min_score WHEN 15 THEN 17 ELSE b.min_score END,
+    b.description_en = CASE b.min_score
+        WHEN 1 THEN 'Low: monitor within routine activities.'
+        WHEN 5 THEN 'Medium: treat within department plans; quarterly follow-up. Residual risk may be accepted by the owning department head.'
+        WHEN 10 THEN 'High: treatment plan with owner and dates, monthly follow-up. Residual risk accepted only by the chief executive.'
+        ELSE 'Critical: immediate treatment and escalation to the risk committee and the board. Residual risk accepted only by the risk committee or the board.' END,
+    b.description_ar = CASE b.min_score
+        WHEN 1 THEN 'منخفض: متابعة ضمن الأنشطة الاعتيادية.'
+        WHEN 5 THEN 'متوسط: معالجة ضمن خطط الإدارات ومتابعة ربع سنوية، ويقبل الخطر المتبقي مدير الإدارة المالكة.'
+        WHEN 10 THEN 'مرتفع: خطة معالجة بمسؤول ومواعيد ومتابعة شهرية، ولا يقبل الخطر المتبقي إلا الرئيس التنفيذي.'
+        ELSE 'حرج: معالجة فورية وتصعيد إلى لجنة المخاطر ومجلس الإدارة، ولا يُقبل الخطر المتبقي إلا بقرار من لجنة المخاطر أو المجلس.' END,
+    b.updated_at = NOW();
+
+INSERT IGNORE INTO settings (setting_key, setting_value, updated_at) VALUES ('scale_basis', 'erm', NOW());
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('024_framework_documents', NOW());
+
+-- ===== migration 025_risk_function =====
+CREATE TABLE IF NOT EXISTS rm_procedures (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NOT NULL,
+  section VARCHAR(20) NOT NULL,
+  frequency ENUM('daily','weekly','monthly','quarterly','semiannual','annual','event') NOT NULL,
+  approver ENUM('director','head','committee','board','owner') NOT NULL DEFAULT 'director',
+  title_ar VARCHAR(250) NOT NULL,
+  title_en VARCHAR(250) NOT NULL,
+  output_ar VARCHAR(250) NULL,
+  output_en VARCHAR(250) NULL,
+  manual_code VARCHAR(40) NULL,
+  assignee_user_id INT UNSIGNED NULL,
+  due_days SMALLINT UNSIGNED NULL,
+  is_builtin TINYINT(1) NOT NULL DEFAULT 1,
+  is_active TINYINT(1) NOT NULL DEFAULT 1,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_rmp_code (code),
+  KEY idx_rmp_section (section, is_active),
+  CONSTRAINT fk_rmp_user FOREIGN KEY (assignee_user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS rm_tasks (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  procedure_id INT UNSIGNED NOT NULL,
+  period_key VARCHAR(10) NOT NULL,
+  period_start DATE NOT NULL,
+  period_end DATE NOT NULL,
+  due_date DATE NOT NULL,
+  assignee_user_id INT UNSIGNED NULL,
+  status ENUM('open','done','not_applicable') NOT NULL DEFAULT 'open',
+  output_ref VARCHAR(250) NULL,
+  note TEXT NULL,
+  completed_by INT UNSIGNED NULL,
+  completed_at DATETIME NULL,
+  created_at DATETIME NOT NULL,
+  UNIQUE KEY uq_rmt_period (procedure_id, period_key),
+  KEY idx_rmt_status (status, due_date),
+  CONSTRAINT fk_rmt_proc FOREIGN KEY (procedure_id) REFERENCES rm_procedures(id),
+  CONSTRAINT fk_rmt_user FOREIGN KEY (assignee_user_id) REFERENCES users(id),
+  CONSTRAINT fk_rmt_done FOREIGN KEY (completed_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS rm_escalations (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  source_type ENUM('appetite_red','regulatory_breach','material_breach','contrary_decision','critical_event','access_restriction','data_integrity','icaap','other') NOT NULL,
+  source_entity VARCHAR(30) NULL,
+  source_id INT UNSIGNED NULL,
+  section VARCHAR(20) NULL,
+  title VARCHAR(250) NOT NULL,
+  detail TEXT NOT NULL,
+  escalated_to ENUM('committee_chair','board','cbl') NOT NULL DEFAULT 'committee_chair',
+  ceo_informed TINYINT(1) NOT NULL DEFAULT 1,
+  ceo_excluded_reason VARCHAR(250) NULL,
+  escalated_at DATETIME NOT NULL,
+  escalated_by INT UNSIGNED NOT NULL,
+  response TEXT NULL,
+  response_on DATE NULL,
+  outcome TEXT NULL,
+  status ENUM('open','responded','closed') NOT NULL DEFAULT 'open',
+  closed_at DATETIME NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_esc_code (code),
+  KEY idx_esc_source (source_entity, source_id),
+  KEY idx_esc_status (status, escalated_at),
+  CONSTRAINT fk_esc_user FOREIGN KEY (escalated_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS rm_opinions (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  section VARCHAR(20) NOT NULL,
+  subject_type ENUM('financing','rating','product','outsourcing','project','cloud','ai_tool','hedging','policy_review','exception','other') NOT NULL,
+  title VARCHAR(250) NOT NULL,
+  requesting_department_id INT UNSIGNED NULL,
+  request_ref VARCHAR(80) NULL,
+  received_on DATE NOT NULL,
+  due_on DATE NULL,
+  summary TEXT NOT NULL,
+  key_risks TEXT NULL,
+  limits_impact TEXT NULL,
+  opinion ENUM('no_objection','conditional','reservation') NULL,
+  conditions TEXT NULL,
+  rationale TEXT NULL,
+  status ENUM('draft','submitted','reviewed','issued','decided','returned') NOT NULL DEFAULT 'draft',
+  prepared_by INT UNSIGNED NOT NULL,
+  reviewed_by INT UNSIGNED NULL,
+  reviewed_at DATETIME NULL,
+  issued_by INT UNSIGNED NULL,
+  issued_at DATETIME NULL,
+  decision_body VARCHAR(150) NULL,
+  decision ENUM('approved','approved_conditions','rejected','withdrawn') NULL,
+  conditions_adopted TINYINT(1) NULL,
+  decision_on DATE NULL,
+  decision_note TEXT NULL,
+  contrary TINYINT(1) NOT NULL DEFAULT 0,
+  escalation_id INT UNSIGNED NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_op_code (code),
+  KEY idx_op_status (status, section),
+  CONSTRAINT fk_op_dept FOREIGN KEY (requesting_department_id) REFERENCES departments(id),
+  CONSTRAINT fk_op_prep FOREIGN KEY (prepared_by) REFERENCES users(id),
+  CONSTRAINT fk_op_rev FOREIGN KEY (reviewed_by) REFERENCES users(id),
+  CONSTRAINT fk_op_iss FOREIGN KEY (issued_by) REFERENCES users(id),
+  CONSTRAINT fk_op_esc FOREIGN KEY (escalation_id) REFERENCES rm_escalations(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS rm_breaches (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  code VARCHAR(20) NULL,
+  kind ENUM('breach','exception') NOT NULL DEFAULT 'breach',
+  section VARCHAR(20) NOT NULL,
+  limit_type ENUM('regulatory','internal') NOT NULL,
+  limit_tier ENUM('board','policy','operational') NOT NULL DEFAULT 'policy',
+  limit_name VARCHAR(250) NOT NULL,
+  kri_id INT UNSIGNED NULL,
+  subject VARCHAR(250) NULL,
+  limit_value DECIMAL(18,3) NULL,
+  actual_value DECIMAL(18,3) NULL,
+  unit VARCHAR(20) NULL,
+  detected_at DATETIME NOT NULL,
+  cause TEXT NULL,
+  owner_department_id INT UNSIGNED NULL,
+  plan_due DATE NULL,
+  plan_text TEXT NULL,
+  plan_received_on DATE NULL,
+  material TINYINT(1) NOT NULL DEFAULT 0,
+  risk_opinion ENUM('no_objection','conditional','reservation') NULL,
+  approver_body VARCHAR(150) NULL,
+  decision ENUM('approved','rejected') NULL,
+  decision_on DATE NULL,
+  expires_on DATE NULL,
+  status ENUM('open','plan_received','resolved','closed') NOT NULL DEFAULT 'open',
+  resolved_on DATE NULL,
+  resolution_note TEXT NULL,
+  escalation_id INT UNSIGNED NULL,
+  created_by INT UNSIGNED NOT NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  UNIQUE KEY uq_br_code (code),
+  KEY idx_br_status (status, kind),
+  CONSTRAINT fk_br_kri FOREIGN KEY (kri_id) REFERENCES kris(id),
+  CONSTRAINT fk_br_dept FOREIGN KEY (owner_department_id) REFERENCES departments(id),
+  CONSTRAINT fk_br_esc FOREIGN KEY (escalation_id) REFERENCES rm_escalations(id),
+  CONSTRAINT fk_br_user FOREIGN KEY (created_by) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO settings (setting_key, setting_value, updated_at) VALUES ('rm_procedures_version', '', NOW());
+
+INSERT IGNORE INTO schema_migrations (version, applied_at) VALUES ('025_risk_function', NOW());
+
 SET FOREIGN_KEY_CHECKS = 1;

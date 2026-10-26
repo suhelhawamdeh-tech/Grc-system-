@@ -60,6 +60,11 @@ $showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'we
   <?php if (can('incident.view')) echo $nav('/incidents', t('nav.incidents'), null, 'alert'); ?>
   <?php if (can('export.run')) echo $nav('/reports', t('nav.reports'), null, 'file'); ?>
   <?php if (can('risk.create') && (can('kri.report') || can('compliance.manage'))) echo $nav('/import', t('nav.import'), null, 'file'); ?>
+  <?php if (can('rm.view') || can('rm.breaches')): ?>
+    <h3><?= e(t('nav.rm_group')) ?></h3>
+    <?php if (can('rm.view')) echo $nav('/rm', t('nav.rm'), null, 'shield'); elseif (can('rm.breaches')) echo $nav('/rm/breaches', t('rm.breaches'), '/rm', 'alert'); ?>
+    <?php if (can('policy.view')) echo $nav('/policies/framework', t('docs.framework'), '/policies/framework', 'layers'); ?>
+  <?php endif; ?>
   <?php if (can('strategy.view') || can('governance.view') || can('circular.view') || can('bia.view') || can('sharia.view') || can('control.view') || can('kri.view') || can('appetite.view') || can('compliance.view') || can('committee.view') || can('policy.view') || can('rcsa.view')): ?>
     <h3><?= e(t('nav.governance')) ?></h3>
     <?php if (can('strategy.view')) echo $nav('/strategy', t('nav.strategy'), null, 'target'); ?>

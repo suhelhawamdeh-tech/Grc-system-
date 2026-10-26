@@ -158,6 +158,8 @@ $router->post('/committees/{id}/actions/{aid}', 'CommitteeController@updateActio
 
 $router->get('/policies', 'PolicyController@index', 'policy.view');
 $router->get('/policies/new', 'PolicyController@create', 'policy.manage');
+$router->get('/policies/framework', 'PolicyController@framework', 'policy.view');
+$router->post('/policies/import', 'PolicyController@import', 'policy.manage');
 $router->post('/policies', 'PolicyController@store', 'policy.manage');
 $router->get('/policies/{id}', 'PolicyController@show', 'policy.view');
 $router->get('/policies/{id}/edit', 'PolicyController@edit', 'policy.manage');
@@ -361,3 +363,35 @@ $router->get('/admin/assistant', 'AssistantController@settings', 'settings.manag
 $router->post('/admin/assistant', 'AssistantController@saveSettings', 'settings.manage');
 $router->post('/admin/assistant/test', 'AssistantController@testConnection', 'settings.manage');
 $router->post('/admin/assistant/sync', 'AssistantController@syncLibrary', 'settings.manage');
+
+// Risk function workbench (release 1.6)
+$router->get('/rm', 'RiskFunctionController@home', 'rm.view');
+$router->get('/rm/calendar', 'RiskFunctionController@calendar', 'rm.view');
+$router->post('/rm/tasks/{id}', 'RiskFunctionController@completeTask', 'rm.work');
+$router->get('/rm/procedures', 'RiskFunctionController@procedures', 'rm.view');
+$router->post('/rm/procedures/{id}', 'RiskFunctionController@updateProcedure', 'rm.approve');
+$router->get('/rm/opinions', 'RiskFunctionController@opinions', 'rm.view');
+$router->get('/rm/opinions/new', 'RiskFunctionController@opinionNew', 'rm.work');
+$router->post('/rm/opinions', 'RiskFunctionController@opinionStore', 'rm.work');
+$router->get('/rm/opinions/{id}', 'RiskFunctionController@opinionShow', 'rm.view');
+$router->get('/rm/opinions/{id}/edit', 'RiskFunctionController@opinionEdit', 'rm.work');
+$router->post('/rm/opinions/{id}', 'RiskFunctionController@opinionUpdate', 'rm.work');
+$router->post('/rm/opinions/{id}/step', 'RiskFunctionController@opinionStep', 'rm.work');
+$router->post('/rm/opinions/{id}/decision', 'RiskFunctionController@opinionDecide', 'rm.work');
+$router->get('/rm/opinions/{id}/print', 'RiskFunctionController@opinionPrint', 'rm.view');
+$router->get('/rm/opinions/{id}/docx', 'RiskFunctionController@opinionDocx', 'rm.view');
+$router->get('/rm/breaches', 'RiskFunctionController@breaches', 'rm.breaches');
+$router->get('/rm/breaches/new', 'RiskFunctionController@breachNew', 'rm.work');
+$router->post('/rm/breaches', 'RiskFunctionController@breachStore', 'rm.work');
+$router->get('/rm/breaches/{id}', 'RiskFunctionController@breachShow', 'rm.breaches');
+$router->post('/rm/breaches/{id}/plan', 'RiskFunctionController@breachPlan', 'rm.breaches');
+$router->post('/rm/breaches/{id}/resolve', 'RiskFunctionController@breachResolve', 'rm.work');
+$router->get('/rm/breaches/{id}/print', 'RiskFunctionController@breachPrint', 'rm.breaches');
+$router->get('/rm/breaches/{id}/docx', 'RiskFunctionController@breachDocx', 'rm.breaches');
+$router->get('/rm/escalations', 'RiskFunctionController@escalations', 'rm.view');
+$router->get('/rm/escalations/new', 'RiskFunctionController@escalationNew', 'rm.work');
+$router->post('/rm/escalations', 'RiskFunctionController@escalationStore', 'rm.work');
+$router->get('/rm/escalations/{id}', 'RiskFunctionController@escalationShow', 'rm.view');
+$router->post('/rm/escalations/{id}/respond', 'RiskFunctionController@escalationRespond', 'rm.work');
+$router->post('/rm/escalations/{id}/close', 'RiskFunctionController@escalationClose', 'rm.approve');
+$router->get('/rm/escalations/{id}/docx', 'RiskFunctionController@escalationDocx', 'rm.view');

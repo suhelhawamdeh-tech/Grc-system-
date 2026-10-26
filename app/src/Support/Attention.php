@@ -13,7 +13,7 @@ final class Attention
 
     /** Section key => translation key of its heading (used by My tasks and e-mail digests). */
     public const LABELS = ['actions' => 'my.actions', 'decisions' => 'my.decisions', 'obligations' => 'my.obligations', 'kris' => 'my.kris', 'rcsa' => 'my.rcsa', 'rcsa_review' => 'my.rcsa_review', 'control_tests' => 'my.control_tests',
-        'sharia_events' => 'my.sharia_events', 'sharia_reviews' => 'my.sharia_reviews', 'circulars' => 'my.circulars', 'circulars_overdue' => 'my.circulars_overdue', 'kri_breaches' => 'my.kri_breaches', 'approvals' => 'my.approvals', 'bia_review' => 'my.bia_review', 'ia_respond' => 'my.ia_respond', 'ia_implement' => 'my.ia_implement', 'ia_verify' => 'my.ia_verify', 'ia_review_wp' => 'my.ia_review_wp', 'aml_reviews' => 'my.aml_reviews', 'aml_reports' => 'my.aml_reports', 'notes' => 'my.notes'];
+        'sharia_events' => 'my.sharia_events', 'sharia_reviews' => 'my.sharia_reviews', 'circulars' => 'my.circulars', 'circulars_overdue' => 'my.circulars_overdue', 'kri_breaches' => 'my.kri_breaches', 'approvals' => 'my.approvals', 'bia_review' => 'my.bia_review', 'ia_respond' => 'my.ia_respond', 'ia_implement' => 'my.ia_implement', 'ia_verify' => 'my.ia_verify', 'ia_review_wp' => 'my.ia_review_wp', 'aml_reviews' => 'my.aml_reviews', 'aml_reports' => 'my.aml_reports', 'rm_tasks' => 'my.rm_tasks', 'rm_opinions' => 'my.rm_opinions', 'rm_plans' => 'my.rm_plans', 'rm_escalations' => 'my.rm_escalations', 'notes' => 'my.notes'];
 
     /** @return array<string,array> section key => rows (each row: label, due, link, overdue) */
     public static function items(array $u): array
@@ -49,6 +49,14 @@ final class Attention
         $s['ia_review_wp'] = Perm::roleHas($u['role'], 'ia.manage') ? Db::all("SELECT w.id, CONCAT(e.code, ' / ', w.ref, ' — ', w.title) AS title, DATE(w.prepared_at) AS due FROM audit_workpapers w JOIN audit_engagements e ON e.id = w.engagement_id WHERE w.status = 'prepared' AND e.status = 'fieldwork' AND w.prepared_by <> ? ORDER BY w.prepared_at LIMIT 50", [$id]) : [];
         $s['aml_reviews'] = Perm::roleHas($u['role'], 'aml.manage') ? Db::all("SELECT c.id, CONCAT(c.customer_ref, ' — ', c.full_name) AS title, c.next_review_due AS due FROM aml_customers c WHERE c.status = 'active' AND c.next_review_due <= ? ORDER BY FIELD(c.rating, 'high', 'medium', 'low'), c.next_review_due LIMIT 50", [date('Y-m-d', strtotime('+30 days'))]) : [];
         $s['aml_reports'] = Perm::roleHas($u['role'], 'aml.manage') ? Db::all("SELECT r.id, CONCAT(r.code, ' — ', r.title) AS title, r.due_date AS due FROM aml_reports r WHERE r.status = 'draft' AND r.due_date <= ? ORDER BY r.due_date LIMIT 50", [$horizon]) : [];
+        // Risk function: procedures assigned to me (or unassigned, for the risk team), opinions awaiting my review or issue, plans my department owes, open escalations.
+        $s['rm_tasks'] = Perm::roleHas($u['role'], 'rm.work') ? Db::all("SELECT t.id, CONCAT(p.code, ' — ', IF(? = 'ar', p.title_ar, p.title_en), ' (', t.period_key, ')') AS title, t.due_date AS due FROM rm_tasks t JOIN rm_procedures p ON p.id = t.procedure_id
+            WHERE t.status = 'open' AND (t.assignee_user_id = ? OR t.assignee_user_id IS NULL) AND t.due_date <= ? ORDER BY t.due_date LIMIT 50", [\App\Core\I18n::locale(), $id, $horizon]) : [];
+        $s['rm_opinions'] = Perm::roleHas($u['role'], 'rm.work') ? Db::all("SELECT o.id, CONCAT(o.code, ' — ', o.title) AS title, COALESCE(o.due_on, o.received_on) AS due FROM rm_opinions o
+            WHERE o.prepared_by <> ? AND (o.status = 'submitted' OR (o.status = 'reviewed' AND ? = 1)) ORDER BY o.received_on LIMIT 50", [$id, Perm::roleHas($u['role'], 'rm.approve') ? 1 : 0]) : [];
+        $s['rm_plans'] = Perm::roleHas($u['role'], 'rm.respond') && (int)($u['department_id'] ?? 0) ? Db::all("SELECT b.id, CONCAT(b.code, ' — ', b.limit_name) AS title, b.plan_due AS due FROM rm_breaches b
+            WHERE b.kind = 'breach' AND b.status = 'open' AND b.owner_department_id = ? ORDER BY b.plan_due IS NULL, b.plan_due LIMIT 50", [(int)$u['department_id']]) : [];
+        $s['rm_escalations'] = Perm::roleHas($u['role'], 'rm.approve') ? Db::all("SELECT e.id, CONCAT(e.code, ' — ', e.title) AS title, DATE(e.escalated_at) AS due FROM rm_escalations e WHERE e.status <> 'closed' ORDER BY e.escalated_at LIMIT 50") : [];
         $s['notes'] = Db::all('SELECT n.id, n.body AS title, n.remind_on AS due, n.page_path FROM user_notes n WHERE n.user_id = ? AND n.is_done = 0 AND n.remind_on IS NOT NULL AND n.remind_on <= ? ORDER BY n.remind_on LIMIT 50', [$id, $today]);
         foreach ($s as &$rows) {
             foreach ($rows as &$r) {
