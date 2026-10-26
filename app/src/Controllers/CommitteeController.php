@@ -10,7 +10,7 @@ use App\Support\Ref;
 
 final class CommitteeController extends Controller
 {
-    public const COMMITTEES = ['board_risk', 'board_audit', 'executive_risk', 'alco', 'sharia_board', 'other'];
+    public const COMMITTEES = ['board', 'board_risk', 'board_audit', 'executive_risk', 'alco', 'sharia_board', 'other'];
     private const PER_PAGE = 25;
 
     public function index(): string

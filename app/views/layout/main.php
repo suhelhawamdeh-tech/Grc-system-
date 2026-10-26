@@ -65,6 +65,7 @@ $showWelcome = $u && $path === '/' && \App\Support\Prefs::get((int)$u['id'], 'we
     <?php if (can('rm.view')) echo $nav('/rm', t('nav.rm'), null, 'shield'); elseif (can('rm.breaches')) echo $nav('/rm/breaches', t('rm.breaches'), '/rm', 'alert'); ?>
     <?php if (can('appetite.view')) echo $nav('/appetite/framework', t('raf.dashboard'), '/appetite/framework', 'target'); ?>
     <?php if (can('icaap.view')) echo $nav('/icaap', t('icaap.nav'), null, 'scale'); ?>
+    <?php if (can('rm.view')) echo $nav('/board-reports', t('brr.nav'), null, 'file'); ?>
     <?php if (can('policy.view')) echo $nav('/policies/framework', t('docs.framework'), '/policies/framework', 'layers'); ?>
   <?php endif; ?>
   <?php if (can('strategy.view') || can('governance.view') || can('circular.view') || can('bia.view') || can('sharia.view') || can('control.view') || can('kri.view') || can('appetite.view') || can('compliance.view') || can('committee.view') || can('policy.view') || can('rcsa.view')): ?>

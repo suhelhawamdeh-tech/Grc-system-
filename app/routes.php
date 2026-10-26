@@ -401,6 +401,19 @@ $router->post('/rm/escalations/{id}/close', 'RiskFunctionController@escalationCl
 $router->get('/rm/escalations/{id}/docx', 'RiskFunctionController@escalationDocx', 'rm.view');
 
 // ICAAP (release 1.6)
+// Quarterly board risk report (release 1.6)
+$router->get('/board-reports', 'BoardReportController@index', 'rm.view');
+$router->post('/board-reports', 'BoardReportController@store', 'rm.work');
+$router->get('/board-reports/{id}', 'BoardReportController@show', 'rm.view');
+$router->post('/board-reports/{id}', 'BoardReportController@update', 'rm.work');
+$router->post('/board-reports/{id}/rows', 'BoardReportController@addRow', 'rm.work');
+$router->post('/board-reports/{id}/rows/{rid}', 'BoardReportController@updateRow', 'rm.work');
+$router->post('/board-reports/{id}/rows/{rid}/delete', 'BoardReportController@deleteRow', 'rm.work');
+$router->post('/board-reports/{id}/tiles', 'BoardReportController@suggestTiles', 'rm.work');
+$router->post('/board-reports/{id}/references', 'BoardReportController@addFrameworkRefs', 'rm.work');
+$router->post('/board-reports/{id}/status', 'BoardReportController@status', 'rm.work');
+$router->get('/board-reports/{id}/print', 'BoardReportController@print', 'rm.view');
+$router->get('/board-reports/{id}/docx', 'BoardReportController@docx', 'rm.view');
 $router->get('/icaap', 'IcaapController@index', 'icaap.view');
 $router->post('/icaap', 'IcaapController@store', 'icaap.manage');
 $router->get('/icaap/{id}', 'IcaapController@show', 'icaap.view');
