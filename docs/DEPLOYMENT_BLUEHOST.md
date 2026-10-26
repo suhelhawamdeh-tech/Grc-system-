@@ -129,3 +129,15 @@ and, inside `'app'`, `'base_url' => 'https://grc.example.com'` so digests contai
 - **Library upkeep (monthly):** review questions marked "not covered by the library" in the settings page and add the missing Central Bank of Libya circulars, bank policies and procedures (**Reference library → Add a document**, or **Add to the reference library** from a registered circular). Mark internal documents *restricted* when only compliance and risk should see them.
 - The built-in passages are summaries with links to the originals. Libyan legal texts found online are often unofficial translations: rely on the official Arabic text and the latest CBL circulars.
 
+## 18. Release 1.6 configuration notes (framework, ICAAP, board report, registers)
+- Apply migrations 024 to 029 from **Administration → System**. Migration 024 changes the score bands to 1–4 low, 5–9 medium, 10–16 high, 17–25 critical **only if** the bands were still the shipped defaults; review **Administration → Scales** afterwards and confirm with the risk committee. Existing risks are re-banded automatically from their scores.
+- **Load the bank's documents on the bank's server only.** Either import them from **Framework documents → Import** (several Word files at once), or copy them to a folder outside `public_html` and run:
+  ```
+  php bin/import-documents.php /home/USER/framework-docs --user=risk.director --dry-run
+  php bin/import-documents.php /home/USER/framework-docs --user=risk.director
+  ```
+  The script imports charters first, then the risk appetite framework, the ERM framework, policies and manuals, and lists missing references at the end. Delete the copied folder afterwards. Never upload the bank's documents to a demonstration, preview or public copy of the platform, and never commit them to a repository.
+- Set each document's classification. *Confidential* and *secret* files can be downloaded only by risk, compliance and internal audit, and are indexed as restricted in the reference library.
+- **Risk appetite:** create the 49 standard board metrics from **Risk appetite framework → Create from template**, then calibrate each with the values approved by the board. Readings are refused until a metric is calibrated.
+- **Daily job:** `bin/notify.php` also generates the risk-function work calendar and expires temporary security acceptances past their date (each escalated once to the risk committee chair). Keep the cron job scheduled daily.
+- **Permissions:** department managers see and answer limit breaches of their own department only; they do not see opinions, ICAAP, board reports or registers.

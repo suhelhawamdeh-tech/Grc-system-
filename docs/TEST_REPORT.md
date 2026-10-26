@@ -1,7 +1,7 @@
 # Test report (session 1)
 
 **Command:** `php tests/run.php` — dependency-free runner; copies the app to a temp dir, wipes two scratch databases, installs on a clean DB, starts PHP's built-in server and drives it over HTTP with a cookie-aware client.
-**Result: 1531 checks passed, 0 failed** (609 in the first release, 625 for releases 1.1 to 1.3: usability, controls, Sharia, BIA/approvals, e-mail with a fake SMTP sink, Excel export and board pack; 199 for release 1.4: internal audit, AML and T24 integration with a simulated T24 API; 98 for release 1.5: reference library and AI assistant, with a simulated Claude API). Not verified for release 1.4: a real Temenos T24 system or API. Not verified for release 1.5: a call to the real Claude API, and the quality of real model answers. Not verified here: Bluehost, Apache, PHP 8.1–8.3, real SMTP providers, Microsoft Excel opening of the generated .xlsx (structure and XML validity are tested, but the file was not opened in Excel), screen readers.
+**Result: 1620 checks passed, 0 failed** (609 in the first release, 625 for releases 1.1 to 1.3: usability, controls, Sharia, BIA/approvals, e-mail with a fake SMTP sink, Excel export and board pack; 199 for release 1.4: internal audit, AML and T24 integration with a simulated T24 API; 98 for release 1.5: reference library and AI assistant, with a simulated Claude API; 89 for release 1.6: framework documents, risk-function workbench, risk appetite framework, ICAAP, quarterly board report and supporting registers). Not verified for release 1.4: a real Temenos T24 system or API. Not verified for release 1.5: a call to the real Claude API, and the quality of real model answers. Not verified for release 1.6: opening the generated Word files in Microsoft Word (they are checked as valid Office Open XML and parsed), and the bank's real documents (tests use a synthetic Word document built by the platform). Not verified here: Bluehost, Apache, PHP 8.1–8.3, real SMTP providers, Microsoft Excel opening of the generated .xlsx (structure and XML validity are tested, but the file was not opened in Excel), screen readers.
 
 **Environment actually used:** Linux container, PHP 8.4.19 (CLI, built-in server), MariaDB 10.11.14, curl. Chromium (Playwright) was used only to take screenshots of Arabic/English/mobile pages for a visual check.
 
@@ -54,6 +54,17 @@
 | Assistant: administration and limits | 9 | 0 |
 | Assistant: Claude mode (fake API) | 15 | 0 |
 
+### Release 1.6 sections
+| Area | Passed | Failed |
+|---|---|---|
+| Release 6 unit: framework constants, document reader, registers config | 8 | 0 |
+| Framework documents: import, hierarchy, confidentiality | 6 | 0 |
+| Risk-function workbench: opinions, breaches, escalations | 14 | 0 |
+| Risk appetite framework: template, calibration, amber and red | 9 | 0 |
+| ICAAP: inputs, materiality, Pillar 2, stress, approvals | 19 | 0 |
+| Quarterly board risk report | 14 | 0 |
+| Supporting registers | 19 | 0 |
+
 ## What the tests demonstrate
 * **Authentication:** CSRF rejection, uniform login errors, session ID regeneration, throttling after 5 failures (even with the right password), forced password change, logout via POST only, deactivated users blocked.
 * **Authorization:** role × URL matrix (Phase 1 and 2), unauthorised direct URLs, out-of-scope records return 404 (view, edit, POST edit, archive, print, attachments, CSV, dashboard), scope enforced on create/move, restricted users cannot widen CSV via query parameters.
@@ -65,6 +76,7 @@
 * **i18n:** identical ar/en key sets (base + module files), no untranslated keys rendered on ~30 pages in both languages, `dir`/`lang` attributes, language switch, open-redirect protection, stylesheet uses logical properties only, no inline scripts.
 * **Installation:** CLI install on an empty DB, second install refused, web wizard (token, DB test, config written with 600 perms + deny file, admin creation, lock, 404 afterwards, closed even if the lock file is deleted), sub-directory deployment under `/grc/` (assets, links, cookie path, deep-link `next`).
 * **AI assistant:** the request sent to the (simulated) Claude API carries the key only in the header, the required API version and fallback headers, the chosen model and effort, the system rules and numbered sources, and no customer name, customer number or account number; answers are escaped, invented citations dropped, refusals and API errors handled (library passages shown instead), no request at all when the library has nothing relevant; personal numbers and e-mails removed before storage; history private to each user; restricted documents hidden from other roles; rate limit, switch-off and settings validation (Claude mode refused without a key).
+* **Release 1.6:** a synthetic Word document is imported (level and classification from its control table, missing reference listed, no duplicate on re-import, confidential file refused to a department manager); opinions need a second person and a contrary decision is escalated; no exception against a regulatory limit; uncalibrated appetite metrics refuse readings, amber gives a notice and red an escalation; ICAAP figures checked against hand calculations (27.0833% ratio, Pillar 1 300m, Pillar 2 40m, buffer 17m, margin 293m, stress paths) with phase gates, approval order and lock; the board report refuses an incomplete submission or a board date before the committee, creates decisions and dated actions once on approval and is then locked; registers derive late deliveries, refuse invalid dates and targets, expire and escalate security acceptances exactly once, and build the maturity and committee templates without duplicates.
 * **Packaging:** ZIP contents (no tests/secrets/runtime data), `install.sql` imports into an empty DB and equals the migrated schema.
 
 ## NOT verified (cannot be claimed)
